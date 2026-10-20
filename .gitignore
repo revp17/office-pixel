@@ -4,3 +4,5 @@ dist/
 vault/.obsidian/workspace.json
 vault/.obsidian/workspaces.json
 vault/.obsidian/cache
+
+.claude/

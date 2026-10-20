@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Office-Pixel</title>
+  </head>
+  <body>
+    <div id="app">
+      <aside id="studio">
+        <h1>Office-Pixel <small>Studio</small></h1>
+        <label for="yaml">Definición del proceso (YAML)</label>
+        <textarea id="yaml" spellcheck="false"></textarea>
+        <div class="row">
+          <label>Semilla <input id="seed" type="number" value="42" /></label>
+          <label>Horizonte (min) <input id="horizon" type="number" value="480" min="10" /></label>
+        </div>
+        <button id="apply" class="primary">Aplicar y simular</button>
+        <ul id="errors"></ul>
+      </aside>
+      <main id="stage">
+        <div id="toolbar">
+          <button id="play">▶ Reproducir</button>
+          <button id="restart">⟲ Reiniciar</button>
+          <label>Velocidad
+            <select id="speed">
+              <option value="5">5 min/s</option>
+              <option value="20" selected>20 min/s</option>
+              <option value="60">60 min/s</option>
+              <option value="200">200 min/s</option>
+            </select>
+          </label>
+          <input id="timeline" type="range" min="0" max="480" step="0.1" value="0" />
+          <span id="clock">0:00</span>
+          <button id="fit">Ajustar vista</button>
+        </div>
+        <div id="progress"><div id="progress-fill"></div><span id="progress-text"></span></div>
+        <div id="game"></div>
+        <section id="metrics"></section>
+      </main>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
