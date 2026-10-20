@@ -1,0 +1,36 @@
+process: aprobacion_credito
+version: 3
+arrivals: { type: poisson, ratePerHour: 12, calendar: lun-vie_9-18 }
+resources:
+  - { id: analistas, count: 3, skills: [riesgo], shift: lun-vie_9-18 }
+  - { id: bot_kyc, count: 5, kind: automated }
+stages:
+  - id: recepcion
+    duration: { dist: fixed, minutes: 2 }
+    next: validacion
+  - id: validacion
+    resource: bot_kyc
+    duration: { dist: lognormal, medianMinutes: 4, sigma: 0.5 }
+    wip: { limit: 20 }
+    exceptions:
+      - { id: doc_ilegible, probability: 0.08, action: goto, target: recepcion, penaltyMinutes: 30 }
+    next:
+      - { when: "case.amount > 10000", to: revision_senior }
+      - { otherwise: true, to: revision }
+  - id: revision
+    resource: analistas
+    duration: { dist: normal, meanMinutes: 25, sdMinutes: 8 }
+    sla: { maxMinutes: 120, onBreach: escalate }
+    exceptions:
+      - { id: rechazo, probability: 0.12, action: goto, target: cerrado_rechazado }
+    next: despacho
+  - id: revision_senior
+    resource: analistas
+    duration: { dist: normal, meanMinutes: 45, sdMinutes: 12 }
+    next: despacho
+  - id: despacho
+    duration: { dist: fixed, minutes: 5 }
+    terminal: true
+  - id: cerrado_rechazado
+    terminal: true
+metrics: [throughput, cycleTime, wip, utilization, slaBreaches]
