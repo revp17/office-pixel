@@ -8,6 +8,8 @@ export interface OrgCaseView {
   stage: string;
   status: OrgCaseStatus;
   person?: string;
+  /** unidad de destino mientras el caso viaja entre áreas */
+  toUnit?: string;
   enteredAt: number;
   createdAt: number;
   breached: boolean;
@@ -91,6 +93,7 @@ export class OrgReplayer {
         c.stage = ev.stage;
         c.status = 'queued';
         c.person = undefined;
+        c.toUnit = undefined;
         c.enteredAt = ev.t;
         c.breached = false;
         break;
@@ -98,6 +101,7 @@ export class OrgReplayer {
       case 'handoff.started':
         this.counters.handoffs++;
         this.cases.get(ev.caseId)!.status = 'transit';
+        this.cases.get(ev.caseId)!.toUnit = ev.toUnit;
         break;
       case 'work.started': {
         const c = this.cases.get(ev.caseId)!;

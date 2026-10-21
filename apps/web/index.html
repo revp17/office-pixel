@@ -9,34 +9,41 @@
     <div id="app">
       <aside id="studio">
         <h1>Office-Pixel <small>Studio</small></h1>
-        <label for="yaml">Definición del proceso (YAML)</label>
+        <label for="yaml">Empresa (YAML): áreas, personas, calendario y procesos</label>
         <textarea id="yaml" spellcheck="false"></textarea>
         <div class="row">
-          <label>Semilla <input id="seed" type="number" value="42" /></label>
-          <label>Horizonte (min) <input id="horizon" type="number" value="480" min="10" /></label>
+          <label>Semilla <input id="seed" type="number" value="1" /></label>
+          <label>Días <input id="days" type="number" value="5" min="1" max="30" /></label>
         </div>
         <button id="apply" class="primary">Aplicar y simular</button>
         <ul id="errors"></ul>
       </aside>
       <main id="stage">
         <div id="toolbar">
+          <button id="toggle-studio" title="Mostrar/ocultar el editor">☰ Studio</button>
           <button id="play">▶ Reproducir</button>
           <button id="restart">⟲ Reiniciar</button>
           <label>Velocidad
             <select id="speed">
-              <option value="5">5 min/s</option>
-              <option value="20" selected>20 min/s</option>
-              <option value="60">60 min/s</option>
-              <option value="200">200 min/s</option>
+              <option value="10">10 min/s</option>
+              <option value="30" selected>30 min/s</option>
+              <option value="60">1 h/s</option>
+              <option value="240">4 h/s</option>
+              <option value="720">12 h/s</option>
             </select>
           </label>
-          <input id="timeline" type="range" min="0" max="480" step="0.1" value="0" />
-          <span id="clock">0:00</span>
-          <button id="fit">Ajustar vista</button>
+          <input id="timeline" type="range" min="0" max="7200" step="1" value="0" />
+          <span id="clock">Día 1 · Lun 00:00</span>
+          <button id="fit">Vista general</button>
         </div>
         <div id="progress"><div id="progress-fill"></div><span id="progress-text"></span></div>
         <div id="game"></div>
-        <section id="metrics"></section>
+        <section id="bottom">
+          <div id="kpis"></div>
+          <div id="units"></div>
+          <div id="people"></div>
+          <div id="detail"><p class="hint">Haz clic en una persona del edificio o de la lista para ver su día.</p></div>
+        </section>
       </main>
     </div>
     <script type="module" src="/src/main.ts"></script>
