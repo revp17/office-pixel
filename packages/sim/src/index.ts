@@ -4,3 +4,10 @@ export { simulate } from './engine';
 export { Replayer, type CaseView, type CaseStatus, type Counters } from './replay';
 export { compileExpr } from './expr';
 export { mulberry32 } from './rng';
+
+// Modelo de empresa (áreas, personas, calendarios)
+export * from './org/types';
+export { parseCompany, validateCompany, type CompanyParseResult } from './org/validate';
+export { simulateCompany } from './org/engine';
+export { OrgReplayer, type OrgCaseView, type OrgCaseStatus, type PersonView, type OrgCounters } from './org/replay';
+export { makeBizCalendar, parseHM, DAY } from './org/time';

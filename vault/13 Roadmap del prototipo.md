@@ -18,6 +18,18 @@ tags: [gestión, roadmap]
 - `wip.limit` es solo visual; no bloquea el flujo.
 - Render en Canvas 2D (WebGL falló en el navegador embebido con "Framebuffer incomplete").
 
+## Hito 1.5 — Empresa virtual (ver [[14 Modelo organizacional]])
+- [x] Modelo de empresa: unidades, personas, calendarios, turnos, reuniones, ausentismo
+- [x] Motor: cola compartida con *pull*, trabajo que se pausa/reanuda, error humano, traspasos con traslado, tiempo hábil
+- [x] Validación del YAML de empresa (elegibilidad, referencias, horas)
+- [x] `examples/banco_pixel.yaml`: 32 personas, 5 áreas, 2 procesos cruzados
+- [x] `OrgReplayer` y 16 tests nuevos
+- [ ] Edificio generado desde el organigrama (plantas, salas, escritorios) y avatares que caminan
+- [ ] Panel de persona (su día, carga, cola) y de unidad
+- [ ] Web migrada del motor de proceso al de empresa
+
+Hallazgo con la semilla 1 (5 días): el cuello de botella no es Riesgos sino **Contratos (Legal)**, 87 % de utilización y ~2 h de espera media en revisión legal.
+
 ## Hito 2
 - [ ] Calendarios/turnos y WIP que bloquea (excepciones y SLAs ya están en el Hito 1)
 - [ ] NPCs como recursos; avatar del FDE interviene

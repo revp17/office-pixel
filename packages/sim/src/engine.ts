@@ -3,14 +3,14 @@ import { compileExpr, type CompiledExpr } from './expr';
 import { mulberry32 } from './rng';
 import type { Metrics, ProcessDef, SimEvent, SimOptions, SimResult, StageDef } from './types';
 
-interface Scheduled {
+export interface Scheduled {
   t: number;
   seq: number;
   run: () => void;
 }
 
 /** Cola de prioridad mínima por (tiempo, orden de inserción) → orden estable y determinista. */
-class Heap {
+export class Heap {
   private a: Scheduled[] = [];
   get size() {
     return this.a.length;

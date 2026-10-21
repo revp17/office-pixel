@@ -9,6 +9,10 @@ Simulador visual de procesos para Forward Deployed Engineers: define un proceso 
 - `examples/aprobacion_credito.yaml` — proceso de ejemplo.
 - `vault/` — vault de Obsidian con el diseño (empieza por `00 Inicio.md`).
 
+## Empresa virtual (motor listo, sin interfaz todavía)
+
+`examples/banco_pixel.yaml` define una empresa de 32 personas (Comercial, Operaciones, Riesgos, Legal y Atención) con calendario, turnos, reuniones y dos procesos que cruzan áreas. El motor está en `packages/sim/src/org/` (`parseCompany`, `simulateCompany`, `OrgReplayer`). El modelo y sus reglas están en `vault/14 Modelo organizacional.md`. La web actual todavía usa el motor de proceso único.
+
 ## Uso
 
 ```bash

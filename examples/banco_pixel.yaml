@@ -1,0 +1,188 @@
+company: Banco Pixel
+
+calendar:
+  workDays: [0, 1, 2, 3, 4]          # lunes a viernes
+  hours: { start: "09:00", end: "18:00" }
+  breaks: [{ start: "13:00", end: "14:00" }]
+  absenteeism: 0.03
+
+travel: { sameTeam: 0, sameArea: 2, crossArea: 5 }   # minutos de traslado de un caso
+
+schedules:
+  turno_tarde:
+    hours: { start: "12:00", end: "21:00" }
+    breaks: [{ start: "16:00", end: "17:00" }]
+
+meetings:
+  - { id: daily_riesgos,   unit: riesgos,    start: "09:15", minutes: 15 }
+  - { id: daily_ops,       unit: operaciones, start: "09:00", minutes: 10 }
+  - { id: daily_atencion,  unit: atencion,   start: "09:00", minutes: 10 }
+  - { id: comite_riesgos,  unit: riesgos,    start: "15:00", minutes: 60, days: [0] }
+
+units:
+  - id: comercial
+    name: Comercial
+    head: gerente_comercial
+    children:
+      - { id: ventas, name: Ventas }
+  - id: operaciones
+    name: Operaciones
+    head: jefa_ops
+    children:
+      - { id: kyc, name: Validación KYC }
+      - { id: formalizacion, name: Formalización }
+  - id: riesgos
+    name: Riesgos
+    head: jefe_riesgos
+    children:
+      - { id: analisis, name: Análisis }
+      - { id: senior, name: Riesgos senior }
+  - id: legal
+    name: Legal y Cumplimiento
+    head: jefa_legal
+    children:
+      - { id: contratos, name: Contratos }
+      - { id: cumplimiento, name: Cumplimiento }
+  - id: atencion
+    name: Atención al cliente
+    head: supervisor_atencion
+    children:
+      - { id: contact_center, name: Contact center }
+
+people:
+  # Comercial
+  - { id: gerente_comercial, name: Marcos Rivera, unit: comercial, role: gerente }
+  - { id: e1, name: Sofía Luna,    unit: ventas, role: ejecutivo, reportsTo: gerente_comercial, speed: 1.1 }
+  - { id: e2, name: Diego Paz,     unit: ventas, role: ejecutivo, reportsTo: gerente_comercial }
+  - { id: e3, name: Valeria Cruz,  unit: ventas, role: ejecutivo, reportsTo: gerente_comercial, speed: 0.9 }
+  - { id: e4, name: Andrés Mora,   unit: ventas, role: ejecutivo, reportsTo: gerente_comercial }
+  - { id: e5, name: Camila Soto,   unit: ventas, role: ejecutivo, reportsTo: gerente_comercial }
+  # Operaciones
+  - { id: jefa_ops, name: Laura Núñez, unit: operaciones, role: jefe }
+  - { id: k1, name: Pablo Reyes,   unit: kyc, role: operador_kyc, reportsTo: jefa_ops }
+  - { id: k2, name: Irene Vidal,   unit: kyc, role: operador_kyc, reportsTo: jefa_ops, speed: 1.15 }
+  - { id: k3, name: Tomás Ortega,  unit: kyc, role: operador_kyc, reportsTo: jefa_ops }
+  - { id: k4, name: Elena Ríos,    unit: kyc, role: operador_kyc, reportsTo: jefa_ops, errorRate: 0.04 }
+  - { id: f1, name: Hugo Salas,    unit: formalizacion, role: formalizador, reportsTo: jefa_ops }
+  - { id: f2, name: Marta Gil,     unit: formalizacion, role: formalizador, reportsTo: jefa_ops, speed: 1.1 }
+  - { id: f3, name: Raúl Vega,     unit: formalizacion, role: formalizador, reportsTo: jefa_ops, errorRate: 0.03 }
+  # Riesgos
+  - { id: jefe_riesgos, name: Carlos Duarte, unit: riesgos, role: jefe }
+  - { id: a1, name: Ana Beltrán,   unit: analisis, role: analista, reportsTo: jefe_riesgos, speed: 1.1 }
+  - { id: a2, name: Luis Herrera,  unit: analisis, role: analista, reportsTo: jefe_riesgos }
+  - { id: a3, name: Nuria Campos,  unit: analisis, role: analista, reportsTo: jefe_riesgos, errorRate: 0.05 }
+  - { id: a4, name: Iván Prieto,   unit: analisis, role: analista, reportsTo: jefe_riesgos, speed: 0.9 }
+  - { id: s1, name: Patricia Lara, unit: senior, role: analista_senior, reportsTo: jefe_riesgos, speed: 1.1 }
+  - { id: s2, name: Jorge Medina,  unit: senior, role: analista_senior, reportsTo: jefe_riesgos }
+  # Legal y Cumplimiento
+  - { id: jefa_legal, name: Beatriz Ferrer, unit: legal, role: jefe }
+  - { id: l1, name: Rodrigo Pineda, unit: contratos, role: abogado, reportsTo: jefa_legal }
+  - { id: l2, name: Silvia Ramos,   unit: contratos, role: abogado, reportsTo: jefa_legal }
+  - { id: c1, name: Álvaro Nieto,   unit: cumplimiento, role: oficial, reportsTo: jefa_legal }
+  - { id: c2, name: Lucía Barrios,  unit: cumplimiento, role: oficial, reportsTo: jefa_legal }
+  # Atención al cliente
+  - { id: supervisor_atencion, name: Gonzalo Peña, unit: atencion, role: supervisor }
+  - { id: g1, name: Daniela Cano,  unit: contact_center, role: agente, reportsTo: supervisor_atencion }
+  - { id: g2, name: Mateo Ibáñez,  unit: contact_center, role: agente, reportsTo: supervisor_atencion, speed: 1.1 }
+  - { id: g3, name: Paula Segura,  unit: contact_center, role: agente, reportsTo: supervisor_atencion }
+  - { id: g4, name: Emilio Rojas,  unit: contact_center, role: agente, reportsTo: supervisor_atencion, schedule: turno_tarde }
+  - { id: g5, name: Julia Mendoza, unit: contact_center, role: agente, reportsTo: supervisor_atencion, schedule: turno_tarde }
+
+processes:
+  - id: solicitud_credito
+    name: Solicitud de crédito
+    arrivals: { type: poisson, ratePerHour: 6 }       # por hora hábil
+    attributes:
+      amount: { dist: lognormal, median: 25000, sigma: 0.9 }
+    stages:
+      - id: captura
+        label: Captura de solicitud
+        unit: ventas
+        role: ejecutivo
+        duration: { dist: normal, meanMinutes: 20, sdMinutes: 5 }
+        next: kyc
+      - id: kyc
+        label: Validación KYC
+        unit: kyc
+        role: operador_kyc
+        duration: { dist: lognormal, medianMinutes: 12, sigma: 0.4 }
+        exceptions:
+          - { id: doc_ilegible, probability: 0.08, action: goto, target: captura, penaltyMinutes: 0 }
+        next:
+          - { when: "case.amount > 50000", to: evaluacion_senior }
+          - { otherwise: true, to: evaluacion_analista }
+      - id: evaluacion_analista
+        label: Evaluación de riesgo
+        unit: analisis
+        role: analista
+        duration: { dist: normal, meanMinutes: 35, sdMinutes: 10 }
+        sla: { maxMinutes: 480 }
+        exceptions:
+          - { id: rechazo, probability: 0.12, action: goto, target: cerrado_rechazado }
+        next:
+          - { when: "case.amount > 20000", to: revision_legal }
+          - { otherwise: true, to: formalizacion }
+      - id: evaluacion_senior
+        label: Evaluación senior
+        unit: senior
+        role: analista_senior
+        duration: { dist: normal, meanMinutes: 60, sdMinutes: 15 }
+        sla: { maxMinutes: 600 }
+        exceptions:
+          - { id: rechazo_senior, probability: 0.15, action: goto, target: cerrado_rechazado }
+        next: cumplimiento
+      - id: cumplimiento
+        label: Control AML
+        unit: cumplimiento
+        role: oficial
+        duration: { dist: normal, meanMinutes: 25, sdMinutes: 6 }
+        next: revision_legal
+      - id: revision_legal
+        label: Revisión legal
+        unit: contratos
+        role: abogado
+        duration: { dist: normal, meanMinutes: 40, sdMinutes: 10 }
+        next: formalizacion
+      - id: formalizacion
+        label: Formalización
+        unit: formalizacion
+        role: formalizador
+        duration: { dist: normal, meanMinutes: 20, sdMinutes: 4 }
+        next: desembolso
+      - id: desembolso
+        label: Desembolso
+        unit: formalizacion
+        role: formalizador
+        duration: { dist: fixed, minutes: 8 }
+        terminal: true
+      - id: cerrado_rechazado
+        label: Rechazada
+        terminal: true
+
+  - id: reclamo_cliente
+    name: Reclamo de cliente
+    arrivals: { type: poisson, ratePerHour: 10 }
+    attributes:
+      complexity: { dist: normal, mean: 0.5, sd: 0.25 }
+    stages:
+      - id: atencion_n1
+        label: Atención nivel 1
+        unit: contact_center
+        role: agente
+        duration: { dist: lognormal, medianMinutes: 9, sigma: 0.4 }
+        sla: { maxMinutes: 60 }
+        next:
+          - { when: "case.complexity > 0.7", to: investigacion }
+          - { otherwise: true, to: resolucion }
+      - id: investigacion
+        label: Investigación
+        unit: kyc
+        role: operador_kyc
+        duration: { dist: normal, meanMinutes: 35, sdMinutes: 10 }
+        next: resolucion
+      - id: resolucion
+        label: Resolución al cliente
+        unit: contact_center
+        role: agente
+        duration: { dist: fixed, minutes: 5 }
+        terminal: true

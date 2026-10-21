@@ -14,6 +14,7 @@ Simulador visual de procesos para Forward Deployed Engineers (FDE): el FDE defin
 - [[11 User Journey FDE]]
 
 ## Técnico
+- [[14 Modelo organizacional]] ← **modelo vigente: empresa virtual**
 - [[02 Fork vs cliente propio]]
 - [[07 Modelo de datos de tarea]]
 - [[08 Definición de proceso]]

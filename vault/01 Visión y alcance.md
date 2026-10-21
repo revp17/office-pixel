@@ -17,6 +17,9 @@ La herramienta será usada por **Forward Deployed Engineers**. Ya no es un track
 
 El mapa es la **visualización** de la simulación. Ver [[09 Motor de simulación]].
 
+## Segundo giro: empresa virtual (2026-10-20)
+El destino es **ver una empresa virtual**: crear cada área, subárea y persona, y simular sus procesos diarios. La unidad base pasa a ser la organización (áreas › subáreas › personas con horarios, reuniones, ausencias, velocidad y errores) y los procesos fluyen entre ellas. Detalle, decisiones y reglas en [[14 Modelo organizacional]].
+
 ## Requisitos clave
 1. Espacio para definir procesos, reglas, excepciones, tiempos → [[08 Definición de proceso]]
 2. Procesos como habitaciones → [[03 Procesos como espacio físico]]
