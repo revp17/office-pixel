@@ -31,9 +31,24 @@ npm run typecheck
 npm run build
 ```
 
+## Configurar la empresa (formularios)
+
+El botón **⚙ Configurar empresa** abre un panel de formularios, sin tocar YAML:
+
+| Pestaña | Qué se configura |
+|---|---|
+| Empresa | nombre, jornada, días laborables, pausas, ausentismo, tiempos de traslado |
+| Áreas y equipos | áreas (plantas), equipos (salas) y responsables |
+| Personas | una fila por persona: equipo, rol, jefe, velocidad, errores, ausentismo, horario, habilidades |
+| Procesos | llegadas, datos de cada caso, etapas (equipo, rol, duración, plazo), camino siguiente o por condiciones, excepciones |
+| Horarios y reuniones | turnos, reuniones recurrentes y ausencias planificadas |
+| YAML (avanzado) | el mismo contenido como texto: copiar, descargar, abrir archivo, pegar |
+
+Los problemas se validan en vivo (el botón **Aplicar y simular** se bloquea hasta resolverlos). «Cargar ejemplo» y «Empezar en blanco» reemplazan el borrador. La empresa aplicada se guarda en el navegador (`localStorage`); si no hay nada guardado se carga Banco Pixel. Los identificadores internos se generan solos a partir de los nombres.
+
 ## Uso de la interfaz
 
-- Edita el YAML en el panel izquierdo (☰ Studio lo oculta) y pulsa **Aplicar y simular**; los errores de validación salen en línea.
+- Los días y la semilla de la simulación están en la barra superior (**↻ Simular** repite con otros valores).
 - Velocidad de 10 min/s a 12 h/s, línea de tiempo arrastrable, zoom con la rueda (hacia el cursor) y arrastre para mover. Los chips **P1…P5** acercan la cámara a una planta; **Vista general** encuadra todo. Con zoom muy alejado se ven solo contadores por sala.
 - Aspecto: formas suavizadas (sin `pixelArt`), render a la resolución real de la pantalla (`devicePixelRatio`), texto nítido y avatares/cajas que crecen al alejar la cámara para seguir siendo legibles.
 - Misma semilla → misma simulación (reproducible).
@@ -43,5 +58,6 @@ npm run build
 - El motor de proceso único del Hito 1 sigue en `packages/sim` (con sus tests), pero la web ya no lo usa.
 - Las personas se mueven a velocidad proporcional a la velocidad de simulación; a 4 h/s o más llegan a su sitio con retraso visual.
 - No hay picos de demanda, bajas ni contrataciones como escenarios; solo ausencias fijas en `scenario.absences`.
-- No hay edición visual de la empresa: se edita el YAML.
+- Los mensajes de validación muestran identificadores internos (p. ej. `equipo_1`) en vez de los nombres.
+- No hay deshacer en los formularios; «Cancelar» descarta todo el borrador.
 - Phaser se renderiza en modo Canvas 2D.

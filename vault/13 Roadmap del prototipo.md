@@ -29,7 +29,10 @@ tags: [gestión, roadmap]
 - [x] Casos como cajas: bandeja por sala, sobre el escritorio al trabajarse, viajan en los traspasos
 - [x] Panel de persona (su día, carga, caso actual) y utilización por unidad
 - [x] Web migrada del motor de proceso al de empresa (la vista de proceso único se eliminó)
+- [x] Panel de configuración con formularios (Preact): empresa, áreas, personas, procesos con reglas y excepciones, horarios, YAML avanzado; validación en vivo; guardado en `localStorage`
 - [ ] Panel de unidad con cola histórica y comparación entre corridas
+- [ ] Mensajes de validación con nombres en vez de ids; deshacer/rehacer en los formularios
+- [ ] Editor visual del organigrama (arrastrar) y del flujo del proceso (diagrama)
 
 Hallazgo con la semilla 1 (5 días): el cuello de botella no es Riesgos sino **Contratos (Legal)**, 87 % de utilización y ~2 h de espera media en revisión legal.
 

@@ -2,6 +2,7 @@ import './style.css';
 import Phaser from 'phaser';
 import {
   DAY,
+  companyToYaml,
   parseCompany,
   simulateCompany,
   type CompanyDef,
@@ -10,13 +11,13 @@ import {
   type UnitDef,
 } from '@office-pixel/sim';
 import defaultYaml from '../../../examples/banco_pixel.yaml?raw';
+import { closeConfig, openConfig } from './config/ConfigApp';
 import { OrgScene, fmtTime, type OrgHud } from './orgScene';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
-const yamlBox = $<HTMLTextAreaElement>('yaml');
 const seedInput = $<HTMLInputElement>('seed');
 const daysInput = $<HTMLInputElement>('days');
-const errorsList = $<HTMLUListElement>('errors');
+const configRoot = $<HTMLDivElement>('config-root');
 const playBtn = $<HTMLButtonElement>('play');
 const speedSel = $<HTMLSelectElement>('speed');
 const timeline = $<HTMLInputElement>('timeline');
@@ -28,7 +29,29 @@ const unitsBox = $<HTMLElement>('units');
 const peopleBox = $<HTMLElement>('people');
 const detail = $<HTMLElement>('detail');
 
-yamlBox.value = defaultYaml;
+// La empresa vive en el navegador (localStorage); si no hay nada guardado se carga el ejemplo.
+const STORE = 'office-pixel.company.v1';
+const example = (): CompanyDef => parseCompany(defaultYaml).def!;
+function loadCompany(): CompanyDef {
+  try {
+    const text = localStorage.getItem(STORE);
+    if (text) {
+      const r = parseCompany(text);
+      if (r.def) return r.def;
+    }
+  } catch {
+    /* sin almacenamiento: se usa el ejemplo */
+  }
+  return example();
+}
+function saveCompany(d: CompanyDef) {
+  try {
+    localStorage.setItem(STORE, companyToYaml(d));
+  } catch {
+    /* sin almacenamiento: no se persiste */
+  }
+}
+let company = loadCompany();
 
 const scene = new OrgScene();
 // Render a la resolución real de la pantalla (devicePixelRatio) y mostrarlo a tamaño CSS:
@@ -216,13 +239,14 @@ function renderFloorChips() {
 scene.onModel = renderFloorChips;
 
 // ---------- simulación ----------
-function run() {
-  const parsed = parseCompany(yamlBox.value);
-  errorsList.innerHTML = parsed.errors.map((e) => `<li>• ${esc(e)}</li>`).join('');
-  if (!parsed.def) return;
+function run(next?: CompanyDef) {
+  if (next) {
+    company = next;
+    saveCompany(next);
+  }
   const seed = Math.trunc(Number(seedInput.value)) || 0;
   const days = Math.min(30, Math.max(1, Math.trunc(Number(daysInput.value)) || 5));
-  def = parsed.def;
+  def = company;
   result = simulateCompany(def, { seed, horizonDays: days });
   personEvents = new Map(def.people.map((p) => [p.id, []]));
   for (const e of result.events) if (e.type === 'person.state') personEvents.get(e.person)!.push({ t: e.t, state: e.state });
@@ -232,7 +256,23 @@ function run() {
   paintDetail(undefined, true);
 }
 
-$('apply').addEventListener('click', run);
+$('simulate').addEventListener('click', () => run());
+function showConfig() {
+  scene.playing = false;
+  openConfig(configRoot, {
+    initial: structuredClone(company),
+    example,
+    onApply: (d) => {
+      closeConfig(configRoot);
+      run(d);
+    },
+    onClose: () => closeConfig(configRoot),
+  });
+}
+$('configure').addEventListener('click', showConfig);
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && configRoot.classList.contains('open')) closeConfig(configRoot);
+});
 $('restart').addEventListener('click', () => {
   scene.seek(0);
   scene.playing = true;
@@ -240,13 +280,6 @@ $('restart').addEventListener('click', () => {
 $('fit').addEventListener('click', () => {
   scene.fit();
   chips.querySelectorAll('button').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.f === '-1'));
-});
-const app = $('app');
-if (window.innerWidth < 1000) app.classList.add('collapsed');
-$('toggle-studio').addEventListener('click', () => {
-  app.classList.toggle('collapsed');
-  // el canvas cambia de tamaño: reencuadrar tras el reflujo
-  setTimeout(() => scene.fit(), 50);
 });
 playBtn.addEventListener('click', () => {
   if (scene.simT >= Number(timeline.max)) scene.seek(0);
