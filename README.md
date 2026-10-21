@@ -34,7 +34,8 @@ npm run build
 ## Uso de la interfaz
 
 - Edita el YAML en el panel izquierdo (☰ Studio lo oculta) y pulsa **Aplicar y simular**; los errores de validación salen en línea.
-- Velocidad de 10 min/s a 12 h/s, línea de tiempo arrastrable, zoom con rueda y arrastre para mover; con zoom muy alejado se ven solo contadores por sala.
+- Velocidad de 10 min/s a 12 h/s, línea de tiempo arrastrable, zoom con la rueda (hacia el cursor) y arrastre para mover. Los chips **P1…P5** acercan la cámara a una planta; **Vista general** encuadra todo. Con zoom muy alejado se ven solo contadores por sala.
+- Aspecto: formas suavizadas (sin `pixelArt`), render a la resolución real de la pantalla (`devicePixelRatio`), texto nítido y avatares/cajas que crecen al alejar la cámara para seguir siendo legibles.
 - Misma semilla → misma simulación (reproducible).
 
 ## Limitaciones conocidas

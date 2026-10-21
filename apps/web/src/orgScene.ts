@@ -9,12 +9,14 @@ import {
   type PersonState,
 } from '@office-pixel/sim';
 import {
+  INBOX_STEP,
   buildBuilding,
   commonDest,
   deskDest,
   inboxSlot,
   route,
   type BuildingL,
+  type CommonL,
   type Dest,
   type Pt,
   type RoomL,
@@ -32,19 +34,21 @@ export interface OrgHud {
   selectedCase?: string;
 }
 
-const AREA_COLORS = [0x4aa3ff, 0xffb020, 0xb06ab3, 0x5bc16a, 0xff7a59, 0x3ec6c6];
-const PROC_COLORS = [0xe0a43a, 0xe0627a, 0x6ac1e0, 0x9bd65b];
-const SKIN = [0xf2c9a0, 0xd9a273, 0xb57a4e, 0x8a5a3a, 0xf6d7b8];
+const AREA_COLORS = [0x5aa9ff, 0xffb547, 0xc084e0, 0x5ed08a, 0xff8a65, 0x4fd1d1];
+const PROC_COLORS = [0xe8a93f, 0xe5677f, 0x5fc0e8, 0x9ad65f];
+const SKIN = [0xf5d0b0, 0xe0b088, 0xc38d63, 0x9a6a47, 0xf8dcc2];
+const HAIR = [0x2a1d14, 0x4a3020, 0x16120f, 0x7a5233, 0xc7a15a];
 const DOT: Record<PersonState, number> = {
   off: 0x000000,
-  idle: 0x8591ad,
-  working: 0x4aa3ff,
-  break: 0xffb020,
-  meeting: 0xb06ab3,
-  absent: 0xff5a4a,
+  idle: 0x9aa6c2,
+  working: 0x5aa9ff,
+  break: 0xffb547,
+  meeting: 0xc084e0,
+  absent: 0xff6b5a,
 };
-const SEMANTIC_ZOOM = 0.38;
+const SEMANTIC_ZOOM = 0.28;
 const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const FONT = '"Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif';
 
 export function fmtTime(t: number): string {
   const day = Math.floor(t / DAY);
@@ -52,12 +56,21 @@ export function fmtTime(t: number): string {
   return `Día ${day + 1} · ${WEEKDAYS[day % 7]} ${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 }
 
-const TXT = (size: number, color = '#dfe5f3') => ({
-  fontFamily: '"Courier New", monospace',
+const TXT = (size: number, color = '#e6ebf7', weight: '400' | '600' | '700' = '600') => ({
+  fontFamily: FONT,
   fontSize: `${size}px`,
-  fontStyle: 'bold',
+  fontStyle: weight,
   color,
+  resolution: 3, // texto nítido incluso al acercar la cámara
 });
+
+/** Mezcla dos colores 0xRRGGBB (t=0 → a, t=1 → b). */
+function mix(a: number, b: number, t: number): number {
+  const r = Math.round(((a >> 16) & 255) * (1 - t) + ((b >> 16) & 255) * t);
+  const g = Math.round(((a >> 8) & 255) * (1 - t) + ((b >> 8) & 255) * t);
+  const bl = Math.round((a & 255) * (1 - t) + (b & 255) * t);
+  return (r << 16) | (g << 8) | bl;
+}
 
 /** Mueve un objeto a lo largo de una lista de puntos a velocidad constante. */
 class Mover {
@@ -109,8 +122,10 @@ interface PersonView {
   id: string;
   mover: Mover;
   container: Phaser.GameObjects.Container;
-  body: Phaser.GameObjects.Graphics;
-  dot: Phaser.GameObjects.Rectangle;
+  art: Phaser.GameObjects.Container;
+  legL: Phaser.GameObjects.Rectangle;
+  legR: Phaser.GameObjects.Rectangle;
+  dot: Phaser.GameObjects.Arc;
   tag: Phaser.GameObjects.Text;
   name: Phaser.GameObjects.Text;
   visible: boolean;
@@ -119,12 +134,14 @@ interface PersonView {
 
 interface CrateView {
   mover: Mover;
-  rect: Phaser.GameObjects.Rectangle;
+  box: Phaser.GameObjects.Container;
+  alert: Phaser.GameObjects.Arc;
+  img: Phaser.GameObjects.Image;
 }
 
 interface RoomView {
   room: RoomL;
-  header: Phaser.GameObjects.Text;
+  stats: Phaser.GameObjects.Text;
   overflow: Phaser.GameObjects.Text;
   big: Phaser.GameObjects.Text;
   overlay: Phaser.GameObjects.Rectangle;
@@ -135,9 +152,12 @@ interface RoomView {
 export class OrgScene extends Phaser.Scene {
   onHud?: (h: OrgHud) => void;
   onSelect?: (personId: string | undefined) => void;
+  /** se llama cuando el edificio ya está construido (p. ej. para pintar los chips de planta) */
+  onModel?: () => void;
   playing = false;
   speed = 30;
   simT = 0;
+  selected?: string;
 
   private ready = false;
   private pending?: { def: CompanyDef; result: OrgSimResult };
@@ -155,25 +175,51 @@ export class OrgScene extends Phaser.Scene {
   private ring?: Phaser.GameObjects.Graphics;
   private lastT = 0;
   private forceSnap = true;
-  selected?: string;
 
   constructor() {
     super('org');
   }
 
   create() {
+    this.makeCrateTextures();
     const cam = this.cameras.main;
     this.input.on('pointermove', (p: Phaser.Input.Pointer) => {
       if (!p.isDown) return;
       cam.scrollX -= (p.x - p.prevPosition.x) / cam.zoom;
       cam.scrollY -= (p.y - p.prevPosition.y) / cam.zoom;
     });
-    this.input.on('wheel', (_p: unknown, _o: unknown, _dx: number, dy: number) => {
-      cam.setZoom(Phaser.Math.Clamp(cam.zoom * (dy > 0 ? 0.9 : 1.1), 0.12, 3));
+    // zoom hacia el cursor: el punto bajo el puntero se queda quieto
+    this.input.on('wheel', (p: Phaser.Input.Pointer, _o: unknown, _dx: number, dy: number) => {
+      const oldZ = cam.zoom;
+      const newZ = Phaser.Math.Clamp(oldZ * (dy > 0 ? 0.9 : 1.1), 0.12, 3.2);
+      const wx = cam.scrollX + cam.width / 2 + (p.x - cam.width / 2) / oldZ;
+      const wy = cam.scrollY + cam.height / 2 + (p.y - cam.height / 2) / oldZ;
+      cam.setZoom(newZ);
+      cam.scrollX = wx - (p.x - cam.width / 2) / newZ - cam.width / 2;
+      cam.scrollY = wy - (p.y - cam.height / 2) / newZ - cam.height / 2;
     });
     this.scale.on('resize', () => this.fit());
     this.ready = true;
     if (this.pending) this.setModel(this.pending.def, this.pending.result);
+  }
+
+  /** Cajas (casos) como texturas suaves: una por proceso. */
+  private makeCrateTextures() {
+    PROC_COLORS.forEach((c, i) => {
+      const g = this.make.graphics({}, false);
+      g.fillStyle(0x000000, 0.28);
+      g.fillEllipse(12, 19, 20, 5);
+      g.fillStyle(mix(c, 0x000000, 0.35), 1);
+      g.fillRoundedRect(2, 4, 20, 14, 3);
+      g.fillStyle(c, 1);
+      g.fillRoundedRect(2, 2, 20, 14, 3);
+      g.fillStyle(0xffffff, 0.28);
+      g.fillRoundedRect(3, 3, 18, 4, { tl: 2, tr: 2, bl: 0, br: 0 });
+      g.fillStyle(0xffffff, 0.55); // cinta
+      g.fillRect(10.5, 2, 3, 14);
+      g.generateTexture(`crate${i}`, 24, 22);
+      g.destroy();
+    });
   }
 
   // ---------- construcción ----------
@@ -209,11 +255,13 @@ export class OrgScene extends Phaser.Scene {
     this.drawBuilding();
     this.buildPeople();
     this.ring = this.add.graphics().setDepth(60);
-    this.daylight = this.add
-      .rectangle(0, 0, this.b.width, this.b.height, 0x0a1030, 0)
-      .setOrigin(0)
-      .setDepth(900);
+    this.daylight = this.add.rectangle(0, 0, this.b.width, this.b.height, 0x0a1030, 0).setOrigin(0).setDepth(900);
     this.fit();
+    this.onModel?.();
+  }
+
+  get floorNames(): string[] {
+    return this.b?.floors.map((f) => f.name) ?? [];
   }
 
   fit() {
@@ -222,6 +270,17 @@ export class OrgScene extends Phaser.Scene {
     const z = Math.min(cam.width / this.b.width, cam.height / this.b.height, 1.3);
     cam.setZoom(z);
     cam.centerOn(this.b.width / 2, this.b.height / 2);
+  }
+
+  /** Acerca la cámara a una planta (o a todo el edificio si index < 0). */
+  focusFloor(index: number) {
+    if (!this.b) return;
+    if (index < 0) return this.fit();
+    const f = this.b.floors[index];
+    const cam = this.cameras.main;
+    const z = Math.min(cam.width / (f.w + 190), cam.height / (f.h + 90), 2.4);
+    cam.pan(f.x + f.w / 2 - 40, f.y + f.h / 2, 500, 'Sine.easeInOut', true);
+    cam.zoomTo(z, 500);
   }
 
   seek(t: number) {
@@ -234,143 +293,225 @@ export class OrgScene extends Phaser.Scene {
     if (id && focus && this.b) {
       const d = this.b.personDesk.get(id)!.desk;
       this.cameras.main.pan(d.x, d.y, 450, 'Sine.easeInOut', true);
-      this.cameras.main.zoomTo(1.4, 450);
+      this.cameras.main.zoomTo(1.6, 450);
     }
   }
 
   private drawBuilding() {
     const b = this.b!;
     const g = this.add.graphics().setDepth(1);
+    const first = b.floors[0];
+    const last = b.floors[b.floors.length - 1];
+    const top = first.y;
+    const bottom = last.y + last.h;
 
     // escalera
-    const top = b.floors[0].y;
-    const bottom = b.floors[b.floors.length - 1].y + b.floors[b.floors.length - 1].h;
-    g.fillStyle(0x07080c, 1);
-    g.fillRect(b.stairsX - 21, top - 4, 42, bottom - top + 50);
-    for (let y = top; y < bottom + 40; y += 8) {
-      g.fillStyle(((y - top) / 8) % 2 ? 0x3a4259 : 0x2e3548, 1);
-      g.fillRect(b.stairsX - 17, y, 34, 7);
-    }
-    this.add.text(b.stairsX, bottom + 28, 'ENTRADA', TXT(9, '#8591ad')).setOrigin(0.5).setDepth(2);
+    g.fillStyle(0x07090d, 1);
+    g.fillRoundedRect(b.stairsX - 22, top - 8, 44, bottom - top + 66, 10);
+    g.fillStyle(0x222a3b, 1);
+    g.fillRoundedRect(b.stairsX - 18, top - 4, 36, bottom - top + 58, 7);
+    g.lineStyle(1, 0xffffff, 0.07);
+    for (let y = top; y < bottom + 50; y += 9) g.lineBetween(b.stairsX - 18, y, b.stairsX + 18, y);
+    this.add.text(b.stairsX, bottom + 42, 'ENTRADA', TXT(9, '#8f9bb8', '700')).setOrigin(0.5).setDepth(2);
 
     b.floors.forEach((f, fi) => {
       const color = AREA_COLORS[fi % AREA_COLORS.length];
       this.areaOf.set(f.areaId, color);
-      // losa y pasillo
-      g.fillStyle(0x07080c, 1);
-      g.fillRect(f.x - 4, f.y - 4, f.w + 8, f.h + 8);
-      g.fillStyle(0x1a1f2b, 1);
-      g.fillRect(f.x, f.y, f.w, f.h);
-      for (let x = f.x; x < f.x + f.w; x += 20) {
-        g.fillStyle(((x - f.x) / 20) % 2 ? 0x2a3144 : 0x252c3e, 1);
-        g.fillRect(x, f.y + f.roomsH, 20, f.h - f.roomsH);
-      }
-      g.fillRect(b.stairsX + 17, f.corridorY - 10, f.x - b.stairsX - 17, 20);
-      this.add.text(f.x, f.y - 20, `PLANTA ${fi + 1} · ${f.name.toUpperCase()}`, TXT(12, '#' + color.toString(16).padStart(6, '0'))).setDepth(3);
+
+      // losa + pasillo
+      g.fillStyle(0x07090d, 1);
+      g.fillRoundedRect(f.x - 7, f.y - 7, f.w + 14, f.h + 14, 14);
+      g.fillStyle(0x151a25, 1);
+      g.fillRoundedRect(f.x - 2, f.y - 2, f.w + 4, f.h + 4, 11);
+      g.fillStyle(0x1d2432, 1);
+      g.fillRect(b.stairsX + 18, f.corridorY - 16, f.x + f.w - b.stairsX - 18, 32);
+      g.lineStyle(2, 0xffffff, 0.08);
+      for (let x = f.x; x < f.x + f.w; x += 22) g.lineBetween(x, f.corridorY, x + 11, f.corridorY);
+
+      this.add
+        .text(f.x + 2, f.y - 26, `PLANTA ${fi + 1}`, TXT(10, '#' + color.toString(16).padStart(6, '0'), '700'))
+        .setDepth(3);
+      this.add.text(f.x + 62, f.y - 26, f.name, TXT(10, '#9aa6c2', '600')).setDepth(3);
 
       for (const r of f.rooms) this.buildRoom(g, r, color);
-      this.buildCommon(g, f.common, f.index, color);
+      this.buildCommon(g, f.common, color);
     });
   }
 
+  private plant(g: Phaser.GameObjects.Graphics, x: number, y: number) {
+    g.fillStyle(0x000000, 0.25);
+    g.fillEllipse(x, y + 8, 16, 5);
+    g.fillStyle(0x8a5a3a, 1);
+    g.fillRoundedRect(x - 5, y, 10, 8, 2);
+    g.fillStyle(0x3f9e5e, 1);
+    g.fillCircle(x - 4, y - 3, 5);
+    g.fillCircle(x + 4, y - 3, 5);
+    g.fillStyle(0x56bd78, 1);
+    g.fillCircle(x, y - 7, 5.5);
+  }
+
+  private desk(g: Phaser.GameObjects.Graphics, x: number, y: number, seat: Pt, color: number) {
+    g.fillStyle(0x000000, 0.28);
+    g.fillRoundedRect(x - 25, y - 12, 50, 32, 6);
+    g.fillStyle(0x8a6238, 1);
+    g.fillRoundedRect(x - 24, y - 15, 48, 31, 6);
+    g.fillStyle(0xb98856, 1);
+    g.fillRoundedRect(x - 24, y - 15, 48, 26, 6);
+    g.fillStyle(0xffffff, 0.12);
+    g.fillRoundedRect(x - 22, y - 13, 44, 4, 3);
+    // monitor
+    g.fillStyle(0x131824, 1);
+    g.fillRoundedRect(x - 10, y - 13, 20, 13, 2.5);
+    g.fillStyle(0x7fe3b4, 0.95);
+    g.fillRoundedRect(x - 8.5, y - 11.5, 17, 10, 1.5);
+    g.fillStyle(0xffffff, 0.25);
+    g.fillRect(x - 7, y - 10, 8, 2);
+    g.fillStyle(0x131824, 1);
+    g.fillRect(x - 2, y, 4, 2);
+    // teclado
+    g.fillStyle(0xe3e8f4, 0.7);
+    g.fillRoundedRect(x - 9, y + 3, 18, 5, 1.5);
+    // silla
+    g.fillStyle(0x000000, 0.25);
+    g.fillEllipse(seat.x, seat.y - 1, 18, 7);
+    g.fillStyle(mix(0x2a3144, color, 0.3), 1);
+    g.fillCircle(seat.x, seat.y - 6, 8);
+    g.fillStyle(0xffffff, 0.12);
+    g.fillCircle(seat.x - 2, seat.y - 8, 4);
+  }
+
   private buildRoom(g: Phaser.GameObjects.Graphics, r: RoomL, color: number) {
-    const c1 = 0x232a3a;
-    const c2 = 0x1f2534;
-    for (let ty = 0; ty * 20 < r.h; ty++)
-      for (let tx = 0; tx * 20 < r.w; tx++) {
-        g.fillStyle((tx + ty) % 2 ? c1 : c2, 1);
-        g.fillRect(r.x + tx * 20, r.y + ty * 20, Math.min(20, r.w - tx * 20), Math.min(20, r.h - ty * 20));
-      }
-    g.lineStyle(3, 0x07080c, 1);
-    g.strokeRect(r.x, r.y, r.w, r.h);
-    g.fillStyle(color, 0.9);
-    g.fillRect(r.x, r.y, r.w, 22);
-    g.fillStyle(0x8a6a3a, 1); // puerta
-    g.fillRect(r.door.x - 14, r.y + r.h - 3, 28, 6);
+    const carpet = mix(0x1f2635, color, 0.1);
+    g.fillStyle(0x07090d, 1);
+    g.fillRoundedRect(r.x - 3, r.y - 3, r.w + 6, r.h + 6, 9);
+    g.fillStyle(carpet, 1);
+    g.fillRoundedRect(r.x, r.y, r.w, r.h, 7);
+    g.lineStyle(1, 0xffffff, 0.035);
+    for (let x = r.x + 32; x < r.x + r.w; x += 32) g.lineBetween(x, r.y + 24, x, r.y + r.h - 4);
+    for (let y = r.y + 54; y < r.y + r.h; y += 32) g.lineBetween(r.x + 4, y, r.x + r.w - 4, y);
+    g.fillStyle(color, 0.96);
+    g.fillRoundedRect(r.x, r.y, r.w, 24, { tl: 7, tr: 7, bl: 0, br: 0 });
+    g.fillStyle(0xffffff, 0.18);
+    g.fillRoundedRect(r.x + 2, r.y + 2, r.w - 4, 5, { tl: 5, tr: 5, bl: 0, br: 0 });
+    g.lineStyle(1.5, color, 0.3);
+    g.strokeRoundedRect(r.x + 1, r.y + 1, r.w - 2, r.h - 2, 7);
+    // puerta
+    g.fillStyle(0xb98856, 1);
+    g.fillRoundedRect(r.door.x - 16, r.y + r.h - 4, 32, 8, 3);
+
     // bandeja de entrada
-    g.fillStyle(0x161a24, 1);
-    g.fillRect(r.inbox.x - 4, r.inbox.y - 4, r.inbox.cols * 17 + 6, r.inbox.rows * 17 + 6);
-    g.lineStyle(1, 0x3a4259, 1);
-    g.strokeRect(r.inbox.x - 4, r.inbox.y - 4, r.inbox.cols * 17 + 6, r.inbox.rows * 17 + 6);
-    // escritorios
-    for (const d of r.desks) {
-      g.fillStyle(0x07080c, 1);
-      g.fillRect(d.x - 21, d.y - 13, 42, 28);
-      g.fillStyle(0x8a643a, 1);
-      g.fillRect(d.x - 20, d.y - 12, 40, 26);
-      g.fillStyle(0x2b3346, 1);
-      g.fillRect(d.x - 7, d.y - 10, 14, 9);
-      g.fillStyle(0x5bc16a, 0.8);
-      g.fillRect(d.x - 5, d.y - 9, 10, 6);
-      g.fillStyle(0x3a4259, 1);
-      g.fillCircle(d.seat.x, d.seat.y + 1, 6);
-    }
-    const maxChars = Math.max(4, Math.floor((r.w - 56) / 6.4));
+    const tw = r.inbox.cols * INBOX_STEP + 6;
+    const th = r.inbox.rows * INBOX_STEP + 6;
+    g.fillStyle(0x0f131c, 0.9);
+    g.fillRoundedRect(r.inbox.x - 4, r.inbox.y - 4, tw, th, 6);
+    g.lineStyle(1, 0xffffff, 0.08);
+    g.strokeRoundedRect(r.inbox.x - 4, r.inbox.y - 4, tw, th, 6);
+
+    for (const d of r.desks) this.desk(g, d.x, d.y, d.seat, color);
+    this.plant(g, r.x + 14, r.y + r.h - 16);
+
+    const maxChars = Math.max(4, Math.floor((r.w - 62) / 6.6));
     const title = r.name.length > maxChars ? `${r.name.slice(0, maxChars - 1)}…` : r.name;
-    this.add.text(r.x + 6, r.y + 5, title, TXT(10, '#0b0d13')).setDepth(3);
-    const header = this.add.text(r.x + r.w - 5, r.y + 6, '', TXT(9, '#0b0d13')).setOrigin(1, 0).setDepth(3);
+    this.add.text(r.x + 8, r.y + 5, title, TXT(11, '#0c0f16', '700')).setDepth(3);
+    const stats = this.add.text(r.x + r.w - 6, r.y + 7, '', TXT(9, '#0c0f16', '700')).setOrigin(1, 0).setDepth(3);
     const overflow = this.add
-      .text(r.inbox.x + r.inbox.cols * 17, r.y + r.h - 4, '', TXT(10, '#ffd479'))
+      .text(r.inbox.x + r.inbox.cols * INBOX_STEP - 2, r.y + r.h - 6, '', TXT(10, '#ffd479', '700'))
       .setOrigin(1, 1)
       .setDepth(12);
     const big = this.add
-      .text(r.x + r.w / 2, r.y + r.h / 2 + 8, '0', TXT(64, '#ffffff'))
+      .text(r.x + r.w / 2, r.y + r.h / 2 + 10, '0', TXT(70, '#ffffff', '700'))
       .setOrigin(0.5)
       .setDepth(40)
       .setVisible(false);
     const overlay = this.add.rectangle(r.x, r.y, r.w, r.h, 0xff3030, 0).setOrigin(0).setDepth(4);
     const bar = this.add.graphics().setDepth(5);
-    this.roomViews.set(r.id, { room: r, header, overflow, big, overlay, bar, people: r.desks.map((d) => d.personId) });
+    this.roomViews.set(r.id, { room: r, stats, overflow, big, overlay, bar, people: r.desks.map((d) => d.personId) });
   }
 
-  private buildCommon(g: Phaser.GameObjects.Graphics, c: { x: number; y: number; w: number; h: number; door: Pt }, fi: number, color: number) {
-    for (let ty = 0; ty * 20 < c.h; ty++)
-      for (let tx = 0; tx * 20 < c.w; tx++) {
-        g.fillStyle((tx + ty) % 2 ? 0x2c2a22 : 0x28261f, 1);
-        g.fillRect(c.x + tx * 20, c.y + ty * 20, Math.min(20, c.w - tx * 20), Math.min(20, c.h - ty * 20));
-      }
-    g.lineStyle(3, 0x07080c, 1);
-    g.strokeRect(c.x, c.y, c.w, c.h);
-    g.fillStyle(0x6b5a3a, 1);
-    g.fillRect(c.x, c.y, c.w, 22);
-    g.fillStyle(0x8a6a3a, 1);
-    g.fillRect(c.door.x - 14, c.y + c.h - 3, 28, 6);
-    g.fillStyle(color, 0.35); // mesa
-    g.fillRect(c.x + 12, c.y + c.h - 34, c.w - 24, 18);
-    this.add.text(c.x + 6, c.y + 4, 'Sala común', TXT(11, '#f4e8c8')).setDepth(3);
-    void fi;
+  private buildCommon(g: Phaser.GameObjects.Graphics, c: CommonL, color: number) {
+    g.fillStyle(0x07090d, 1);
+    g.fillRoundedRect(c.x - 3, c.y - 3, c.w + 6, c.h + 6, 9);
+    g.fillStyle(0x3b3125, 1);
+    g.fillRoundedRect(c.x, c.y, c.w, c.h, 7);
+    g.lineStyle(1, 0x000000, 0.2);
+    for (let x = c.x + 22; x < c.x + c.w; x += 22) g.lineBetween(x, c.y + 24, x, c.y + c.h - 2);
+    g.fillStyle(0x7a5f3a, 1);
+    g.fillRoundedRect(c.x, c.y, c.w, 24, { tl: 7, tr: 7, bl: 0, br: 0 });
+    g.fillStyle(0xffffff, 0.14);
+    g.fillRoundedRect(c.x + 2, c.y + 2, c.w - 4, 5, { tl: 5, tr: 5, bl: 0, br: 0 });
+    g.fillStyle(0xb98856, 1);
+    g.fillRoundedRect(c.door.x - 16, c.y + c.h - 4, 32, 8, 3);
+    // sofá y mesa
+    g.fillStyle(mix(0x3a3550, color, 0.35), 1);
+    g.fillRoundedRect(c.x + 10, c.y + c.h - 30, c.w - 20, 16, 7);
+    g.fillStyle(0xffffff, 0.1);
+    g.fillRoundedRect(c.x + 12, c.y + c.h - 28, c.w - 24, 4, 3);
+    g.fillStyle(0x000000, 0.25);
+    g.fillEllipse(c.x + c.w / 2, c.y + c.h - 56, 42, 14);
+    g.fillStyle(0xcfa56a, 1);
+    g.fillEllipse(c.x + c.w / 2, c.y + c.h - 59, 40, 14);
+    this.plant(g, c.x + c.w - 14, c.y + 44);
+    this.add.text(c.x + 8, c.y + 5, 'Sala común', TXT(11, '#f6ead2', '700')).setDepth(3);
   }
 
   private buildPeople() {
     const b = this.b!;
     const def = this.def!;
     def.people.forEach((p, i) => {
-      const color = this.areaOf.get(b.floors[b.personFloor.get(p.id)!].areaId) ?? 0x4aa3ff;
-      const body = this.add.graphics();
+      const color = this.areaOf.get(b.floors[b.personFloor.get(p.id)!].areaId) ?? 0x5aa9ff;
       const skin = SKIN[i % SKIN.length];
-      body.fillStyle(0x000000, 0.25);
-      body.fillEllipse(0, 1, 14, 5);
-      body.fillStyle(0x2b3346, 1);
-      body.fillRect(-4, -5, 3, 5);
-      body.fillRect(1, -5, 3, 5);
-      body.fillStyle(color, 1);
-      body.fillRect(-5, -14, 10, 10);
-      body.fillStyle(skin, 1);
-      body.fillRect(-4, -22, 8, 8);
-      body.fillStyle(0x2a1d14, 1);
-      body.fillRect(-4, -23, 8, 3);
-      const dot = this.add.rectangle(0, -29, 5, 5, DOT.idle).setStrokeStyle(1, 0x07080c);
-      const tag = this.add.text(0, -38, '', TXT(8, '#ffffff')).setOrigin(0.5).setBackgroundColor('#000000aa');
+      const hair = HAIR[(i * 3) % HAIR.length];
+      const dark = mix(color, 0x000000, 0.3);
+
+      const shadow = this.add.ellipse(0, 1, 20, 7, 0x000000, 0.3);
+      const legL = this.add.rectangle(-3.6, -7, 4.2, 8, 0x232a3b).setOrigin(0.5, 0);
+      const legR = this.add.rectangle(3.6, -7, 4.2, 8, 0x232a3b).setOrigin(0.5, 0);
+      const g = this.add.graphics();
+      // brazos
+      g.fillStyle(dark, 1);
+      g.fillRoundedRect(-10, -22, 4, 11, 2);
+      g.fillRoundedRect(6, -22, 4, 11, 2);
+      g.fillStyle(skin, 1);
+      g.fillCircle(-8, -10.5, 2.2);
+      g.fillCircle(8, -10.5, 2.2);
+      // torso
+      g.fillStyle(color, 1);
+      g.fillRoundedRect(-7.5, -24, 15, 17, 5);
+      g.fillStyle(0xffffff, 0.22);
+      g.fillRoundedRect(-5.5, -23, 11, 4, 2);
+      // cabeza
+      g.fillStyle(skin, 1);
+      g.fillCircle(0, -30, 7);
+      g.fillStyle(hair, 1);
+      g.beginPath();
+      g.slice(0, -30.5, 7.3, Phaser.Math.DegToRad(180), Phaser.Math.DegToRad(360), false);
+      g.fillPath();
+      g.fillStyle(0x1a1410, 1);
+      g.fillCircle(-2.4, -29.5, 1);
+      g.fillCircle(2.4, -29.5, 1);
+      const art = this.add.container(0, 0, [shadow, legL, legR, g]);
+
+      const dot = this.add.circle(0, -43, 3.6, DOT.idle).setStrokeStyle(1.5, 0x0b0e14);
+      const tag = this.add
+        .text(0, -54, '', TXT(9, '#ffffff', '700'))
+        .setOrigin(0.5)
+        .setBackgroundColor('#0b0e14dd')
+        .setPadding(4, 1, 4, 1);
       const first = (p.name ?? p.id).split(' ')[0];
-      const name = this.add.text(0, 6, first, TXT(8, '#c9d2ea')).setOrigin(0.5, 0);
-      const hit = this.add.rectangle(0, -12, 18, 30, 0xffffff, 0.001).setInteractive({ useHandCursor: true });
+      const name = this.add.text(0, 6, first, TXT(9, '#cdd6ee', '600')).setOrigin(0.5, 0);
+      const hit = this.add.rectangle(0, -18, 24, 44, 0xffffff, 0.001).setInteractive({ useHandCursor: true });
       hit.on('pointerdown', () => this.select(p.id));
-      const container = this.add.container(b.entrance.x, b.entrance.y, [body, dot, tag, name, hit]).setDepth(20).setVisible(false);
+      const container = this.add
+        .container(b.entrance.x, b.entrance.y, [art, dot, tag, name, hit])
+        .setDepth(20)
+        .setVisible(false);
       this.persons.set(p.id, {
         id: p.id,
         mover: new Mover(b.entrance.x, b.entrance.y),
         container,
-        body,
+        art,
+        legL,
+        legR,
         dot,
         tag,
         name,
@@ -401,7 +542,7 @@ export class OrgScene extends Phaser.Scene {
     this.lastT = this.simT;
     rp.advanceTo(this.simT);
 
-    const walk = Math.min(1400, 90 + this.speed * 3);
+    const walk = Math.min(1400, 100 + this.speed * 3);
     this.updatePersons(time, dt, walk, jumped);
     const queued = this.updateCases(time, dt, walk, jumped);
     this.updateRooms(time, queued);
@@ -424,10 +565,17 @@ export class OrgScene extends Phaser.Scene {
     });
   }
 
+  /** Al alejar la cámara los iconos crecen para seguir siendo legibles. */
+  private iconScale(max: number): number {
+    return Phaser.Math.Clamp(0.78 / this.cameras.main.zoom, 1, max);
+  }
+
   private updatePersons(time: number, dt: number, walk: number, jumped: boolean) {
     const rp = this.rp!;
     const b = this.b!;
-    const semantic = this.cameras.main.zoom < SEMANTIC_ZOOM;
+    const zoom = this.cameras.main.zoom;
+    const semantic = zoom < SEMANTIC_ZOOM;
+    const scale = this.iconScale(2.3);
     for (const pv of this.persons.values()) {
       const state = rp.persons.get(pv.id)!.state;
       let dest: Dest;
@@ -474,17 +622,24 @@ export class OrgScene extends Phaser.Scene {
 
       const prevX = pv.mover.x;
       const moving = pv.mover.step(dt, walk);
-      if (moving) pv.facing = pv.mover.x >= prevX ? 1 : -1;
+      if (moving) pv.facing = pv.mover.x > prevX + 0.01 ? 1 : pv.mover.x < prevX - 0.01 ? -1 : pv.facing;
       pv.container.setPosition(pv.mover.x, pv.mover.y);
       pv.container.setDepth(20 + pv.mover.y / 1000);
+      pv.container.setScale(scale);
       pv.container.setVisible(pv.visible && !semantic);
-      pv.container.setAlpha(state === 'absent' ? 0.3 : 1);
-      pv.body.y = moving ? Math.sin(time / 55) * 1.6 : 0;
-      pv.body.scaleX = pv.facing;
+      pv.container.setAlpha(state === 'absent' ? 0.32 : 1);
+
+      // animación: caminar (piernas + rebote), teclear (cabeceo leve)
+      const swing = moving ? Math.sin(time / 75) : 0;
+      pv.legL.y = -7 + swing * 2.2;
+      pv.legR.y = -7 - swing * 2.2;
+      pv.art.y = moving ? -Math.abs(swing) * 1.3 : state === 'working' ? Math.sin(time / 190 + pv.mover.x) * 0.5 : 0;
+      pv.art.scaleX = pv.facing;
       pv.dot.setFillStyle(DOT[state] || DOT.idle);
       pv.dot.setVisible(!moving);
-      pv.tag.setText(state === 'break' ? 'pausa' : state === 'meeting' ? 'reunión' : state === 'absent' ? 'ausente' : '');
-      pv.name.setVisible(this.cameras.main.zoom > 0.7);
+      const tagText = state === 'break' ? 'pausa' : state === 'meeting' ? 'reunión' : state === 'absent' ? 'ausente' : '';
+      pv.tag.setText(tagText).setVisible(tagText !== '');
+      pv.name.setVisible(zoom * scale > 0.8);
     }
   }
 
@@ -493,7 +648,8 @@ export class OrgScene extends Phaser.Scene {
     const rp = this.rp!;
     const b = this.b!;
     const semantic = this.cameras.main.zoom < SEMANTIC_ZOOM;
-    const blink = Math.floor(time / 250) % 2 === 0;
+    const blink = Math.floor(time / 280) % 2 === 0;
+    const crateScale = 0.74 * this.iconScale(1.5);
     const queued = new Map<string, OrgCaseView[]>();
     const live = new Set<string>();
     const place = new Map<string, { key: string; dest: Dest } | null>();
@@ -509,7 +665,7 @@ export class OrgScene extends Phaser.Scene {
         queued.set(room.id, l);
       } else if ((c.status === 'working' || c.status === 'paused') && c.person) {
         const { room: pr, desk } = b.personDesk.get(c.person)!;
-        place.set(c.id, { key: `desk:${c.person}`, dest: { x: desk.x + 11, y: desk.y - 2, floor: pr.floor, zone: pr.id } });
+        place.set(c.id, { key: `desk:${c.person}`, dest: { x: desk.x + 15, y: desk.y - 3, floor: pr.floor, zone: pr.id } });
       } else if (c.status === 'transit' && c.toUnit) {
         const to = b.unitRoom(c.toUnit);
         if (to) {
@@ -520,13 +676,16 @@ export class OrgScene extends Phaser.Scene {
       live.add(c.id);
     }
 
+    const overflow = new Set<string>();
     for (const [roomId, list] of queued) {
       const room = b.rooms.get(roomId)!;
       list.sort((x, y) => x.enteredAt - y.enteredAt || (x.id < y.id ? -1 : 1));
       const cap = room.inbox.cols * room.inbox.rows;
       list.forEach((c, i) => {
-        const s = inboxSlot(room, Math.min(i, cap - 1));
-        place.set(c.id, { key: `inbox:${roomId}:${Math.min(i, cap - 1)}`, dest: { x: s.x, y: s.y, floor: room.floor, zone: roomId } });
+        const slot = Math.min(i, cap - 1);
+        const s = inboxSlot(room, slot);
+        place.set(c.id, { key: `inbox:${roomId}:${slot}`, dest: { x: s.x, y: s.y, floor: room.floor, zone: roomId } });
+        if (i >= cap - 1) overflow.add(c.id);
         live.add(c.id);
       });
     }
@@ -537,11 +696,10 @@ export class OrgScene extends Phaser.Scene {
       let cv = this.crates.get(id);
       if (!cv) {
         const start = p && jumped ? p.dest : b.entrance;
-        const rect = this.add
-          .rectangle(start.x, start.y, 12, 12, PROC_COLORS[(this.procIndex.get(c.process) ?? 0) % PROC_COLORS.length])
-          .setStrokeStyle(2, 0x3a2a10)
-          .setDepth(30);
-        cv = { mover: new Mover(start.x, start.y), rect };
+        const img = this.add.image(0, 0, `crate${(this.procIndex.get(c.process) ?? 0) % PROC_COLORS.length}`);
+        const alert = this.add.circle(8, -6, 4, 0xff3b30).setStrokeStyle(1.5, 0xffffff).setVisible(false);
+        const box = this.add.container(start.x, start.y, [img, alert]).setDepth(30);
+        cv = { mover: new Mover(start.x, start.y), box, alert, img };
         this.crates.set(id, cv);
       }
       if (p) {
@@ -551,27 +709,19 @@ export class OrgScene extends Phaser.Scene {
         } else cv.mover.setDest(p.key, () => route(b, cv!.mover, p.dest));
       }
       cv.mover.step(dt, walk);
-      const overflowed = c.status === 'queued' && p && /:\d+$/.test(p.key) && this.slotIndexIsOverflow(c, queued);
-      cv.rect.setPosition(cv.mover.x, cv.mover.y);
-      cv.rect.setFillStyle(PROC_COLORS[(this.procIndex.get(c.process) ?? 0) % PROC_COLORS.length], c.status === 'paused' ? 0.55 : 1);
-      cv.rect.setStrokeStyle(2, c.breached && blink ? 0xff2020 : 0x3a2a10);
-      cv.rect.setVisible(!semantic && !overflowed);
+      cv.box.setPosition(cv.mover.x, cv.mover.y);
+      cv.box.setScale(crateScale);
+      cv.img.setAlpha(c.status === 'paused' ? 0.55 : 1);
+      cv.alert.setVisible(c.breached && blink);
+      cv.box.setVisible(!semantic && !overflow.has(id));
     }
     for (const [id, cv] of this.crates) {
       if (!live.has(id)) {
-        cv.rect.destroy();
+        cv.box.destroy();
         this.crates.delete(id);
       }
     }
     return queued;
-  }
-
-  private slotIndexIsOverflow(c: OrgCaseView, queued: Map<string, OrgCaseView[]>): boolean {
-    const unit = this.stageUnit.get(`${c.process}.${c.stage}`);
-    const room = unit ? this.b!.unitRoom(unit) : undefined;
-    if (!room) return false;
-    const list = queued.get(room.id)!;
-    return list.indexOf(c) >= room.inbox.cols * room.inbox.rows - 1;
   }
 
   private updateRooms(time: number, queued: Map<string, OrgCaseView[]>) {
@@ -586,25 +736,25 @@ export class OrgScene extends Phaser.Scene {
         return s === 'idle' || s === 'working';
       }).length;
       const cap = r.inbox.cols * r.inbox.rows;
-      rv.header.setText(`${here}/${total} · c${q}`);
+      rv.stats.setText(`${here}/${total} · c${q}`);
       rv.overflow.setText(q >= cap ? `+${q - cap + 1}` : '');
       rv.big.setText(String(q)).setVisible(semantic);
 
       const load = q / Math.max(2, total * 1.5);
-      const color = load < 0.7 ? 0x5bc16a : load <= 1 ? 0xffb020 : 0xff3030;
+      const color = load < 0.7 ? 0x5ed08a : load <= 1 ? 0xffb547 : 0xff4d3d;
       rv.bar.clear();
       const filled = Math.min(10, Math.round(load * 10));
-      const segW = (r.w - 8) / 10;
+      const segW = (r.w - 14) / 10;
       for (let i = 0; i < 10; i++) {
         rv.bar.fillStyle(i < filled ? color : 0x2b3346, 1);
-        rv.bar.fillRect(r.x + 4 + i * segW, r.y + 24, segW - 2, 4);
+        rv.bar.fillRoundedRect(r.x + 7 + i * segW, r.y + 26, segW - 2.5, 4, 2);
       }
       let alpha = 0;
-      let tint = 0xffb020;
+      let tint = 0xffb547;
       if (load > 1) {
-        tint = 0xff3030;
-        alpha = 0.14 + 0.07 * Math.sin(time / 180);
-      } else if (load >= 0.7) alpha = ((load - 0.7) / 0.3) * 0.12;
+        tint = 0xff3b30;
+        alpha = 0.13 + 0.07 * Math.sin(time / 180);
+      } else if (load >= 0.7) alpha = ((load - 0.7) / 0.3) * 0.11;
       rv.overlay.setFillStyle(tint, alpha);
     }
   }
@@ -625,7 +775,8 @@ export class OrgScene extends Phaser.Scene {
     if (!this.selected) return;
     const pv = this.persons.get(this.selected);
     if (!pv || !pv.container.visible) return;
-    this.ring.lineStyle(2, 0xffd479, 0.6 + 0.4 * Math.sin(time / 200));
-    this.ring.strokeCircle(pv.mover.x, pv.mover.y - 10, 17);
+    const s = pv.container.scale;
+    this.ring.lineStyle(2.5, 0xffd479, 0.65 + 0.35 * Math.sin(time / 200));
+    this.ring.strokeEllipse(pv.mover.x, pv.mover.y + 1, 30 * s, 11 * s);
   }
 }

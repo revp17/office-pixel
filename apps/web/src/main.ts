@@ -31,14 +31,25 @@ const detail = $<HTMLElement>('detail');
 yamlBox.value = defaultYaml;
 
 const scene = new OrgScene();
-new Phaser.Game({
+// Render a la resolución real de la pantalla (devicePixelRatio) y mostrarlo a tamaño CSS:
+// así formas y texto salen nítidos en pantallas HiDPI en vez de verse "pixelados".
+const dpr = Math.min(window.devicePixelRatio || 1, 2);
+const host = $('game');
+const game = new Phaser.Game({
   type: Phaser.CANVAS, // 2D puro: sin dependencia de WebGL/framebuffers
-  parent: 'game',
-  backgroundColor: '#12151d',
-  pixelArt: true,
-  scale: { mode: Phaser.Scale.RESIZE, width: '100%', height: '100%' },
+  parent: host,
+  backgroundColor: '#0e1117',
+  width: Math.max(2, Math.round(host.clientWidth * dpr)),
+  height: Math.max(2, Math.round(host.clientHeight * dpr)),
+  scale: { mode: Phaser.Scale.NONE, zoom: 1 / dpr },
+  render: { pixelArt: false, antialias: true, roundPixels: false },
   scene,
 });
+new ResizeObserver(() => {
+  const w = Math.round(host.clientWidth * dpr);
+  const h = Math.round(host.clientHeight * dpr);
+  if (w > 1 && h > 1) game.scale.resize(w, h);
+}).observe(host);
 
 let def: CompanyDef;
 let result: OrgSimResult;
@@ -187,6 +198,23 @@ function paintDetail(h?: OrgHud, force = false) {
     <div class="legend"><span style="--c:#4aa3ff">trabajo</span><span style="--c:#8591ad">libre</span><span style="--c:#ffb020">pausa</span><span style="--c:#b06ab3">reunión</span><span style="--c:#ff5a4a">ausente</span></div>`;
 }
 
+// ---------- plantas ----------
+const chips = $<HTMLDivElement>('floors');
+function renderFloorChips() {
+  chips.innerHTML =
+    `<button data-f="-1" class="chip on">Todo</button>` +
+    scene.floorNames.map((n, i) => `<button data-f="${i}" class="chip">P${i + 1} · ${esc(n)}</button>`).join('');
+  chips.querySelectorAll<HTMLButtonElement>('button').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      chips.querySelectorAll('button').forEach((x) => x.classList.remove('on'));
+      btn.classList.add('on');
+      scene.focusFloor(Number(btn.dataset.f));
+    }),
+  );
+}
+
+scene.onModel = renderFloorChips;
+
 // ---------- simulación ----------
 function run() {
   const parsed = parseCompany(yamlBox.value);
@@ -209,7 +237,10 @@ $('restart').addEventListener('click', () => {
   scene.seek(0);
   scene.playing = true;
 });
-$('fit').addEventListener('click', () => scene.fit());
+$('fit').addEventListener('click', () => {
+  scene.fit();
+  chips.querySelectorAll('button').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.f === '-1'));
+});
 const app = $('app');
 if (window.innerWidth < 1000) app.classList.add('collapsed');
 $('toggle-studio').addEventListener('click', () => {

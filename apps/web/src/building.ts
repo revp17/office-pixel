@@ -71,16 +71,16 @@ export interface BuildingL {
 }
 
 export const FLOOR_X = 100;
-const DESK_W = 58;
-const DESK_H = 54;
-const INBOX_W = 66;
+const DESK_W = 64;
+const DESK_H = 62;
+const INBOX_W = 70;
 const HEADER = 30;
 const ROOM_GAP = 14;
 const COMMON_W = 132;
 const CORR_H = 44;
 const FLOOR_GAP = 34;
 const TOP = 60;
-export const INBOX_STEP = 17;
+export const INBOX_STEP = 18;
 
 function* dfs(list: UnitDef[]): Generator<UnitDef> {
   for (const u of list) {
@@ -115,7 +115,7 @@ export function buildBuilding(def: CompanyDef): BuildingL {
       const n = byUnit.get(u.id)!.length;
       const cols = Math.min(n, 4);
       const rows = Math.ceil(n / cols);
-      return { u, n, cols, rows, w: 14 + cols * DESK_W + INBOX_W, h: HEADER + Math.max(rows, 2) * DESK_H + 12 };
+      return { u, n, cols, rows, w: 14 + cols * DESK_W + INBOX_W, h: HEADER + Math.max(rows, 2) * DESK_H + 24 };
     });
     const roomsH = Math.max(...dims.map((d) => d.h));
     const floor: FloorL = {
@@ -156,8 +156,8 @@ export function buildBuilding(def: CompanyDef): BuildingL {
         const col = i % d.cols;
         const row = Math.floor(i / d.cols);
         const dx = x + 12 + col * DESK_W + DESK_W / 2;
-        const dy = cursorY + HEADER + 8 + row * DESK_H + 14;
-        const desk: DeskL = { personId: pid, x: dx, y: dy, seat: { x: dx, y: dy + 20 } };
+        const dy = cursorY + HEADER + 10 + row * DESK_H + 14;
+        const desk: DeskL = { personId: pid, x: dx, y: dy, seat: { x: dx, y: dy + 38 } };
         room.desks.push(desk);
         personDesk.set(pid, { room, desk });
         personFloor.set(pid, index);
@@ -173,12 +173,12 @@ export function buildBuilding(def: CompanyDef): BuildingL {
     floor.w = x + COMMON_W + 10 - FLOOR_X;
 
     const cols = 4;
-    const cap = cols * Math.max(1, Math.floor((roomsH - HEADER - 10) / 28));
+    const cap = cols * Math.max(1, Math.floor((roomsH - HEADER - 40) / 34));
     floor.people.forEach((pid, i) => {
       const s = i % cap;
       commonSeat.set(pid, {
-        x: floor.common.x + 22 + (s % cols) * 28,
-        y: cursorY + HEADER + 22 + Math.floor(s / cols) * 28,
+        x: floor.common.x + 24 + (s % cols) * 28,
+        y: cursorY + HEADER + 34 + Math.floor(s / cols) * 34,
       });
     });
 
