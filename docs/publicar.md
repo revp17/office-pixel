@@ -62,17 +62,20 @@ Aparece la pantalla de acceso. **Crear cuenta** y entra. En la barra superior el
 
 ## 5. Publicar en Vercel
 
-La configuración ya está en `vercel.json` (compila `apps/web` y sirve `apps/web/dist`). Solo hay que decirle dónde está tu proyecto de Nhost.
+La configuración ya está en `apps/web/vercel.json` (y en `vercel.json` de la raíz, para quien importe la raíz). Solo hay que decirle dónde está tu proyecto de Nhost.
 
 **Con el panel de Vercel**
 
-1. **Add New → Project** e importa el repositorio de GitHub. Deja el directorio raíz (`./`); la compilación se toma de `vercel.json`.
-2. En **Environment Variables** añade `VITE_NHOST_SUBDOMAIN` y `VITE_NHOST_REGION` (en Production y Preview). **Antes de desplegar**: Vite las incrusta al compilar.
-3. **Deploy**. Cada `git push` a `main` vuelve a publicar.
+1. **Add New → Project** e importa el repositorio de GitHub.
+2. Vercel avisará: *«Multiple applications detected in this directory»* (porque el repositorio tiene `apps/web` y `apps/server`). **No uses «Services».** Elige **importar como proyecto independiente** la aplicación **`apps/web`** (o, si te deja escribir el **Root Directory**, pon `apps/web`). `apps/server` es el servidor de la base de datos local y **no se publica**: con Nhost no hace falta.
+3. Con `apps/web` como directorio raíz, la compilación sale de `apps/web/vercel.json` (instala desde la raíz del repositorio, compila y sirve `dist`). Deja activada la opción **«Include source files outside of the Root Directory»** (viene activada).
+4. En **Environment Variables** añade `VITE_NHOST_SUBDOMAIN` y `VITE_NHOST_REGION` (en Production y Preview). **Antes de desplegar**: Vite las incrusta al compilar.
+5. **Deploy**. Cada `git push` a `main` vuelve a publicar.
 
 **Con la CLI**
 
 ```bash
+cd apps/web
 vercel link
 vercel env add VITE_NHOST_SUBDOMAIN production
 vercel env add VITE_NHOST_REGION production
