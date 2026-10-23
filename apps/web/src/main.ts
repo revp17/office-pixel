@@ -390,7 +390,8 @@ $('reset-all').addEventListener('click', () => {
 });
 $('preview-exit').addEventListener('click', () => run());
 window.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && configRoot.classList.contains('open')) closeConfig(configRoot);
+  // con un diálogo abierto (decorar sala, quitar área…) Esc es suyo: no cierra toda la configuración
+  if (e.key === 'Escape' && configRoot.classList.contains('open') && !document.querySelector('.modal-back')) closeConfig(configRoot);
 });
 $('restart').addEventListener('click', () => {
   scene.seek(0);

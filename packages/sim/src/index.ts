@@ -15,5 +15,6 @@ export { fichaMarkdown } from './org/ficha';
 export * from './org/procedures';
 export * from './org/deps';
 export * from './org/facilities';
+export * from './org/decor';
 export { OrgReplayer, type OrgCaseView, type OrgCaseStatus, type PersonView, type OrgCounters } from './org/replay';
 export { makeBizCalendar, parseHM, DAY } from './org/time';

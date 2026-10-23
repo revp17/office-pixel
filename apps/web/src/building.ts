@@ -1,4 +1,4 @@
-import { hasArt, resolveFacility, type CompanyDef, type Facility, type FacilityArt, type PersonKind, type UnitDef } from '@office-pixel/sim';
+import { hasArt, resolveFacility, type CompanyDef, type DecorItem, type Facility, type FacilityArt, type PersonKind, type UnitDef } from '@office-pixel/sim';
 
 export interface Pt {
   x: number;
@@ -57,6 +57,8 @@ export interface RoomL {
   art?: FacilityArt;
   /** alto de la franja de equipamiento (0 en las oficinas) */
   propsH: number;
+  /** objetos colocados por el usuario (posiciones relativas a la sala) */
+  decor: DecorItem[];
   area: number;
   x: number;
   y: number;
@@ -221,6 +223,7 @@ export function buildBuilding(def: CompanyDef, orientation: Orientation = 'verti
         icon: resolveFacility(def, d.u.facility).icon,
         ...(hasArt(resolveFacility(def, d.u.facility).art) ? { art: resolveFacility(def, d.u.facility).art } : {}),
         propsH: d.propsH,
+        decor: d.u.decor ?? [],
         area: index,
         x,
         y,

@@ -14,6 +14,8 @@ import {
   subtreeIds,
   usage,
 } from './model';
+import { buildBuilding } from '../building';
+import { DecorEditor } from './DecorEditor';
 import { RetireDialog } from './RetireDialog';
 import { AddBtn, Card, Days, Field, IconBtn, Num, Pct, Sel, Section, Text, Time, type TabProps, type Up } from './ui';
 
@@ -119,7 +121,7 @@ function PeopleBox({ d, up, unitId }: { d: TabProps['d']; up: Up; unitId: string
   );
 }
 
-function FacilitySel({ d, unit, up }: { d: CompanyDef; unit: UnitDef; up: Up }) {
+function FacilitySel({ d, unit, up, onDecorate }: { d: CompanyDef; unit: UnitDef; up: Up; onDecorate: (id: string) => void }) {
   const options = facilityViews(d).map((f) => ({ value: f.id, label: `${f.icon} ${f.label}` }));
   const set = (v: string) =>
     up((x) => {
@@ -130,6 +132,9 @@ function FacilitySel({ d, unit, up }: { d: CompanyDef; unit: UnitDef; up: Up }) 
   return (
     <Field label="Tipo de instalación" hint={resolveFacility(d, unit.facility).hint}>
       <Sel value={unit.facility ?? 'oficina'} options={options} onChange={set} />
+      <button type="button" class="btn" onClick={() => onDecorate(unit.id)} title="Colocar mesas, sillas, puertas, plantas y más en la sala">
+        🪑 Decorar sala{unit.decor?.length ? ` (${unit.decor.length})` : ''}
+      </button>
     </Field>
   );
 }
@@ -137,6 +142,8 @@ function FacilitySel({ d, unit, up }: { d: CompanyDef; unit: UnitDef; up: Up }) 
 export function AreasTab({ d, up, note }: TabProps) {
   const rename = (id: string, name: string) => up((x) => void (findUnit(x.units, id)!.name = name));
   const [retiring, setRetiring] = useState<string | null>(null);
+  const [decorating, setDecorating] = useState<string | null>(null);
+  const decorate = (id: string) => (buildBuilding(d).rooms.has(id) ? setDecorating(id) : note('Esta área no tiene sala propia (solo sus subáreas). Decora una subárea.'));
   const remove = (id: string) => {
     const probe = structuredClone(d);
     const r = removeUnit(probe, id);
@@ -147,6 +154,7 @@ export function AreasTab({ d, up, note }: TabProps) {
 
   return (
     <div class="form">
+      {decorating && findUnit(d.units, decorating) && <DecorEditor d={d} unitId={decorating} up={up} note={note} onClose={() => setDecorating(null)} />}
       {retiring && findUnit(d.units, retiring) && (
         <RetireDialog d={d} unitId={retiring} up={up} note={note} onClose={() => setRetiring(null)} />
       )}
@@ -176,7 +184,7 @@ export function AreasTab({ d, up, note }: TabProps) {
             <Field label="Nombre del área">
               <Text value={area.name ?? area.id} onChange={(v) => rename(area.id, v)} />
             </Field>
-            <FacilitySel d={d} unit={area} up={up} />
+            <FacilitySel d={d} unit={area} up={up} onDecorate={decorate} />
             <PeopleBox d={d} up={up} unitId={area.id} />
 
             <div class="sublist">
@@ -191,7 +199,7 @@ export function AreasTab({ d, up, note }: TabProps) {
                       ✕
                     </IconBtn>
                   </div>
-                  <FacilitySel d={d} unit={unit} up={up} />
+                  <FacilitySel d={d} unit={unit} up={up} onDecorate={decorate} />
                   <PeopleBox d={d} up={up} unitId={unit.id} />
                 </div>
               ))}

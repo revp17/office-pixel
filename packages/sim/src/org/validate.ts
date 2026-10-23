@@ -4,6 +4,7 @@ import { compileExpr } from '../expr';
 import { parseHM } from './time';
 import { ART_H, ART_W, FACILITIES } from './types';
 import { isBuiltinFacility } from './facilities';
+import { isDecorKind } from './decor';
 import type { CompanyDef, UnitDef } from './types';
 
 const HEX = /^#[0-9a-fA-F]{3,8}$/;
@@ -145,6 +146,23 @@ export function validateCompany(raw: unknown): CompanyParseResult {
       unitIds.add(u.id);
       if (u.facility !== undefined && !(typeof u.facility === 'string' && (isBuiltinFacility(u.facility) || customFacilityIds.has(u.facility))))
         errors.push(`${at}.facility: debe ser uno de ${[...Object.keys(FACILITIES), ...customFacilityIds].join(', ')}`);
+      if (u.decor !== undefined) {
+        if (!Array.isArray(u.decor)) errors.push(`${at}.decor: debe ser una lista`);
+        else {
+          if (u.decor.length > 300) errors.push(`${at}.decor: máximo 300 objetos`);
+          const seen = new Set<string>();
+          u.decor.forEach((it, j) => {
+            const p = `${at}.decor[${j}]`;
+            if (!isObj(it)) return void errors.push(`${p}: inválido`);
+            if (typeof it.id !== 'string' || !it.id) errors.push(`${p}.id: falta`);
+            else if (seen.has(it.id)) errors.push(`${p}.id: repetido "${it.id}"`);
+            else seen.add(it.id);
+            if (!isDecorKind(it.k)) errors.push(`${p}.k: el objeto "${String(it.k)}" no existe en el catálogo`);
+            if (!num(it.x) || !num(it.y)) errors.push(`${p}: x e y deben ser números`);
+            if (![0, 90, 180, 270].includes(it.rot as number)) errors.push(`${p}.rot: 0, 90, 180 o 270`);
+          });
+        }
+      }
       if (u.children !== undefined) walk(u.children, `${at}.children`);
     });
   };

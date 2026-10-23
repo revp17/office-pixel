@@ -5,6 +5,8 @@ import {
   ART_H,
   ART_W,
   DAY,
+  DECOR,
+  type ArtItem,
   type CompanyDef,
   type OrgCaseView,
   type OrgCounters,
@@ -480,6 +482,7 @@ export class OrgScene extends Phaser.Scene {
     }
     this.plant(g, r.x + 14, r.y + r.h - 16);
     if (r.art || r.look !== 'oficina') this.facilityProps(g, r);
+    this.drawDecor(r);
     const autoRoom = [...this.autoUnits].some((u) => this.b!.unitRoom(u)?.id === r.id);
     if (autoRoom) {
       g.fillStyle(0x0f131c, 0.95);
@@ -513,6 +516,35 @@ export class OrgScene extends Phaser.Scene {
   }
 
   /** Equipamiento de las instalaciones que no son oficina: ocupa la franja libre bajo los escritorios. */
+  /** Pinta una forma (rectángulo, elipse, triángulo o línea) de una ilustración; `k` es la escala. */
+  private paintShape(gg: Phaser.GameObjects.Graphics, it: ArtItem, ox: number, oy: number, k: number) {
+    if (it.t === 'emoji') return;
+    const h = it.c.slice(1);
+    const c = parseInt(h.length <= 4 ? h.split('').slice(0, 3).map((d) => d + d).join('') : h.slice(0, 6), 16);
+    gg.fillStyle(c, 1);
+    if (it.t === 'rect') {
+      if (it.r) gg.fillRoundedRect(ox + it.x * k, oy + it.y * k, it.w * k, it.h * k, Math.min(it.r * k, (it.w * k) / 2, (it.h * k) / 2));
+      else gg.fillRect(ox + it.x * k, oy + it.y * k, it.w * k, it.h * k);
+    } else if (it.t === 'ellipse') gg.fillEllipse(ox + (it.x + it.w / 2) * k, oy + (it.y + it.h / 2) * k, it.w * k, it.h * k);
+    else if (it.t === 'tri') gg.fillTriangle(ox + (it.x + it.w / 2) * k, oy + it.y * k, ox + (it.x + it.w) * k, oy + (it.y + it.h) * k, ox + it.x * k, oy + (it.y + it.h) * k);
+    else {
+      gg.lineStyle(Math.max(1, it.lw * k), c, 1);
+      gg.lineBetween(ox + it.x * k, oy + it.y * k, ox + it.x2 * k, oy + it.y2 * k);
+    }
+  }
+
+  /** Objetos del catálogo (mesas, sillas, puertas, plantas…) que el usuario colocó en la sala. */
+  private drawDecor(r: RoomL) {
+    r.decor.forEach((it, i) => {
+      const d = DECOR[it.k];
+      if (!d || it.x < 0 || it.y < 0 || it.x > r.w || it.y > r.h) return;
+      const gg = this.add.graphics().setDepth(2 + i * 0.001);
+      for (const a of d.art) this.paintShape(gg, a, -d.w / 2, -d.h / 2, 1);
+      gg.setPosition(r.x + it.x, r.y + it.y).setRotation((it.rot * Math.PI) / 180);
+      if (it.flip) gg.setScale(-1, 1);
+    });
+  }
+
   /** Ilustración propia del tipo de instalación: elementos dibujados por el usuario o una imagen subida. */
   private drawArt(r: RoomL) {
     const art = r.art!;

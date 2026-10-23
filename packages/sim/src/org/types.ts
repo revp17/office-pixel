@@ -1,4 +1,5 @@
 import type { ArrivalsDef, DistSpec, ExceptionDef, NextRule } from '../types';
+import type { DecorItem } from './decor';
 
 export interface BlockDef {
   start: string; // "HH:MM"
@@ -164,6 +165,8 @@ export interface UnitDef {
   name?: string;
   /** qué instalación es (por defecto, oficina); define su aspecto en el plano */
   facility?: string;
+  /** objetos (mesas, sillas, puertas, plantas…) colocados en la sala de esta unidad */
+  decor?: DecorItem[];
   /** @deprecated formato antiguo: al leer un YAML se convierte en `kind: responsable` de esa persona */
   head?: string;
   children?: UnitDef[];
