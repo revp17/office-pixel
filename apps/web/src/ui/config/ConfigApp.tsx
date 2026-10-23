@@ -1,7 +1,7 @@
 import { render } from 'preact';
 import { useMemo, useState } from 'preact/hooks';
 import { validateCompany, type CompanyDef } from '@office-pixel/sim';
-import { emptyCompany } from './model';
+import { emptyCompany } from '../../application/editing/model';
 import { CatalogoTab } from './catalogoTab';
 import { EmpresaTab, AreasTab, PersonasTab } from './tabs';
 import { ProcesosTab } from './procesos';

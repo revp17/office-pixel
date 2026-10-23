@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks';
 import { companyToYaml, parseCompany, type CompanyDef } from '@office-pixel/sim';
-import { flatUnits, uniqueId } from './model';
+import { flatUnits, uniqueId } from '../../application/editing/model';
 import { AddBtn, Card, Days, Field, IconBtn, Num, Sel, Section, Text, Time, type TabProps } from './ui';
 
 // ---------- Horarios, reuniones y ausencias ----------

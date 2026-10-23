@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { DECOR, DECOR_GROUPS, decorBounds, type CompanyDef, type DecorGroup, type DecorItem } from '@office-pixel/sim';
-import { buildBuilding } from '../building';
+import { buildBuilding } from '../../scene/building';
 import { ArtItems } from './arte';
-import { findUnit } from './model';
+import { findUnit } from '../../application/editing/model';
 import type { Up } from './ui';
 
 const SNAP = 2;

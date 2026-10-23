@@ -1,5 +1,5 @@
 import { companyToYaml, parseCompany, type CompanyDef } from '@office-pixel/sim';
-import { ApiError, db, type Backend, type CompanyFull, type CompanyInfo } from './db';
+import { ApiError, db, type Backend, type CompanyFull, type CompanyInfo } from '../infrastructure/backend/db';
 
 export type DbStatus = 'checking' | 'db' | 'saving' | 'local' | 'error';
 

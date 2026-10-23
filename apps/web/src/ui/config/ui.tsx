@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import type { CompanyDef, DistSpec } from '@office-pixel/sim';
-import { DAY_NAMES, DAY_TITLES, DIST_LABELS, defaultDist, distFields, getParam, isNumText, parseNumText } from './model';
+import { DAY_NAMES, DAY_TITLES, DIST_LABELS, defaultDist, distFields, getParam, isNumText, parseNumText } from '../../application/editing/model';
 
 export type Up = (fn: (d: CompanyDef) => void) => void;
 export interface TabProps {

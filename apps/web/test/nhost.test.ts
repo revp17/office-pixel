@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { companyToYaml, parseCompany } from '@office-pixel/sim';
-import { ApiError } from '../src/backendTypes';
-import { createNhostBackend } from '../src/nhostDb';
-import { AuthError, NhostAuth, nhostEndpoints } from '../src/nhostAuth';
+import { ApiError } from '../src/application/ports';
+import { createNhostBackend } from '../src/infrastructure/backend/nhostDb';
+import { AuthError, NhostAuth, nhostEndpoints } from '../src/infrastructure/backend/nhostAuth';
 
 const banco = readFileSync(new URL('../../../examples/banco_pixel.yaml', import.meta.url), 'utf8');
 const yamlOf = (name: string) => companyToYaml({ ...parseCompany(banco).def!, company: name });

@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parseCompany, type CompanyDef } from '@office-pixel/sim';
-import { buildBuilding, commonDest, deskDest, locate, route } from '../src/building';
-import { addUnit, emptyCompany } from '../src/config/model';
+import { buildBuilding, commonDest, deskDest, locate, route } from '../src/scene/building';
+import { addUnit, emptyCompany } from '../src/application/editing/model';
 
 const def = parseCompany(readFileSync(new URL('../../../examples/banco_pixel.yaml', import.meta.url), 'utf8')).def!;
 const b = buildBuilding(def);

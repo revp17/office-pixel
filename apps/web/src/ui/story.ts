@@ -1,5 +1,5 @@
 import { AUTO_ACTOR, unitPath, type CompanyDef, type OrgEvent } from '@office-pixel/sim';
-import { fmtTime } from './orgScene';
+import { fmtTime } from '../scene/orgScene';
 
 export interface StoryLine {
   t: number;

@@ -21,7 +21,7 @@ import {
 } from '@office-pixel/sim';
 import { StageCard } from '../config/procesos';
 import { AddBtn, Card, Field, Sel, Section, Text, TextArea } from '../config/ui';
-import { addStage } from '../config/model';
+import { addStage } from '../../application/editing/model';
 import { FlowDiagram, type FlowMark } from './flow';
 import type { HubCtx } from './documentar';
 

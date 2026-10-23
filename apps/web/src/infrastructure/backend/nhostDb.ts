@@ -1,5 +1,5 @@
 import { parseCompany } from '@office-pixel/sim';
-import { ApiError, type Backend, type CompanyFull, type CompanyInfo, type RevisionInfo, type SaveResult } from './backendTypes';
+import { ApiError, type Backend, type CompanyFull, type CompanyInfo, type RevisionInfo, type SaveResult } from '../../application/ports';
 import { NhostAuth, type NhostEndpoints } from './nhostAuth';
 
 /**

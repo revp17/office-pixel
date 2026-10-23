@@ -1,4 +1,4 @@
-import './style.css';
+import './app/style.css';
 import Phaser from 'phaser';
 import {
   DAY,
@@ -11,15 +11,15 @@ import {
   type UnitDef,
 } from '@office-pixel/sim';
 import defaultYaml from '../../../examples/banco_pixel.yaml?raw';
-import { TEMPLATES } from './templates';
-import { StoryPanel } from './story';
-import { emptyCompany } from './config/model';
-import { Persistence } from './persist';
-import { db } from './db';
-import { askLogin } from './login';
-import { closeConfig, openConfig, type TabId } from './config/ConfigApp';
-import { closeHub, openHub } from './process/Hub';
-import { OrgScene, fmtTime, type OrgHud } from './orgScene';
+import { TEMPLATES } from './app/templates';
+import { StoryPanel } from './ui/story';
+import { emptyCompany } from './application/editing/model';
+import { Persistence } from './application/persistence';
+import { db } from './infrastructure/backend/db';
+import { askLogin } from './ui/login';
+import { closeConfig, openConfig, type TabId } from './ui/config/ConfigApp';
+import { closeHub, openHub } from './ui/process/Hub';
+import { OrgScene, fmtTime, type OrgHud } from './scene/orgScene';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const seedInput = $<HTMLInputElement>('seed');

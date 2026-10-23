@@ -19,7 +19,7 @@ import {
   slug,
   uniqueId,
   usage,
-} from '../src/config/model';
+} from '../src/application/editing/model';
 
 const exampleText = readFileSync(new URL('../../../examples/banco_pixel.yaml', import.meta.url), 'utf8');
 const example = (): CompanyDef => parseCompany(exampleText).def!;

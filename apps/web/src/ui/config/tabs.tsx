@@ -15,8 +15,8 @@ import {
   removeUnit,
   subtreeIds,
   usage,
-} from './model';
-import { buildBuilding } from '../building';
+} from '../../application/editing/model';
+import { buildBuilding } from '../../scene/building';
 import { DecorEditor } from './DecorEditor';
 import { RetireDialog } from './RetireDialog';
 import { AddBtn, Card, Days, Field, IconBtn, Num, Pct, Sel, Section, Text, Time, type TabProps, type Up } from './ui';

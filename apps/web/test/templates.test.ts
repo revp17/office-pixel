@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { FACILITIES, dependencyEdges, parseCompany, simulateCompany, validateCompany } from '@office-pixel/sim';
-import { buildBuilding } from '../src/building';
+import { buildBuilding } from '../src/scene/building';
 
 const load = (name: string) => parseCompany(readFileSync(new URL(`../../../examples/${name}.yaml`, import.meta.url), 'utf8'));
 

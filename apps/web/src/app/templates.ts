@@ -1,8 +1,8 @@
 import { parseCompany, type CompanyDef } from '@office-pixel/sim';
-import banco from '../../../examples/banco_pixel.yaml?raw';
-import ferreteria from '../../../examples/plantilla_pequena_ferreteria.yaml?raw';
-import distribuidora from '../../../examples/plantilla_mediana_distribuidora.yaml?raw';
-import centro from '../../../examples/plantilla_grande_centro_distribucion.yaml?raw';
+import banco from '../../../../examples/banco_pixel.yaml?raw';
+import ferreteria from '../../../../examples/plantilla_pequena_ferreteria.yaml?raw';
+import distribuidora from '../../../../examples/plantilla_mediana_distribuidora.yaml?raw';
+import centro from '../../../../examples/plantilla_grande_centro_distribucion.yaml?raw';
 
 export interface Template {
   id: string;

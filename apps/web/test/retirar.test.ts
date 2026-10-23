@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parseCompany, simulateCompany, validateCompany, type CompanyDef } from '@office-pixel/sim';
-import { applyRetire, moveTargets, retirePlan } from '../src/config/retirar';
-import { findUnit } from '../src/config/model';
+import { applyRetire, moveTargets, retirePlan } from '../src/application/editing/retirar';
+import { findUnit } from '../src/application/editing/model';
 
 const load = (name: string): CompanyDef => parseCompany(readFileSync(new URL(`../../../examples/${name}.yaml`, import.meta.url), 'utf8')).def!;
 const banco = () => load('banco_pixel');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isNumText, normalizeAttrName, parseNumText, renameAttribute } from '../src/config/model';
+import { isNumText, normalizeAttrName, parseNumText, renameAttribute } from '../src/application/editing/model';
 import type { OrgProcessDef } from '@office-pixel/sim';
 
 describe('escribir números con fluidez', () => {

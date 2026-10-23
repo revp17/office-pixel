@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { applyRetire, effectText, moveTargets, retirePlan } from './retirar';
+import { applyRetire, effectText, moveTargets, retirePlan } from '../../application/editing/retirar';
 import { Sel, type Up } from './ui';
 import type { CompanyDef } from '@office-pixel/sim';
 

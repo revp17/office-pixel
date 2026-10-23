@@ -19,7 +19,7 @@ import {
   uniqueId,
   usage,
   type Op,
-} from './model';
+} from '../../application/editing/model';
 import { AddBtn, Card, DistEditor, Field, IconBtn, NameInput, Num, Pct, Sel, Section, Text, type TabProps } from './ui';
 
 type PMut = (fn: (p: OrgProcessDef, d: CompanyDef) => void) => void;

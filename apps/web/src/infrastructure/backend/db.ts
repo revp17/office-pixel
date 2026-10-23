@@ -1,9 +1,9 @@
-import type { Backend } from './backendTypes';
+import type { Backend } from '../../application/ports';
 import { createNhostBackend } from './nhostDb';
 import { nhostEndpoints } from './nhostAuth';
 import { sqliteBackend } from './sqliteDb';
 
-export * from './backendTypes';
+export * from '../../application/ports';
 
 /**
  * Dónde se guardan las empresas: en Nhost si la aplicación está configurada con un proyecto

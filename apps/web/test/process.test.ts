@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { fichaMarkdown, parseCompany, ensureDoc } from '@office-pixel/sim';
-import { layoutFlow } from '../src/process/flow';
-import { mdToHtml } from '../src/process/fichaView';
+import { layoutFlow } from '../src/ui/process/flow';
+import { mdToHtml } from '../src/ui/process/fichaView';
 
 const def = parseCompany(readFileSync(new URL('../../../examples/banco_pixel.yaml', import.meta.url), 'utf8')).def!;
 const credito = def.processes.find((p) => p.id === 'solicitud_credito')!;

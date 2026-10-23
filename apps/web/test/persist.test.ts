@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { companyToYaml, type CompanyDef } from '@office-pixel/sim';
-import type { Backend, CompanyFull, CompanyInfo } from '../src/backendTypes';
-import { emptyCompany } from '../src/config/model';
-import { Persistence } from '../src/persist';
+import type { Backend, CompanyFull, CompanyInfo } from '../src/application/ports';
+import { emptyCompany } from '../src/application/editing/model';
+import { Persistence } from '../src/application/persistence';
 
 /** Una base de datos de mentira en memoria con la misma interfaz que SQLite y Nhost. */
 function fakeBackend(online = true) {

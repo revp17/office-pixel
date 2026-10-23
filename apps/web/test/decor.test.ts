@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { DECOR, DECOR_GROUPS, companyToYaml, decorBounds, isDecorKind, parseCompany, simulateCompany, validateCompany, type CompanyDef } from '@office-pixel/sim';
-import { buildBuilding } from '../src/building';
+import { buildBuilding } from '../src/scene/building';
 
 import type { UnitDef } from '@office-pixel/sim';
 const unit = (d: CompanyDef, id: string): UnitDef => {

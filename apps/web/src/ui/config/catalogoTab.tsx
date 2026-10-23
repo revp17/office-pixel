@@ -2,7 +2,7 @@ import { useState } from 'preact/hooks';
 import { FACILITIES, facilityViews, hasArt, type ArtItem, type CustomFacility, type Facility, type FacilityView } from '@office-pixel/sim';
 import { ArtEditor, ArtSvg, artImageFromFile } from './arte';
 import { FacilityPreview } from './catalogo';
-import { addUnit, findUnit, flatUnits, uniqueId } from './model';
+import { addUnit, findUnit, flatUnits, uniqueId } from '../../application/editing/model';
 import { AddBtn, Field, Sel, Text, TextArea, type TabProps } from './ui';
 
 const ICONS = ['🏭', '🏬', '🧊', '🧪', '🧰', '⛽', '🏗', '🚧', '🖨', '🧹', '🍽', '🔌', '📡', '🛒', '🏥', '🔒'];

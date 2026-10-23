@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { parseCompany, validateCompany, type CompanyDef } from '@office-pixel/sim';
-import { buildBuilding } from '../src/building';
-import { moveUnit, siblingsOf } from '../src/config/model';
+import { buildBuilding } from '../src/scene/building';
+import { moveUnit, siblingsOf } from '../src/application/editing/model';
 
 const base = (): CompanyDef => parseCompany(readFileSync(new URL('../../../examples/banco_pixel.yaml', import.meta.url), 'utf8')).def!;
 const ids = (d: CompanyDef) => d.units.map((u) => u.id);
@@ -66,7 +66,7 @@ describe('orden de las áreas y subáreas', () => {
 
 describe('orden de los procesos', () => {
   it('un proceso nuevo se puede subir hasta quedar antes de los ya creados', async () => {
-    const { moveProcess, addProcess } = await import('../src/config/model');
+    const { moveProcess, addProcess } = await import('../src/application/editing/model');
     const d = base();
     const before = d.processes.map((p) => p.id);
     const nuevo = addProcess(d);
@@ -87,7 +87,7 @@ describe('orden de los procesos', () => {
     d.processes.find((p) => p.id === 'reclamo_cliente')!.dependsOn = [{ process: 'solicitud_credito', kind: 'requiere' }];
     const snapshot = JSON.stringify([...d.processes].sort((a, b) => a.id.localeCompare(b.id)));
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return import('../src/config/model').then(({ moveProcess }) => {
+    return import('../src/application/editing/model').then(({ moveProcess }) => {
       moveProcess(d, 'reclamo_cliente', 'first');
       expect(d.processes[0].id).toBe('reclamo_cliente');
       expect(JSON.stringify([...d.processes].sort((a, b) => a.id.localeCompare(b.id)))).toBe(snapshot);

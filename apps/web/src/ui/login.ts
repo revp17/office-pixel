@@ -1,4 +1,4 @@
-import type { AccountApi } from './backendTypes';
+import type { AccountApi } from '../application/ports';
 
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 

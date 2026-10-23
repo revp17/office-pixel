@@ -1,4 +1,4 @@
-import { ApiError, type Backend, type CompanyFull, type CompanyInfo, type RevisionInfo, type SaveResult } from './backendTypes';
+import { ApiError, type Backend, type CompanyFull, type CompanyInfo, type RevisionInfo, type SaveResult } from '../../application/ports';
 
 /** Cliente de la API local de Office-Pixel (la base de datos SQLite del servidor). */
 
