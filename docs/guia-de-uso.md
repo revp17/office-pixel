@@ -2,6 +2,8 @@
 
 Office-Pixel simula una **empresa virtual**: tú defines su estructura (planta, áreas, subáreas y las personas de cada una) y sus procesos, y la app los muestra como un plano donde la gente trabaja, camina y se pasa casos de una mesa a otra.
 
+> Los procesos se **documentan, optimizan y fichan** en el espacio **📋 Procesos**: ver [gestion-de-procesos.md](gestion-de-procesos.md).
+
 Esta guía tiene dos partes:
 
 1. [Cómo se dibujan la planta, las áreas, las subáreas y las personas](#1-cómo-se-dibuja-la-empresa)

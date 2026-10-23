@@ -11,13 +11,17 @@ import {
   type UnitDef,
 } from '@office-pixel/sim';
 import defaultYaml from '../../../examples/banco_pixel.yaml?raw';
-import { closeConfig, openConfig } from './config/ConfigApp';
+import { closeConfig, openConfig, type TabId } from './config/ConfigApp';
+import { closeHub, openHub } from './process/Hub';
 import { OrgScene, fmtTime, type OrgHud } from './orgScene';
 
 const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as T;
 const seedInput = $<HTMLInputElement>('seed');
 const daysInput = $<HTMLInputElement>('days');
 const configRoot = $<HTMLDivElement>('config-root');
+const hubRoot = $<HTMLDivElement>('hub-root');
+const previewBanner = $<HTMLDivElement>('preview-banner');
+const previewText = $<HTMLSpanElement>('preview-text');
 const playBtn = $<HTMLButtonElement>('play');
 const speedSel = $<HTMLSelectElement>('speed');
 const timeline = $<HTMLInputElement>('timeline');
@@ -282,14 +286,19 @@ layoutBtns.forEach((b) => b.addEventListener('click', () => setLayout(b.dataset.
 }
 
 // ---------- simulación ----------
-function run(next?: CompanyDef) {
+/** Si pv viene, se simula esa variante (vista previa) en vez de la empresa guardada. */
+let preview: { company: CompanyDef; label: string } | null = null;
+function run(next?: CompanyDef, pv?: { company: CompanyDef; label: string }) {
   if (next) {
     company = next;
     saveCompany(next);
   }
+  preview = pv ?? null;
+  previewBanner.hidden = !preview;
+  if (preview) previewText.textContent = `Vista previa: ${preview.label}. No se guarda; la empresa real no ha cambiado.`;
   const seed = Math.trunc(Number(seedInput.value)) || 0;
   const days = Math.min(30, Math.max(1, Math.trunc(Number(daysInput.value)) || 5));
-  def = company;
+  def = preview ? preview.company : company;
   result = simulateCompany(def, { seed, horizonDays: days });
   personEvents = new Map(def.people.map((p) => [p.id, []]));
   for (const e of result.events) if (e.type === 'person.state') personEvents.get(e.person)!.push({ t: e.t, state: e.state });
@@ -300,10 +309,11 @@ function run(next?: CompanyDef) {
 }
 
 $('simulate').addEventListener('click', () => run());
-function showConfig() {
+function showConfig(tab?: TabId) {
   scene.playing = false;
   openConfig(configRoot, {
     initial: structuredClone(company),
+    initialTab: tab,
     example,
     onApply: (d) => {
       closeConfig(configRoot);
@@ -312,7 +322,44 @@ function showConfig() {
     onClose: () => closeConfig(configRoot),
   });
 }
-$('configure').addEventListener('click', showConfig);
+$('configure').addEventListener('click', () => showConfig());
+
+// ---------- gestión de procesos (documentar, optimizar, ficha) ----------
+function showHub() {
+  const wasPlaying = scene.playing;
+  scene.playing = false;
+  const days = Math.min(30, Math.max(1, Math.trunc(Number(daysInput.value)) || 5));
+  const keep = (d: CompanyDef) => {
+    company = d;
+    saveCompany(d);
+  };
+  openHub(hubRoot, {
+    initial: structuredClone(company),
+    days,
+    // la ficha y la optimización no cambian lo que se simula: no hace falta volver a simular
+    onSave: (d) => {
+      closeHub(hubRoot);
+      keep(d);
+      scene.playing = wasPlaying;
+    },
+    onPreview: (draft, variant, label) => {
+      closeHub(hubRoot);
+      keep(draft);
+      run(undefined, { company: variant, label });
+    },
+    onEditProcess: (draft) => {
+      closeHub(hubRoot);
+      keep(draft);
+      showConfig('procesos');
+    },
+    onClose: () => {
+      closeHub(hubRoot);
+      scene.playing = wasPlaying;
+    },
+  });
+}
+$('processes').addEventListener('click', showHub);
+$('preview-exit').addEventListener('click', () => run());
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && configRoot.classList.contains('open')) closeConfig(configRoot);
 });

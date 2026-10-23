@@ -61,6 +61,18 @@ export function Text(p: { value: string; onChange: (v: string) => void; placehol
   );
 }
 
+export function TextArea(p: { value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) {
+  return (
+    <textarea
+      class="ta"
+      rows={p.rows ?? 3}
+      value={p.value}
+      placeholder={p.placeholder}
+      onInput={(e) => p.onChange((e.target as HTMLTextAreaElement).value)}
+    />
+  );
+}
+
 export function Num(p: {
   value: number | undefined;
   onChange: (v: number | undefined) => void;

@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
 import type { CompanyDef, NextRule, OrgProcessDef, OrgStageDef } from '@office-pixel/sim';
+import { describeDuration } from '@office-pixel/sim';
 import {
   OPS,
   addProcess,
@@ -173,8 +174,19 @@ function Datos({ proc, P }: { proc: OrgProcessDef; P: PMut }) {
   );
 }
 
-function StageCard(props: { d: CompanyDef; proc: OrgProcessDef; st: OrgStageDef; i: number; P: PMut; note: (m: string) => void }) {
-  const { d, proc, st, i, P, note } = props;
+export function StageCard(props: {
+  d: CompanyDef;
+  proc: OrgProcessDef;
+  st: OrgStageDef;
+  i: number;
+  P: PMut;
+  note: (m: string) => void;
+  /** el tiempo y el plazo no se pueden tocar (en la optimización solo se acelera en el paso 4) */
+  lockTiming?: boolean;
+  /** muestra «la hace un sistema»; en la optimización eso es solo del paso 5 */
+  allowAutomation?: boolean;
+}) {
+  const { d, proc, st, i, P, note, lockTiming = false, allowAutomation = true } = props;
   const S = (fn: (s: OrgStageDef, p: OrgProcessDef, x: CompanyDef) => void) =>
     P((p, x) => {
       const s = p.stages.find((q) => q.id === st.id);
@@ -300,25 +312,47 @@ function StageCard(props: { d: CompanyDef; proc: OrgProcessDef; st: OrgStageDef;
               />
             </Field>
           </div>
-          <div class="row">
-            <Field label="Cuánto tarda (a velocidad normal)" grow>
-              <DistEditor spec={st.duration ?? defaultDist('normal', true)} minutes onChange={(s2) => S((s) => void (s.duration = s2))} />
-            </Field>
-            <Field label="Plazo máximo (SLA)" hint="Horas hábiles desde que llega a esta etapa. Vacío = sin plazo.">
-              <Num
-                value={st.sla ? Math.round((st.sla.maxMinutes / 60) * 10) / 10 : undefined}
-                min={0.1}
-                step={0.5}
-                suffix="h"
-                onChange={(v) =>
+          {allowAutomation && !st.terminal && (
+            <label class="check">
+              <input
+                type="checkbox"
+                checked={!!st.automated}
+                onChange={(e) =>
                   S((s) => {
-                    if (!v) delete s.sla;
-                    else s.sla = { maxMinutes: Math.round(v * 60) };
+                    if ((e.target as HTMLInputElement).checked) s.automated = true;
+                    else delete s.automated;
                   })
                 }
               />
-            </Field>
-          </div>
+              La hace un sistema, sin personas (ya está automatizada hoy)
+            </label>
+          )}
+          {lockTiming ? (
+            <p class="hint">
+              Duración {st.duration ? describeDuration(st.duration) : '—'}
+              {st.sla ? ` · plazo ${Math.round((st.sla.maxMinutes / 60) * 10) / 10} h` : ''} — el tiempo se toca en el paso 4 (acelerar), no antes.
+            </p>
+          ) : (
+            <div class="row">
+              <Field label="Cuánto tarda (a velocidad normal)" grow>
+                <DistEditor spec={st.duration ?? defaultDist('normal', true)} minutes onChange={(s2) => S((s) => void (s.duration = s2))} />
+              </Field>
+              <Field label="Plazo máximo (SLA)" hint="Horas hábiles desde que llega a esta etapa. Vacío = sin plazo.">
+                <Num
+                  value={st.sla ? Math.round((st.sla.maxMinutes / 60) * 10) / 10 : undefined}
+                  min={0.1}
+                  step={0.5}
+                  suffix="h"
+                  onChange={(v) =>
+                    S((s) => {
+                      if (!v) delete s.sla;
+                      else s.sla = { maxMinutes: Math.round(v * 60) };
+                    })
+                  }
+                />
+              </Field>
+            </div>
+          )}
         </>
       )}
 

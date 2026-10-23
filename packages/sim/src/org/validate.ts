@@ -184,6 +184,23 @@ export function validateCompany(raw: unknown): CompanyParseResult {
         if (!(typeof arr.everyMinutes === 'number' && arr.everyMinutes > 0)) errors.push(`${P}.arrivals.everyMinutes: debe ser > 0`);
       } else errors.push(`${P}.arrivals.type: "poisson" o "constant"`);
 
+      // ficha y optimización: solo se comprueba la forma básica (el simulador no las usa)
+      if (pr.doc !== undefined) {
+        const doc = pr.doc;
+        if (!isObj(doc)) errors.push(`${P}.doc: debe ser un objeto`);
+        else {
+          if (!isObj(doc.scope) || !Array.isArray(doc.scope.stakeholders)) errors.push(`${P}.doc.scope.stakeholders: debe ser una lista`);
+          if (!Array.isArray(doc.fieldwork)) errors.push(`${P}.doc.fieldwork: debe ser una lista`);
+          if (!Array.isArray(doc.validations)) errors.push(`${P}.doc.validations: debe ser una lista`);
+          if (!isObj(doc.phases)) errors.push(`${P}.doc.phases: debe ser un objeto`);
+        }
+      }
+      if (pr.optimization !== undefined) {
+        const o = pr.optimization;
+        if (!isObj(o) || !isObj(o.reqReview) || !Array.isArray(o.eliminated) || !isObj(o.speed) || !isObj(o.auto) || !isObj(o.steps))
+          errors.push(`${P}.optimization: forma inválida (reqReview, eliminated, speed, auto y steps)`);
+      }
+
       if (pr.attributes !== undefined) {
         if (!isObj(pr.attributes)) errors.push(`${P}.attributes: debe ser un mapa`);
         else for (const [k, d] of Object.entries(pr.attributes)) checkDist(d, `${P}.attributes.${k}`, errors);
@@ -200,7 +217,7 @@ export function validateCompany(raw: unknown): CompanyParseResult {
         if (s.duration !== undefined) checkDist(s.duration, `${S}.duration`, errors);
         if (s.duration !== undefined || s.unit !== undefined) {
           if (typeof s.unit !== 'string' || !unitIds.has(s.unit)) errors.push(`${S}: la unidad "${String(s.unit)}" no existe`);
-          else if (people) {
+          else if (people && s.automated !== true) {
             const ok = people.some(
               (p) =>
                 isObj(p) &&
@@ -213,6 +230,9 @@ export function validateCompany(raw: unknown): CompanyParseResult {
         }
         if (s.duration === undefined && s.unit === undefined && s.terminal !== true)
           errors.push(`${S}: una etapa no terminal necesita "unit" y "duration"`);
+        if (s.automated !== undefined && typeof s.automated !== 'boolean') errors.push(`${S}.automated: debe ser true o false`);
+        if (s.automated === true && (s.duration === undefined || s.unit === undefined))
+          errors.push(`${S}: una etapa automatizada necesita "unit" (dónde se muestra) y "duration"`);
         if (s.sla !== undefined && !(isObj(s.sla) && typeof s.sla.maxMinutes === 'number' && s.sla.maxMinutes > 0))
           errors.push(`${S}.sla.maxMinutes: debe ser > 0`);
         if (Array.isArray(s.exceptions))

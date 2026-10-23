@@ -3,6 +3,7 @@ import { Heap } from '../engine';
 import { compileExpr, type CompiledExpr } from '../expr';
 import { mulberry32 } from '../rng';
 import { DAY, makeBizCalendar, parseHM } from './time';
+import { AUTO_ACTOR } from './types';
 import type {
   CompanyDef,
   OrgEvent,
@@ -137,7 +138,7 @@ export function simulateCompany(def: CompanyDef, options: OrgSimOptions): OrgSim
       };
       if (Array.isArray(s.next))
         st.rules = s.next.map((r) => ({ test: r.otherwise ? null : compileExpr(r.when!), to: r.to }));
-      if (s.unit) {
+      if (s.unit && !s.automated) {
         st.eligible = people.filter(
           (p) =>
             p.ancestors.includes(s.unit!) &&
@@ -257,12 +258,24 @@ export function simulateCompany(def: CompanyDef, options: OrgSimOptions): OrgSim
       });
     }
 
+    if (st.def.automated) return startAuto(c, st);
     if (!st.def.duration && !st.def.unit) {
       // etapa de cierre inmediato
       if (st.def.terminal) return complete(c, st);
     }
     st.queue.push({ c, since: now });
     dispatchStage(st);
+  }
+
+  /** Etapa automatizada: la hace un sistema, sin cola ni personas, con capacidad ilimitada. */
+  function startAuto(c: CaseRT, st: StageRT) {
+    st.started++;
+    emit({ t: now, type: 'work.started', caseId: c.id, stage: st.def.id, person: AUTO_ACTOR });
+    const d = st.def.duration ? sampleDist(st.def.duration, rng) : 0;
+    schedule(now + d, () => {
+      emit({ t: now, type: 'work.finished', caseId: c.id, stage: st.def.id, person: AUTO_ACTOR });
+      afterWork(c, st, null);
+    });
   }
 
   function complete(c: CaseRT, st: StageRT) {
@@ -356,8 +369,8 @@ export function simulateCompany(def: CompanyDef, options: OrgSimOptions): OrgSim
     else enterStage(c, to);
   }
 
-  function afterWork(c: CaseRT, st: StageRT, p: PersonRT) {
-    if (p.errorRate > 0 && rng() < p.errorRate) {
+  function afterWork(c: CaseRT, st: StageRT, p: PersonRT | null) {
+    if (p && p.errorRate > 0 && rng() < p.errorRate) {
       emit({ t: now, type: 'exception', caseId: c.id, stage: st.def.id, exceptionId: `error:${p.def.id}`, target: st.def.id });
       return enterStage(c, st);
     }

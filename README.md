@@ -10,6 +10,7 @@ Simulador visual de procesos para Forward Deployed Engineers: define un proceso 
 - `vault/` — vault de Obsidian con el diseño (empieza por `00 Inicio.md`).
 
 > **Guía de uso:** [docs/guia-de-uso.md](docs/guia-de-uso.md) — cómo se dibujan áreas y empleados, y cómo se configura todo paso a paso.
+> **Gestión de procesos:** [docs/gestion-de-procesos.md](docs/gestion-de-procesos.md) — documentar (5 fases), optimizar (5 pasos de Musk, en orden estricto) y la ficha de proceso.
 
 ## Empresa virtual
 

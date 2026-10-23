@@ -7,18 +7,19 @@ import { ProcesosTab } from './procesos';
 import { HorariosTab, YamlTab } from './extras';
 import type { Up } from './ui';
 
-type TabId = 'empresa' | 'areas' | 'personas' | 'procesos' | 'horarios' | 'yaml';
+export type TabId = 'empresa' | 'areas' | 'personas' | 'procesos' | 'horarios' | 'yaml';
 
 interface Props {
   initial: CompanyDef;
+  initialTab?: TabId;
   example: () => CompanyDef;
   onApply: (d: CompanyDef) => void;
   onClose: () => void;
 }
 
-function ConfigApp({ initial, example, onApply, onClose }: Props) {
+function ConfigApp({ initial, initialTab, example, onApply, onClose }: Props) {
   const [draft, setDraft] = useState<CompanyDef>(initial);
-  const [tab, setTab] = useState<TabId>('empresa');
+  const [tab, setTab] = useState<TabId>(initialTab ?? 'empresa');
   const [toast, setToast] = useState('');
   const [showErrors, setShowErrors] = useState(false);
   const errors = useMemo(() => validateCompany(draft).errors, [draft]);

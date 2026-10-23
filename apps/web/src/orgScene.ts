@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import {
+  AUTO_ACTOR,
   OrgReplayer,
   DAY,
   type CompanyDef,
@@ -172,6 +173,8 @@ export class OrgScene extends Phaser.Scene {
   private horizon = 0;
   private stageUnit = new Map<string, string>();
   private procIndex = new Map<string, number>();
+  /** unidades que tienen alguna etapa automatizada (se dibuja su «bay» de sistema) */
+  private autoUnits = new Set<string>();
   private persons = new Map<string, PersonView>();
   private crates = new Map<string, CrateView>();
   private roomViews = new Map<string, RoomView>();
@@ -253,9 +256,13 @@ export class OrgScene extends Phaser.Scene {
     this.lastT = 0;
     this.playing = true;
     this.forceSnap = true;
+    this.autoUnits.clear();
     def.processes.forEach((p, i) => {
       this.procIndex.set(p.id, i);
-      for (const s of p.stages) if (s.unit) this.stageUnit.set(`${p.id}.${s.id}`, s.unit);
+      for (const s of p.stages) {
+        if (s.unit) this.stageUnit.set(`${p.id}.${s.id}`, s.unit);
+        if (s.unit && s.automated) this.autoUnits.add(s.unit);
+      }
     });
 
     this.drawBuilding();
@@ -470,6 +477,14 @@ export class OrgScene extends Phaser.Scene {
         .setDepth(3);
     }
     this.plant(g, r.x + 14, r.y + r.h - 16);
+    const autoRoom = [...this.autoUnits].some((u) => this.b!.unitRoom(u)?.id === r.id);
+    if (autoRoom) {
+      g.fillStyle(0x0f131c, 0.95);
+      g.fillRoundedRect(r.x + 32, r.y + r.h - 28, 100, 22, 6);
+      g.lineStyle(1, 0x5aa9ff, 0.5);
+      g.strokeRoundedRect(r.x + 32, r.y + r.h - 28, 100, 22, 6);
+      this.add.text(r.x + 36, r.y + r.h - 40, '⚙ Sistema', TXT(9, '#8cc4ff', '700')).setDepth(3);
+    }
 
     const full = r.kind === 'subarea' && r.path.length > 2 ? r.path.slice(-2).join(' › ') : r.name;
     const maxChars = Math.max(4, Math.floor((r.w - 62) / 6.6));
@@ -739,6 +754,12 @@ export class OrgScene extends Phaser.Scene {
         const l = queued.get(room.id) ?? [];
         l.push(c);
         queued.set(room.id, l);
+      } else if (c.status === 'working' && c.person === AUTO_ACTOR) {
+        // etapa automatizada: la caja se queda en el «bay» del sistema de la sala
+        if (!room) continue;
+        let h = 0;
+        for (const ch of c.id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+        place.set(c.id, { key: `auto:${room.id}:${h % 6}`, dest: { x: room.x + 38 + (h % 6) * 15, y: room.y + room.h - 17, area: room.area, zone: room.id } });
       } else if ((c.status === 'working' || c.status === 'paused') && c.person) {
         const { room: pr, desk } = b.personDesk.get(c.person)!;
         place.set(c.id, { key: `desk:${c.person}`, dest: { x: desk.x + 15, y: desk.y - 3, area: pr.area, zone: pr.id } });

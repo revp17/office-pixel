@@ -10,5 +10,7 @@ export * from './org/types';
 export { parseCompany, validateCompany, normalizeCompany, type CompanyParseResult } from './org/validate';
 export { simulateCompany } from './org/engine';
 export { companyToYaml } from './org/yaml';
+export * from './org/manage';
+export { fichaMarkdown } from './org/ficha';
 export { OrgReplayer, type OrgCaseView, type OrgCaseStatus, type PersonView, type OrgCounters } from './org/replay';
 export { makeBizCalendar, parseHM, DAY } from './org/time';

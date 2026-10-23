@@ -10,6 +10,7 @@
       <main id="stage">
         <div id="toolbar">
           <button id="configure" class="primary" title="Áreas, personas, procesos, reglas y excepciones">⚙ Configurar empresa</button>
+          <button id="processes" title="Documentar procesos (5 fases), optimizarlos (5 pasos) y generar la ficha">📋 Procesos</button>
           <button id="play">▶ Reproducir</button>
           <button id="restart">⟲ Reiniciar</button>
           <label>Velocidad
@@ -33,6 +34,10 @@
           <label class="inl">Semilla <input id="seed" type="number" value="1" /></label>
           <button id="simulate" title="Volver a simular con estos días y esta semilla">↻ Simular</button>
         </div>
+        <div id="preview-banner" hidden>
+          <span id="preview-text"></span>
+          <button id="preview-exit" type="button">Volver a la empresa real</button>
+        </div>
         <div id="floors"></div>
         <div id="progress"><div id="progress-fill"></div><span id="progress-text"></span></div>
         <div id="game"></div>
@@ -45,6 +50,7 @@
       </main>
     </div>
     <div id="config-root"></div>
+    <div id="hub-root"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
