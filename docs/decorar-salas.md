@@ -48,6 +48,6 @@ units:
 ## Límites
 
 - Los objetos son **estáticos** (sin animación) y de un único estilo.
-- No se pueden añadir objetos nuevos al catálogo desde la pantalla: si necesitas uno que no está, se añade en el código (`packages/sim/src/org/decor.ts`). Para algo propio hoy puedes usar la **ilustración propia** de un tipo de instalación (ver [instalaciones-y-plantillas.md](instalaciones-y-plantillas.md)).
+- No se pueden añadir objetos nuevos al catálogo desde la pantalla: si necesitas uno que no está, se añade en el código (`packages/sim/src/company/decor.ts`). Para algo propio hoy puedes usar la **ilustración propia** de un tipo de instalación (ver [instalaciones-y-plantillas.md](instalaciones-y-plantillas.md)).
 - Solo se decoran las salas de áreas y subáreas; la **sala común** y los pasillos no.
 - No hay deshacer dentro del editor: usa **Cancelar** para volver a lo guardado.

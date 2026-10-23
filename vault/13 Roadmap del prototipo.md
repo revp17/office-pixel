@@ -24,7 +24,7 @@ tags: [gestión, roadmap]
 - [x] Validación del YAML de empresa (elegibilidad, referencias, horas)
 - [x] `examples/banco_pixel.yaml`: 32 personas, 5 áreas, 2 procesos cruzados
 - [x] `OrgReplayer` y 16 tests nuevos
-- [x] Plano generado desde el organigrama: planta → áreas → subáreas → escritorios, sala común por área, pasillos — `apps/web/src/building.ts`
+- [x] Plano generado desde el organigrama: planta → áreas → subáreas → escritorios, sala común por área, pasillos — `apps/web/src/scene/building.ts`
 - [x] Avatares que caminan por puertas y pasillos según su estado (`person.state`)
 - [x] Casos como cajas: bandeja por sala, sobre el escritorio al trabajarse, viajan en los traspasos
 - [x] Panel de persona (su día, carga, caso actual) y utilización por unidad

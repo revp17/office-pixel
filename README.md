@@ -13,6 +13,7 @@ Simulador visual de procesos para Forward Deployed Engineers: define un proceso 
 
 > **Guía de uso:** [docs/guia-de-uso.md](docs/guia-de-uso.md) — cómo se dibujan áreas y empleados, y cómo se configura todo paso a paso.
 > **Publicar (Nhost + Vercel):** [docs/publicar.md](docs/publicar.md) — guardar en Nhost con cuentas de usuario y publicar la app en Vercel.
+> **Arquitectura:** [docs/arquitectura.md](docs/arquitectura.md) — capas, reglas de dependencia comprobadas por tests, puertos/adaptadores y por qué no microservicios.
 > **Base de datos:** [docs/base-de-datos.md](docs/base-de-datos.md) — las empresas se guardan en SQLite (`data/office-pixel.db`), con varias empresas, versiones anteriores y copia de seguridad.
 > **Procedimientos:** [docs/procedimientos.md](docs/procedimientos.md) — cómo levantar el cómo, quién y cuándo de cada etapa (5 pasos, acción-resultado, capturas anotadas, prueba del novato y firma del ejecutor).
 > **Decorar salas:** [docs/decorar-salas.md](docs/decorar-salas.md) — biblioteca de objetos (puertas, mesas, sillas, plantas…) para acomodar en cada sala.
@@ -21,7 +22,7 @@ Simulador visual de procesos para Forward Deployed Engineers: define un proceso 
 
 ## Empresa virtual
 
-`examples/banco_pixel.yaml` define una empresa de 32 personas (Comercial, Operaciones, Riesgos, Legal y Atención) con calendario, turnos, reuniones y dos procesos que cruzan áreas. El motor está en `packages/sim/src/org/` (`parseCompany`, `simulateCompany`, `OrgReplayer`) y el modelo y sus reglas en `vault/14 Modelo organizacional.md`.
+`examples/banco_pixel.yaml` define una empresa de 32 personas (Comercial, Operaciones, Riesgos, Legal y Atención) con calendario, turnos, reuniones y dos procesos que cruzan áreas. El motor está en `packages/sim/src/` (`parseCompany` en `company/`, `simulateCompany` y `OrgReplayer` en `simulation/`; ver [arquitectura](docs/arquitectura.md)) y el modelo y sus reglas en `vault/14 Modelo organizacional.md`.
 
 La web (`apps/web`) la muestra como un **edificio**:
 
@@ -55,7 +56,7 @@ El botón **⚙ Configurar empresa** abre un panel de formularios, sin tocar YAM
 | Procesos | llegadas, datos de cada caso, etapas (equipo, rol, duración, plazo), camino siguiente o por condiciones, excepciones |
 | YAML (avanzado) | el mismo contenido como texto: copiar, descargar, abrir archivo, pegar |
 
-Los problemas se validan en vivo (el botón **Aplicar y simular** se bloquea hasta resolverlos). «Cargar ejemplo» y «Empezar en blanco» reemplazan el borrador. La empresa aplicada se guarda en la **base de datos** (ver [docs/base-de-datos.md](docs/base-de-datos.md)); si no hay nada guardado se carga Banco Pixel. Los identificadores internos se generan solos a partir de los nombres.
+Los problemas se validan en vivo (el botón **Aplicar y simular** se bloquea hasta resolverlos). «Cargar ejemplo» y «Empezar en blanco» reemplazan el borrador. La empresa aplicada se guarda en la **base de datos** (ver [docs/base-de-datos.md](docs/base-de-datos.md)); si no hay nada guardado la aplicación arranca en cero (en blanco, plantilla o importar). Los identificadores internos se generan solos a partir de los nombres.
 
 ## Uso de la interfaz
 
