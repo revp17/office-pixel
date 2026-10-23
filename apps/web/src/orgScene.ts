@@ -3,6 +3,7 @@ import {
   AUTO_ACTOR,
   OrgReplayer,
   DAY,
+  FACILITIES,
   type CompanyDef,
   type OrgCaseView,
   type OrgCounters,
@@ -477,6 +478,7 @@ export class OrgScene extends Phaser.Scene {
         .setDepth(3);
     }
     this.plant(g, r.x + 14, r.y + r.h - 16);
+    if (r.facility !== 'oficina') this.facilityProps(g, r);
     const autoRoom = [...this.autoUnits].some((u) => this.b!.unitRoom(u)?.id === r.id);
     if (autoRoom) {
       g.fillStyle(0x0f131c, 0.95);
@@ -486,7 +488,8 @@ export class OrgScene extends Phaser.Scene {
       this.add.text(r.x + 36, r.y + r.h - 40, '⚙ Sistema', TXT(9, '#8cc4ff', '700')).setDepth(3);
     }
 
-    const full = r.kind === 'subarea' && r.path.length > 2 ? r.path.slice(-2).join(' › ') : r.name;
+    const icon = r.facility !== 'oficina' ? `${FACILITIES[r.facility].icon} ` : '';
+    const full = icon + (r.kind === 'subarea' && r.path.length > 2 ? r.path.slice(-2).join(' › ') : r.name);
     const maxChars = Math.max(4, Math.floor((r.w - 62) / 6.6));
     const title = full.length > maxChars ? `${full.slice(0, maxChars - 1)}…` : full;
     this.add.text(r.x + (isArea ? 8 : 12), r.y + 5, title, TXT(11, isArea ? '#0c0f16' : '#f2f5fc', '700')).setDepth(3);
@@ -506,6 +509,153 @@ export class OrgScene extends Phaser.Scene {
     const overlay = this.add.rectangle(r.x, r.y, r.w, r.h, 0xff3030, 0).setOrigin(0).setDepth(4);
     const bar = this.add.graphics().setDepth(5);
     this.roomViews.set(r.id, { room: r, stats, overflow, big, overlay, bar, people: r.desks.map((d) => d.personId) });
+  }
+
+  /** Equipamiento de las instalaciones que no son oficina: ocupa la franja libre bajo los escritorios. */
+  private facilityProps(g: Phaser.GameObjects.Graphics, r: RoomL) {
+    const x0 = r.x + 10;
+    const x1 = r.inbox.x - 10;
+    const top = r.y + r.h - 60;
+    const hgt = 30;
+    const pw = x1 - x0;
+    const blink = (x: number, y: number, c: number, period = 900) => {
+      const dot = this.add.circle(x, y, 2.2, c, 1).setDepth(3);
+      this.tweens.add({ targets: dot, alpha: 0.15, duration: period, yoyo: true, repeat: -1 });
+    };
+    const crate = (x: number, y: number, w: number, h: number, c: number) => {
+      g.fillStyle(0x000000, 0.25);
+      g.fillRect(x + 1, y + h - 1, w, 2);
+      g.fillStyle(c, 1);
+      g.fillRect(x, y, w, h);
+      g.lineStyle(1, 0x000000, 0.35);
+      g.strokeRect(x, y, w, h);
+      g.fillStyle(0xffffff, 0.22);
+      g.fillRect(x + 1, y + 1, w - 2, 2);
+    };
+    const palette = [0xc98f4c, 0x9c7a4d, 0xd6a35f, 0x5d8fc9, 0x7aa86a];
+    const pallet = (x: number, y: number, boxes: number) => {
+      g.fillStyle(0x7a5a34, 1);
+      g.fillRect(x, y + 24, 30, 5);
+      for (let i = 0; i < boxes; i++) crate(x + 2 + (i % 2) * 13, y + 12 - Math.floor(i / 2) * 11, 12, 11, palette[(i + Math.floor(x)) % palette.length]);
+    };
+    const truck = (x: number, y: number, body = 0xe8edf7) => {
+      g.fillStyle(0x000000, 0.28);
+      g.fillEllipse(x + 30, y + 30, 66, 6);
+      g.fillStyle(body, 1);
+      g.fillRoundedRect(x, y + 2, 42, 24, 3);
+      g.fillStyle(0xc9d2e6, 1);
+      g.fillRect(x, y + 20, 42, 3);
+      g.fillStyle(0xf5c451, 1);
+      g.fillRoundedRect(x + 42, y + 10, 18, 16, { tl: 2, tr: 7, bl: 0, br: 0 });
+      g.fillStyle(0x9ad1ff, 1);
+      g.fillRect(x + 50, y + 13, 8, 7);
+      g.fillStyle(0x131824, 1);
+      g.fillCircle(x + 10, y + 27, 4.5);
+      g.fillCircle(x + 50, y + 27, 4.5);
+      g.fillStyle(0x9aa6c0, 1);
+      g.fillCircle(x + 10, y + 27, 1.8);
+      g.fillCircle(x + 50, y + 27, 1.8);
+    };
+    const hazard = (x: number, y: number, w: number) => {
+      g.fillStyle(0x1b1f2a, 1);
+      g.fillRect(x, y, w, 5);
+      g.fillStyle(0xf5c451, 1);
+      for (let i = 0; i < w; i += 12) g.fillTriangle(x + i, y + 5, x + i + 6, y, x + i + 12, y);
+    };
+
+    switch (r.facility) {
+      case 'bodega': {
+        const rack = 36;
+        const n = Math.max(1, Math.floor(pw / (rack + 4)));
+        for (let i = 0; i < n; i++) {
+          const x = x0 + i * (rack + 4);
+          g.fillStyle(0x2d3d5e, 1);
+          g.fillRect(x, top, 3, hgt + 2);
+          g.fillRect(x + rack - 3, top, 3, hgt + 2);
+          g.fillStyle(0xe0883a, 1);
+          g.fillRect(x, top + 14, rack, 3);
+          g.fillRect(x, top + hgt - 1, rack, 3);
+          crate(x + 4, top + 3, 12, 11, palette[i % palette.length]);
+          crate(x + 19, top + 4, 12, 10, palette[(i + 2) % palette.length]);
+          crate(x + 5, top + 17, 14, 12, palette[(i + 1) % palette.length]);
+          if (i % 2 === 0) crate(x + 22, top + 19, 10, 10, palette[(i + 3) % palette.length]);
+        }
+        break;
+      }
+      case 'ingreso': {
+        hazard(x0, top + hgt - 2, pw);
+        truck(x0, top - 2);
+        if (pw > 110) pallet(x0 + 70, top, 3);
+        if (pw > 150) pallet(x0 + 104, top, 2);
+        blink(x0 + pw - 4, top + 4, 0x4cd98a, 1200);
+        break;
+      }
+      case 'despacho': {
+        g.fillStyle(0x3a4560, 1);
+        g.fillRoundedRect(x0, top, 38, hgt, 3);
+        g.fillStyle(0x8793b0, 1);
+        for (let y = top + 3; y < top + hgt - 2; y += 4) g.fillRect(x0 + 3, y, 32, 2);
+        pallet(x0 + 46, top, 4);
+        if (pw > 120) pallet(x0 + 80, top, 3);
+        hazard(x0, top + hgt - 2, pw);
+        blink(x0 + 34, top + 4, 0xff8a3d, 700);
+        break;
+      }
+      case 'seguridad': {
+        g.fillStyle(0x0b0e16, 1);
+        g.fillRoundedRect(x0, top, Math.min(pw, 78), 22, 3);
+        for (let i = 0; i < 3; i++) {
+          g.fillStyle(0x1b2c3d, 1);
+          g.fillRect(x0 + 4 + i * 24, top + 3, 21, 16);
+          g.fillStyle(0x4aa889, 0.65);
+          g.fillRect(x0 + 6 + i * 24, top + 10 + (i % 2) * 2, 17, 2);
+          g.fillStyle(0x7fe3b4, 0.4);
+          g.fillRect(x0 + 6 + i * 24, top + 5, 6, 3);
+        }
+        blink(x0 + 5, top + 3, 0xff4d4d, 650);
+        // torniquete y escudo
+        const tx = x0 + Math.min(pw, 78) + 14;
+        if (tx + 30 < x1) {
+          g.fillStyle(0x9aa6c0, 1);
+          g.fillRect(tx, top + 10, 4, 18);
+          g.fillRect(tx + 24, top + 10, 4, 18);
+          g.fillStyle(0xf5c451, 1);
+          g.fillRect(tx + 4, top + 14, 20, 3);
+        }
+        break;
+      }
+      case 'mantenimiento': {
+        g.fillStyle(0x6b4f30, 1);
+        g.fillRoundedRect(x0, top + 10, Math.min(pw, 70), 8, 2);
+        g.fillStyle(0x3a4560, 1);
+        g.fillRect(x0 + 3, top + 18, 4, 12);
+        g.fillRect(x0 + Math.min(pw, 70) - 7, top + 18, 4, 12);
+        g.fillStyle(0xc0392b, 1); // caja de herramientas
+        g.fillRoundedRect(x0 + 8, top + 3, 22, 8, 2);
+        g.fillStyle(0xffffff, 0.3);
+        g.fillRect(x0 + 10, top + 5, 18, 2);
+        // tablero de herramientas
+        const bx = x0 + Math.min(pw, 70) + 8;
+        if (bx + 40 < x1) {
+          g.fillStyle(0x2b3550, 1);
+          g.fillRoundedRect(bx, top, 40, 26, 3);
+          g.lineStyle(2.4, 0xc9d2e6, 1);
+          g.lineBetween(bx + 7, top + 5, bx + 7, top + 21);
+          g.lineBetween(bx + 16, top + 5, bx + 20, top + 21);
+          g.lineStyle(2.4, 0xf5c451, 1);
+          g.lineBetween(bx + 28, top + 6, bx + 34, top + 20);
+        }
+        blink(x0 + Math.min(pw, 70) - 6, top + 7, 0xffb347, 500);
+        break;
+      }
+      case 'transporte': {
+        truck(x0, top - 2, 0x8cc4ff);
+        if (pw > 130) truck(x0 + 68, top - 2, 0xffd479);
+        hazard(x0, top + hgt - 2, pw);
+        break;
+      }
+      default:
+    }
   }
 
   private buildCommon(g: Phaser.GameObjects.Graphics, c: CommonL, color: number) {

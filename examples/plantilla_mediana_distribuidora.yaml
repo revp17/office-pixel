@@ -1,0 +1,250 @@
+company: Distribuidora Andina
+
+# Plantilla de empresa MEDIANA (38 personas): administración, logística (recepción, bodegas,
+# picking, despacho, transporte), seguridad y mantenimiento, cada uno con subáreas.
+
+calendar:
+  workDays: [0, 1, 2, 3, 4]
+  hours: { start: "07:00", end: "17:00" }
+  breaks: [{ start: "12:00", end: "13:00" }]
+  absenteeism: 0.03
+
+travel: { sameTeam: 0, sameArea: 2, crossArea: 5 }
+
+meetings:
+  - { id: daily_logistica, unit: logistica, start: "07:15", minutes: 15 }
+  - { id: ronda_seguridad, unit: seguridad, start: "07:00", minutes: 10 }
+
+units:
+  - id: administracion
+    name: Administración y ventas
+    children:
+      - { id: ventas, name: Ventas y pedidos }
+      - { id: facturacion, name: Facturación }
+  - id: logistica
+    name: Logística
+    children:
+      - { id: recepcion, name: Recepción de productos, facility: ingreso }
+      - { id: bodega_central, name: Bodega central, facility: bodega }
+      - { id: cuarto_frio, name: Cuarto frío, facility: bodega }
+      - { id: picking, name: Preparación de pedidos, facility: bodega }
+      - { id: despacho, name: Despacho, facility: despacho }
+      - { id: transporte, name: Transporte y flota, facility: transporte }
+  - id: seguridad
+    name: Seguridad física
+    facility: seguridad
+    children:
+      - { id: garita, name: Garita y accesos, facility: seguridad }
+      - { id: monitoreo, name: Monitoreo CCTV, facility: seguridad }
+  - id: mantenimiento
+    name: Mantenimiento
+    facility: mantenimiento
+    children:
+      - { id: taller, name: Taller mecánico, facility: mantenimiento }
+      - { id: electrico, name: Electricidad e infraestructura, facility: mantenimiento }
+
+people:
+  # Administración y ventas
+  - { id: gerente, name: Patricio Andrade, unit: administracion, role: gerente, kind: responsable }
+  - { id: jv, name: Marcela Torres, unit: ventas, role: jefe_ventas, kind: responsable }
+  - { id: v1, name: Diana Salazar, unit: ventas, role: vendedor }
+  - { id: v2, name: Esteban Cruz, unit: ventas, role: vendedor, speed: 1.1 }
+  - { id: v3, name: Gabriela Núñez, unit: ventas, role: vendedor }
+  - { id: f1, name: Rubén Paredes, unit: facturacion, role: facturador, kind: responsable }
+  - { id: f2, name: Sandra Ibarra, unit: facturacion, role: facturador }
+  # Logística
+  - { id: jl, name: Fernando Quispe, unit: logistica, role: jefe_logistica, kind: responsable }
+  - { id: rc1, name: Hernán Vallejo, unit: recepcion, role: recibidor, kind: responsable }
+  - { id: rc2, name: Mauricio León, unit: recepcion, role: recibidor }
+  - { id: rc3, name: Teresa Aguirre, unit: recepcion, role: inspector, errorRate: 0.02 }
+  - { id: bc1, name: Wilson Paz, unit: bodega_central, role: bodeguero, kind: responsable }
+  - { id: bc2, name: Cristian Ochoa, unit: bodega_central, role: bodeguero }
+  - { id: bc3, name: Nelly Rojas, unit: bodega_central, role: bodeguero, speed: 1.1 }
+  - { id: cf1, name: Ángel Barrera, unit: cuarto_frio, role: bodeguero, kind: responsable }
+  - { id: cf2, name: Lorena Mena, unit: cuarto_frio, role: bodeguero }
+  - { id: pk1, name: Omar Castillo, unit: picking, role: preparador, kind: responsable }
+  - { id: pk2, name: Jessica Pinto, unit: picking, role: preparador, speed: 1.1 }
+  - { id: pk3, name: Raúl Espín, unit: picking, role: preparador }
+  - { id: pk4, name: Karla Vera, unit: picking, role: preparador, errorRate: 0.04 }
+  - { id: dp1, name: Alexis Montalvo, unit: despacho, role: despachador, kind: responsable }
+  - { id: dp2, name: Mónica Silva, unit: despacho, role: despachador }
+  - { id: dp3, name: Byron Herrera, unit: despacho, role: despachador }
+  - { id: tr1, name: Gustavo Ríos, unit: transporte, role: coordinador_flota, kind: responsable }
+  - { id: tr2, name: Edwin Naranjo, unit: transporte, role: conductor }
+  - { id: tr3, name: Franklin Mejía, unit: transporte, role: conductor }
+  - { id: tr4, name: Jorge Tapia, unit: transporte, role: conductor, schedule: turno_tarde }
+  # Seguridad
+  - { id: js, name: Coronel Iván Duque, unit: seguridad, role: jefe_seguridad, kind: responsable }
+  - { id: gu1, name: Segundo Caicedo, unit: garita, role: guardia, kind: responsable }
+  - { id: gu2, name: Néstor Palacios, unit: garita, role: guardia }
+  - { id: gu3, name: Washington Ayala, unit: garita, role: guardia, schedule: turno_tarde }
+  - { id: mo1, name: Verónica Lasso, unit: monitoreo, role: operador_cctv, kind: responsable }
+  - { id: mo2, name: Darío Burbano, unit: monitoreo, role: operador_cctv }
+  # Mantenimiento
+  - { id: jm, name: Ing. Alberto Cevallos, unit: mantenimiento, role: jefe_mantenimiento, kind: responsable }
+  - { id: mc1, name: Efraín Guamán, unit: taller, role: mecánico, kind: responsable }
+  - { id: mc2, name: Patricio Yánez, unit: taller, role: mecánico }
+  - { id: el1, name: Marco Toapanta, unit: electrico, role: electricista, kind: responsable }
+  - { id: el2, name: Lucía Chávez, unit: electrico, role: electricista }
+
+schedules:
+  turno_tarde:
+    hours: { start: "10:00", end: "19:00" }
+    breaks: [{ start: "14:00", end: "15:00" }]
+
+processes:
+  # ---- Ingreso de productos ----
+  - id: ingreso_producto
+    name: Ingreso de productos
+    arrivals: { type: poisson, ratePerHour: 2 }
+    stages:
+      - id: control_camion
+        label: Controlar el ingreso del camión
+        unit: garita
+        role: guardia
+        duration: { dist: normal, meanMinutes: 6, sdMinutes: 2 }
+        next: descarga
+      - id: descarga
+        label: Descargar en el muelle
+        unit: recepcion
+        role: recibidor
+        duration: { dist: normal, meanMinutes: 30, sdMinutes: 8 }
+        next: inspeccion
+      - id: inspeccion
+        label: Inspeccionar calidad y cantidades
+        unit: recepcion
+        role: inspector
+        duration: { dist: normal, meanMinutes: 20, sdMinutes: 6 }
+        sla: { maxMinutes: 240 }
+        exceptions:
+          - { id: rechazo_calidad, probability: 0.06, action: goto, target: devolucion }
+        next: ubicacion
+      - id: ubicacion
+        label: Ubicar en bodega
+        unit: bodega_central
+        role: bodeguero
+        duration: { dist: normal, meanMinutes: 25, sdMinutes: 6 }
+        terminal: true
+      - id: devolucion
+        label: Devolución al proveedor
+        terminal: true
+
+  # ---- Pedido, despacho y entrega ----
+  - id: pedido_cliente
+    name: Pedido de cliente hasta la entrega
+    arrivals: { type: poisson, ratePerHour: 6 }
+    stages:
+      - id: registro
+        label: Registrar el pedido
+        unit: ventas
+        role: vendedor
+        duration: { dist: normal, meanMinutes: 10, sdMinutes: 3 }
+        next: facturar
+      - id: facturar
+        label: Facturar
+        unit: facturacion
+        role: facturador
+        duration: { dist: normal, meanMinutes: 8, sdMinutes: 2 }
+        next: picking
+      - id: picking
+        label: Preparar el pedido (picking)
+        unit: picking
+        role: preparador
+        duration: { dist: normal, meanMinutes: 20, sdMinutes: 6 }
+        sla: { maxMinutes: 360 }
+        exceptions:
+          - { id: faltante_stock, probability: 0.08, action: goto, target: pedido_incompleto }
+        next: empaque
+      - id: empaque
+        label: Empacar y etiquetar
+        unit: despacho
+        role: despachador
+        duration: { dist: normal, meanMinutes: 12, sdMinutes: 3 }
+        next: carga
+      - id: carga
+        label: Cargar al vehículo
+        unit: despacho
+        role: despachador
+        duration: { dist: normal, meanMinutes: 10, sdMinutes: 3 }
+        next: entrega
+      - id: entrega
+        label: Transportar y entregar
+        unit: transporte
+        role: conductor
+        duration: { dist: normal, meanMinutes: 90, sdMinutes: 25 }
+        terminal: true
+      - id: pedido_incompleto
+        label: Pedido incompleto, a reposición
+        terminal: true
+
+  # ---- Mantenimiento ----
+  - id: orden_mantenimiento
+    name: Orden de mantenimiento
+    arrivals: { type: poisson, ratePerHour: 0.6 }
+    attributes:
+      tipo: { dist: lognormal, median: 5, sigma: 0.7 }
+    stages:
+      - id: solicitud
+        label: Solicitar mantenimiento
+        unit: logistica
+        role: jefe_logistica
+        duration: { dist: normal, meanMinutes: 5, sdMinutes: 1 }
+        next: clasificar
+      - id: clasificar
+        label: Clasificar y asignar
+        unit: mantenimiento
+        role: jefe_mantenimiento
+        duration: { dist: normal, meanMinutes: 6, sdMinutes: 2 }
+        next:
+          - { when: "case.tipo > 5", to: reparacion_mecanica }
+          - { otherwise: true, to: reparacion_electrica }
+      - id: reparacion_mecanica
+        label: Reparación mecánica
+        unit: taller
+        role: mecánico
+        duration: { dist: lognormal, medianMinutes: 60, sigma: 0.5 }
+        sla: { maxMinutes: 600 }
+        next: cierre
+      - id: reparacion_electrica
+        label: Reparación eléctrica
+        unit: electrico
+        role: electricista
+        duration: { dist: lognormal, medianMinutes: 45, sigma: 0.5 }
+        sla: { maxMinutes: 600 }
+        next: cierre
+      - id: cierre
+        label: Verificar y cerrar la orden
+        unit: mantenimiento
+        role: jefe_mantenimiento
+        duration: { dist: fixed, minutes: 6 }
+        terminal: true
+
+  # ---- Seguridad ----
+  - id: incidente_seguridad
+    name: Alerta de seguridad
+    arrivals: { type: poisson, ratePerHour: 0.5 }
+    stages:
+      - id: alerta
+        label: Detectar la alerta en cámaras
+        unit: monitoreo
+        role: operador_cctv
+        duration: { dist: normal, meanMinutes: 3, sdMinutes: 1 }
+        next: verificar
+      - id: verificar
+        label: Verificar en sitio
+        unit: garita
+        role: guardia
+        duration: { dist: normal, meanMinutes: 12, sdMinutes: 4 }
+        sla: { maxMinutes: 60 }
+        exceptions:
+          - { id: falsa_alarma, probability: 0.55, action: goto, target: cerrada }
+        next: reporte
+      - id: reporte
+        label: Reportar al jefe de seguridad
+        unit: seguridad
+        role: jefe_seguridad
+        duration: { dist: normal, meanMinutes: 20, sdMinutes: 6 }
+        terminal: true
+      - id: cerrada
+        label: Cerrada, falsa alarma
+        terminal: true

@@ -2,6 +2,7 @@ import { parse } from 'yaml';
 import { checkDist } from '../dist';
 import { compileExpr } from '../expr';
 import { parseHM } from './time';
+import { FACILITIES } from './types';
 import type { CompanyDef, UnitDef } from './types';
 
 export interface CompanyParseResult {
@@ -97,6 +98,8 @@ export function validateCompany(raw: unknown): CompanyParseResult {
       if (!isObj(u) || typeof u.id !== 'string') return void errors.push(`${at}: falta "id"`);
       if (unitIds.has(u.id)) errors.push(`${at}: unidad duplicada "${u.id}"`);
       unitIds.add(u.id);
+      if (u.facility !== undefined && !(typeof u.facility === 'string' && u.facility in FACILITIES))
+        errors.push(`${at}.facility: debe ser uno de ${Object.keys(FACILITIES).join(', ')}`);
       if (u.children !== undefined) walk(u.children, `${at}.children`);
     });
   };

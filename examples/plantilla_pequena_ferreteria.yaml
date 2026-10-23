@@ -1,0 +1,168 @@
+company: Ferretería El Tornillo
+
+# Plantilla de empresa PEQUEÑA (10 personas): tienda con bodega, recepción de mercadería,
+# despacho, un guardia y un técnico de mantenimiento.
+
+calendar:
+  workDays: [0, 1, 2, 3, 4, 5]         # lunes a sábado
+  hours: { start: "08:00", end: "17:00" }
+  breaks: [{ start: "12:30", end: "13:30" }]
+  absenteeism: 0.02
+
+travel: { sameTeam: 0, sameArea: 1, crossArea: 3 }
+
+units:
+  - { id: tienda, name: Tienda y ventas }
+  - { id: bodega, name: Bodega, facility: bodega }
+  - { id: ingreso, name: Recepción de mercadería, facility: ingreso }
+  - { id: despacho, name: Despacho y reparto, facility: despacho }
+  - { id: seguridad, name: Seguridad, facility: seguridad }
+  - { id: mantenimiento, name: Mantenimiento, facility: mantenimiento }
+
+people:
+  - { id: duena, name: Rosa Medina, unit: tienda, role: dueño, kind: responsable }
+  - { id: v1, name: Luis Ponce, unit: tienda, role: vendedor }
+  - { id: v2, name: Ana Cedeño, unit: tienda, role: vendedor, speed: 1.1 }
+  - { id: b1, name: Mario Intriago, unit: bodega, role: bodeguero, kind: responsable }
+  - { id: b2, name: Kevin Zambrano, unit: bodega, role: bodeguero }
+  - { id: r1, name: Julio Vera, unit: ingreso, role: recibidor, kind: responsable }
+  - { id: d1, name: Pedro Mora, unit: despacho, role: despachador, kind: responsable }
+  - { id: d2, name: Iván Loor, unit: despacho, role: repartidor }
+  - { id: g1, name: Jaime Alcívar, unit: seguridad, role: guardia, kind: responsable }
+  - { id: m1, name: Óscar Bravo, unit: mantenimiento, role: técnico, kind: responsable }
+
+processes:
+  # ---- Ingreso de productos ----
+  - id: ingreso_mercaderia
+    name: Ingreso de mercadería
+    arrivals: { type: poisson, ratePerHour: 1.0 }
+    stages:
+      - id: recepcion
+        label: Recibir y descargar
+        unit: ingreso
+        role: recibidor
+        duration: { dist: normal, meanMinutes: 25, sdMinutes: 6 }
+        next: control
+      - id: control
+        label: Controlar contra la factura
+        unit: ingreso
+        role: recibidor
+        duration: { dist: normal, meanMinutes: 15, sdMinutes: 4 }
+        exceptions:
+          - { id: mercaderia_danada, probability: 0.07, action: goto, target: devuelto }
+        next: almacenar
+      - id: almacenar
+        label: Almacenar en bodega
+        unit: bodega
+        role: bodeguero
+        duration: { dist: normal, meanMinutes: 20, sdMinutes: 5 }
+        terminal: true
+      - id: devuelto
+        label: Devuelto al proveedor
+        terminal: true
+
+  # ---- Despacho de pedidos ----
+  - id: pedido_despacho
+    name: Pedido y despacho
+    arrivals: { type: poisson, ratePerHour: 3 }
+    stages:
+      - id: pedido
+        label: Tomar el pedido
+        unit: tienda
+        role: vendedor
+        duration: { dist: normal, meanMinutes: 8, sdMinutes: 2 }
+        next: picking
+      - id: picking
+        label: Sacar de bodega
+        unit: bodega
+        role: bodeguero
+        duration: { dist: normal, meanMinutes: 15, sdMinutes: 4 }
+        sla: { maxMinutes: 240 }
+        exceptions:
+          - { id: sin_stock, probability: 0.06, action: goto, target: cancelado }
+        next: empaque
+      - id: empaque
+        label: Empacar
+        unit: despacho
+        role: despachador
+        duration: { dist: normal, meanMinutes: 10, sdMinutes: 3 }
+        next: entrega
+      - id: entrega
+        label: Repartir al cliente
+        unit: despacho
+        role: repartidor
+        duration: { dist: normal, meanMinutes: 45, sdMinutes: 10 }
+        terminal: true
+      - id: cancelado
+        label: Pedido cancelado
+        terminal: true
+
+  # ---- Mantenimiento ----
+  - id: mantenimiento_local
+    name: Mantenimiento del local y equipos
+    arrivals: { type: poisson, ratePerHour: 0.4 }
+    stages:
+      - id: aviso
+        label: Avisar la falla
+        unit: tienda
+        role: vendedor
+        duration: { dist: normal, meanMinutes: 5, sdMinutes: 1 }
+        next: diagnostico
+      - id: diagnostico
+        label: Diagnosticar
+        unit: mantenimiento
+        role: técnico
+        duration: { dist: normal, meanMinutes: 20, sdMinutes: 5 }
+        exceptions:
+          - { id: falta_repuesto, probability: 0.15, action: goto, target: espera_repuesto }
+        next: reparacion
+      - id: espera_repuesto
+        label: Conseguir el repuesto
+        unit: mantenimiento
+        role: técnico
+        duration: { dist: fixed, minutes: 60 }
+        next: reparacion
+      - id: reparacion
+        label: Reparar
+        unit: mantenimiento
+        role: técnico
+        duration: { dist: lognormal, medianMinutes: 40, sigma: 0.5 }
+        next: cierre
+      - id: cierre
+        label: Probar y cerrar la orden
+        unit: mantenimiento
+        role: técnico
+        duration: { dist: fixed, minutes: 5 }
+        terminal: true
+
+  # ---- Seguridad ----
+  - id: control_acceso
+    name: Control de acceso
+    arrivals: { type: poisson, ratePerHour: 2 }
+    stages:
+      - id: registro
+        label: Registrar al visitante
+        unit: seguridad
+        role: guardia
+        duration: { dist: normal, meanMinutes: 4, sdMinutes: 1 }
+        next: verificacion
+      - id: verificacion
+        label: Verificar y autorizar
+        unit: seguridad
+        role: guardia
+        duration: { dist: normal, meanMinutes: 3, sdMinutes: 1 }
+        exceptions:
+          - { id: incidente, probability: 0.04, action: goto, target: reporte_incidente }
+        next: autorizado
+      - id: autorizado
+        label: Ingreso autorizado
+        unit: seguridad
+        role: guardia
+        duration: { dist: fixed, minutes: 1 }
+        terminal: true
+      - id: reporte_incidente
+        label: Redactar reporte de incidente
+        unit: seguridad
+        role: guardia
+        duration: { dist: normal, meanMinutes: 25, sdMinutes: 5 }
+        terminal: true

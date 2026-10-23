@@ -11,6 +11,7 @@ import {
   type UnitDef,
 } from '@office-pixel/sim';
 import defaultYaml from '../../../examples/banco_pixel.yaml?raw';
+import { TEMPLATES } from './templates';
 import { closeConfig, openConfig, type TabId } from './config/ConfigApp';
 import { closeHub, openHub } from './process/Hub';
 import { OrgScene, fmtTime, type OrgHud } from './orgScene';
@@ -314,7 +315,7 @@ function showConfig(tab?: TabId) {
   openConfig(configRoot, {
     initial: structuredClone(company),
     initialTab: tab,
-    example,
+    templates: TEMPLATES,
     onApply: (d) => {
       closeConfig(configRoot);
       run(d);

@@ -12,12 +12,12 @@ export type TabId = 'empresa' | 'areas' | 'personas' | 'procesos' | 'horarios' |
 interface Props {
   initial: CompanyDef;
   initialTab?: TabId;
-  example: () => CompanyDef;
+  templates: Array<{ id: string; label: string; make: () => CompanyDef }>;
   onApply: (d: CompanyDef) => void;
   onClose: () => void;
 }
 
-function ConfigApp({ initial, initialTab, example, onApply, onClose }: Props) {
+function ConfigApp({ initial, initialTab, templates, onApply, onClose }: Props) {
   const [draft, setDraft] = useState<CompanyDef>(initial);
   const [tab, setTab] = useState<TabId>(initialTab ?? 'empresa');
   const [toast, setToast] = useState('');
@@ -56,9 +56,23 @@ function ConfigApp({ initial, initialTab, example, onApply, onClose }: Props) {
           Configurar empresa <small>{draft.company}</small>
         </h2>
         <div class="cfg-head-actions">
-          <button type="button" class="btn" onClick={() => replace(example, 'el ejemplo «Banco Pixel»')}>
-            Cargar ejemplo
-          </button>
+          <select
+            class="btn"
+            title="Cargar una empresa de ejemplo"
+            value=""
+            onChange={(e) => {
+              const t = templates.find((q) => q.id === e.currentTarget.value);
+              e.currentTarget.value = '';
+              if (t) replace(t.make, `«${t.label}»`);
+            }}
+          >
+            <option value="">Cargar plantilla…</option>
+            {templates.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.label}
+              </option>
+            ))}
+          </select>
           <button type="button" class="btn" onClick={() => replace(emptyCompany, 'una empresa en blanco')}>
             Empezar en blanco
           </button>

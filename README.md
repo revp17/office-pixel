@@ -11,6 +11,7 @@ Simulador visual de procesos para Forward Deployed Engineers: define un proceso 
 
 > **Guía de uso:** [docs/guia-de-uso.md](docs/guia-de-uso.md) — cómo se dibujan áreas y empleados, y cómo se configura todo paso a paso.
 > **Procedimientos:** [docs/procedimientos.md](docs/procedimientos.md) — cómo levantar el cómo, quién y cuándo de cada etapa (5 pasos, acción-resultado, capturas anotadas, prueba del novato y firma del ejecutor).
+> **Instalaciones y plantillas:** [docs/instalaciones-y-plantillas.md](docs/instalaciones-y-plantillas.md) — bodegas, ingreso y despacho, seguridad y mantenimiento en el plano, y plantillas de empresa pequeña, mediana y grande.
 > **Gestión de procesos:** [docs/gestion-de-procesos.md](docs/gestion-de-procesos.md) — documentar (5 fases), optimizar (5 pasos de Musk, en orden estricto) y la ficha de proceso.
 
 ## Empresa virtual

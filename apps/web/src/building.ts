@@ -1,4 +1,4 @@
-import type { CompanyDef, PersonKind, UnitDef } from '@office-pixel/sim';
+import type { CompanyDef, Facility, PersonKind, UnitDef } from '@office-pixel/sim';
 
 export interface Pt {
   x: number;
@@ -47,6 +47,7 @@ export interface RoomL {
   kind: 'area' | 'subarea';
   /** nombres desde el área hasta esta unidad (para subáreas anidadas) */
   path: string[];
+  facility: Facility;
   area: number;
   x: number;
   y: number;
@@ -109,6 +110,8 @@ const DESK_W = 64;
 const DESK_H = 62;
 const INBOX_W = 70;
 const HEADER = 30;
+/** alto extra de las salas que no son oficina, para su equipamiento */
+export const PROPS_H = 40;
 const ROOM_GAP = 14;
 const COMMON_W = 132;
 const CORR_H = 44;
@@ -159,9 +162,11 @@ export function buildBuilding(def: CompanyDef, orientation: Orientation = 'verti
 
     const dims = members.map((u) => {
       const n = byUnit.get(u.id)?.length ?? 0;
-      const cols = Math.min(Math.max(n, 1), 4);
+      const special = (u.facility ?? 'oficina') !== 'oficina';
+      // las instalaciones llevan una franja con su equipamiento (estantes, muelle, garita…) y son más anchas
+      const cols = Math.min(Math.max(n, special ? 2 : 1), 4);
       const rows = Math.max(Math.ceil(n / cols), 1);
-      return { u, n, cols, rows, w: 14 + cols * DESK_W + INBOX_W, h: HEADER + Math.max(rows, 2) * DESK_H + 24 };
+      return { u, n, cols, rows, w: 14 + cols * DESK_W + INBOX_W, h: HEADER + Math.max(rows, 2) * DESK_H + 24 + (special ? PROPS_H : 0) };
     });
 
     const area: AreaL = {
@@ -197,6 +202,7 @@ export function buildBuilding(def: CompanyDef, orientation: Orientation = 'verti
         name: d.u.name ?? d.u.id,
         kind: d.u.id === root.id ? 'area' : 'subarea',
         path: pathNames(d.u.id),
+        facility: d.u.facility ?? 'oficina',
         area: index,
         x,
         y,

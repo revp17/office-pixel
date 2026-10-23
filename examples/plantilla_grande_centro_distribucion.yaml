@@ -1,0 +1,325 @@
+company: Centro de Distribución Pacífico
+
+# Plantilla de empresa GRANDE (62 personas): un centro de distribución con dirección, compras,
+# recepción, almacenamiento, preparación y despacho, transporte, seguridad, mantenimiento y atención.
+
+calendar:
+  workDays: [0, 1, 2, 3, 4, 5]
+  hours: { start: "06:00", end: "18:00" }
+  breaks: [{ start: "12:00", end: "13:00" }]
+  absenteeism: 0.04
+
+travel: { sameTeam: 0, sameArea: 3, crossArea: 7 }
+
+schedules:
+  turno_tarde:
+    hours: { start: "10:00", end: "22:00" }
+    breaks: [{ start: "15:00", end: "16:00" }]
+
+meetings:
+  - { id: daily_operaciones, unit: almacenamiento, start: "06:15", minutes: 15 }
+  - { id: daily_despacho, unit: preparacion, start: "06:30", minutes: 10 }
+  - { id: comite_seguridad, unit: seguridad, start: "08:00", minutes: 45, days: [0] }
+
+units:
+  - id: direccion
+    name: Dirección y administración
+    children:
+      - { id: compras, name: Compras y planificación }
+  - id: recepcion_area
+    name: Recepción e ingreso
+    facility: ingreso
+    children:
+      - { id: muelles_entrada, name: Muelles de descarga, facility: ingreso }
+      - { id: control_calidad, name: Control de calidad, facility: ingreso }
+  - id: almacenamiento
+    name: Almacenamiento
+    children:
+      - { id: bodega_seca, name: Bodega seca, facility: bodega }
+      - { id: cadena_frio, name: Cadena de frío, facility: bodega }
+      - { id: inventarios, name: Inventarios }
+  - id: preparacion
+    name: Preparación y despacho
+    children:
+      - { id: picking, name: Picking, facility: bodega }
+      - { id: empaque, name: Empaque, facility: despacho }
+      - { id: muelles_salida, name: Muelles de salida, facility: despacho }
+  - id: flota
+    name: Transporte y flota
+    facility: transporte
+    children:
+      - { id: rutas, name: Planificación de rutas }
+      - { id: choferes, name: Conductores, facility: transporte }
+  - id: seguridad
+    name: Seguridad
+    facility: seguridad
+    children:
+      - { id: accesos, name: Control de accesos, facility: seguridad }
+      - { id: cctv, name: Monitoreo CCTV, facility: seguridad }
+      - { id: patrimonial, name: Seguridad patrimonial, facility: seguridad }
+  - id: mantenimiento
+    name: Mantenimiento
+    facility: mantenimiento
+    children:
+      - { id: mecanico, name: Mecánico, facility: mantenimiento }
+      - { id: electrico, name: Eléctrico, facility: mantenimiento }
+      - { id: infraestructura, name: Infraestructura y limpieza, facility: mantenimiento }
+  - id: atencion
+    name: Atención al cliente
+    children:
+      - { id: servicio, name: Servicio y reclamos }
+
+people:
+  # Dirección
+  - { id: director, name: Sofía Villacís, unit: direccion, role: director, kind: responsable }
+  - { id: comp1, name: Andrés Cordero, unit: compras, role: comprador, kind: responsable }
+  - { id: comp2, name: Daniela Arias, unit: compras, role: comprador }
+  - { id: comp3, name: Ramiro Sosa, unit: compras, role: planificador }
+  # Recepción
+  - { id: jrec, name: Hugo Benítez, unit: recepcion_area, role: jefe_recepcion, kind: responsable }
+  - { id: me1, name: Ismael Cobo, unit: muelles_entrada, role: estibador, kind: responsable }
+  - { id: me2, name: Walter Quinde, unit: muelles_entrada, role: estibador }
+  - { id: me3, name: Cecilia Mora, unit: muelles_entrada, role: estibador }
+  - { id: me4, name: Fabricio Lema, unit: muelles_entrada, role: estibador, speed: 1.1 }
+  - { id: cc1, name: Ruth Andrade, unit: control_calidad, role: inspector, kind: responsable }
+  - { id: cc2, name: Pablo Narváez, unit: control_calidad, role: inspector, errorRate: 0.02 }
+  - { id: cc3, name: Elisa Mendoza, unit: control_calidad, role: inspector }
+  # Almacenamiento
+  - { id: jalm, name: Rodolfo Guerra, unit: almacenamiento, role: jefe_almacen, kind: responsable }
+  - { id: bs1, name: Manuel Saltos, unit: bodega_seca, role: bodeguero, kind: responsable }
+  - { id: bs2, name: Verónica Peña, unit: bodega_seca, role: bodeguero }
+  - { id: bs3, name: Ricardo Toral, unit: bodega_seca, role: bodeguero }
+  - { id: bs4, name: Susana Albán, unit: bodega_seca, role: bodeguero, speed: 1.1 }
+  - { id: cf1, name: Henry Ruiz, unit: cadena_frio, role: bodeguero_frio, kind: responsable }
+  - { id: cf2, name: Mireya Carrión, unit: cadena_frio, role: bodeguero_frio }
+  - { id: cf3, name: Leonardo Pozo, unit: cadena_frio, role: bodeguero_frio }
+  - { id: iv1, name: Adriana Bastidas, unit: inventarios, role: auditor_inventario, kind: responsable }
+  - { id: iv2, name: Cristóbal Haro, unit: inventarios, role: auditor_inventario }
+  # Preparación y despacho
+  - { id: jprep, name: Gonzalo Yépez, unit: preparacion, role: jefe_despacho, kind: responsable }
+  - { id: pk1, name: Tania Rueda, unit: picking, role: preparador, kind: responsable }
+  - { id: pk2, name: Santiago Valdez, unit: picking, role: preparador, speed: 1.15 }
+  - { id: pk3, name: Gloria Ochoa, unit: picking, role: preparador }
+  - { id: pk4, name: Diego Pástor, unit: picking, role: preparador }
+  - { id: pk5, name: Nancy Paredes, unit: picking, role: preparador, errorRate: 0.04 }
+  - { id: pk6, name: Julián Cuesta, unit: picking, role: preparador, schedule: turno_tarde }
+  - { id: em1, name: Alicia Carvajal, unit: empaque, role: empacador, kind: responsable }
+  - { id: em2, name: Bryan Salinas, unit: empaque, role: empacador }
+  - { id: em3, name: Yolanda Freire, unit: empaque, role: empacador }
+  - { id: em4, name: Cléber Muñoz, unit: empaque, role: empacador, schedule: turno_tarde }
+  - { id: ms1, name: Arturo Dávila, unit: muelles_salida, role: despachador, kind: responsable }
+  - { id: ms2, name: Paola Robles, unit: muelles_salida, role: despachador }
+  - { id: ms3, name: Víctor Jaramillo, unit: muelles_salida, role: despachador }
+  # Transporte
+  - { id: jflota, name: Emilio Ortiz, unit: flota, role: jefe_transporte, kind: responsable }
+  - { id: rt1, name: Carolina Estrada, unit: rutas, role: planificador_rutas, kind: responsable }
+  - { id: rt2, name: Matías Bonilla, unit: rutas, role: planificador_rutas }
+  - { id: ch1, name: Orlando Pinargote, unit: choferes, role: conductor, kind: responsable }
+  - { id: ch2, name: Domingo Intriago, unit: choferes, role: conductor }
+  - { id: ch3, name: Alberto Zúñiga, unit: choferes, role: conductor }
+  - { id: ch4, name: Mauro Bazurto, unit: choferes, role: conductor }
+  - { id: ch5, name: Freddy Cevallos, unit: choferes, role: conductor, schedule: turno_tarde }
+  - { id: ch6, name: Galo Macías, unit: choferes, role: conductor, schedule: turno_tarde }
+  # Seguridad
+  - { id: jseg, name: Mayor Rafael Landívar, unit: seguridad, role: jefe_seguridad, kind: responsable }
+  - { id: ac1, name: Teófilo Villamar, unit: accesos, role: guardia, kind: responsable }
+  - { id: ac2, name: Ernesto Bravo, unit: accesos, role: guardia }
+  - { id: ac3, name: Rómulo Santos, unit: accesos, role: guardia, schedule: turno_tarde }
+  - { id: cv1, name: Estefanía Loor, unit: cctv, role: operador_cctv, kind: responsable }
+  - { id: cv2, name: Kléber Anchundia, unit: cctv, role: operador_cctv }
+  - { id: pa1, name: Wellington Párraga, unit: patrimonial, role: supervisor_ronda, kind: responsable }
+  - { id: pa2, name: Fausto Delgado, unit: patrimonial, role: supervisor_ronda }
+  # Mantenimiento
+  - { id: jmant, name: Ing. Beatriz Montenegro, unit: mantenimiento, role: jefe_mantenimiento, kind: responsable }
+  - { id: mec1, name: Tito Alcívar, unit: mecanico, role: mecánico, kind: responsable }
+  - { id: mec2, name: Nicolás Burgos, unit: mecanico, role: mecánico }
+  - { id: mec3, name: Eduardo Vargas, unit: mecanico, role: mecánico }
+  - { id: ele1, name: Rosario Quimí, unit: electrico, role: electricista, kind: responsable }
+  - { id: ele2, name: Leandro Chiriboga, unit: electrico, role: electricista }
+  - { id: inf1, name: Segundo Tigua, unit: infraestructura, role: operario_mantenimiento, kind: responsable }
+  - { id: inf2, name: Mariana Lucas, unit: infraestructura, role: operario_mantenimiento }
+  # Atención al cliente
+  - { id: jat, name: Viviana Cedillo, unit: atencion, role: jefe_atencion, kind: responsable }
+  - { id: sv1, name: Rodrigo Plúa, unit: servicio, role: agente, kind: responsable }
+  - { id: sv2, name: Noemí Alvarado, unit: servicio, role: agente }
+  - { id: sv3, name: Jairo Pilay, unit: servicio, role: agente, schedule: turno_tarde }
+
+processes:
+  # ---- Ingreso de productos ----
+  - id: ingreso_producto
+    name: Ingreso de productos
+    arrivals: { type: poisson, ratePerHour: 4 }
+    attributes:
+      pallets: { dist: lognormal, median: 12, sigma: 0.6 }
+    stages:
+      - id: control_acceso
+        label: Controlar el ingreso del camión
+        unit: accesos
+        role: guardia
+        duration: { dist: normal, meanMinutes: 7, sdMinutes: 2 }
+        next: descarga
+      - id: descarga
+        label: Descargar en el muelle
+        unit: muelles_entrada
+        role: estibador
+        duration: { dist: lognormal, medianMinutes: 35, sigma: 0.4 }
+        next: calidad
+      - id: calidad
+        label: Control de calidad y conteo
+        unit: control_calidad
+        role: inspector
+        duration: { dist: normal, meanMinutes: 22, sdMinutes: 6 }
+        sla: { maxMinutes: 240 }
+        exceptions:
+          - { id: rechazo_calidad, probability: 0.05, action: goto, target: devolucion }
+        next:
+          - { when: "case.pallets > 15", to: ubicacion_seca }
+          - { otherwise: true, to: ubicacion_frio }
+      - id: ubicacion_seca
+        label: Ubicar en bodega seca
+        unit: bodega_seca
+        role: bodeguero
+        duration: { dist: normal, meanMinutes: 30, sdMinutes: 8 }
+        next: registro_inventario
+      - id: ubicacion_frio
+        label: Ubicar en cadena de frío
+        unit: cadena_frio
+        role: bodeguero_frio
+        duration: { dist: normal, meanMinutes: 25, sdMinutes: 6 }
+        next: registro_inventario
+      - id: registro_inventario
+        label: Registrar en inventario
+        unit: inventarios
+        role: auditor_inventario
+        duration: { dist: normal, meanMinutes: 10, sdMinutes: 3 }
+        terminal: true
+      - id: devolucion
+        label: Devolución al proveedor
+        terminal: true
+
+  # ---- Pedido y despacho ----
+  - id: despacho_pedido
+    name: Preparación y despacho de pedidos
+    arrivals: { type: poisson, ratePerHour: 12 }
+    stages:
+      - id: recepcion_pedido
+        label: Recibir el pedido
+        unit: servicio
+        role: agente
+        duration: { dist: normal, meanMinutes: 7, sdMinutes: 2 }
+        next: picking
+      - id: picking
+        label: Picking en bodega
+        unit: picking
+        role: preparador
+        duration: { dist: normal, meanMinutes: 22, sdMinutes: 7 }
+        sla: { maxMinutes: 300 }
+        exceptions:
+          - { id: faltante, probability: 0.07, action: goto, target: reposicion }
+        next: empaque
+      - id: empaque
+        label: Empacar y etiquetar
+        unit: empaque
+        role: empacador
+        duration: { dist: normal, meanMinutes: 12, sdMinutes: 3 }
+        next: ruta
+      - id: ruta
+        label: Asignar a una ruta
+        unit: rutas
+        role: planificador_rutas
+        duration: { dist: normal, meanMinutes: 8, sdMinutes: 2 }
+        next: carga
+      - id: carga
+        label: Cargar en el muelle de salida
+        unit: muelles_salida
+        role: despachador
+        duration: { dist: normal, meanMinutes: 14, sdMinutes: 4 }
+        next: entrega
+      - id: entrega
+        label: Transportar y entregar
+        unit: choferes
+        role: conductor
+        duration: { dist: normal, meanMinutes: 100, sdMinutes: 30 }
+        terminal: true
+      - id: reposicion
+        label: Faltante, a reposición
+        terminal: true
+
+  # ---- Mantenimiento ----
+  - id: orden_mantenimiento
+    name: Orden de mantenimiento
+    arrivals: { type: poisson, ratePerHour: 1.2 }
+    attributes:
+      tipo: { dist: lognormal, median: 5, sigma: 0.7 }
+    stages:
+      - id: solicitud
+        label: Solicitar mantenimiento
+        unit: almacenamiento
+        role: jefe_almacen
+        duration: { dist: normal, meanMinutes: 5, sdMinutes: 1 }
+        next: clasificar
+      - id: clasificar
+        label: Clasificar y priorizar
+        unit: mantenimiento
+        role: jefe_mantenimiento
+        duration: { dist: normal, meanMinutes: 6, sdMinutes: 2 }
+        next:
+          - { when: "case.tipo > 7", to: reparacion_mecanica }
+          - { when: "case.tipo > 3", to: reparacion_electrica }
+          - { otherwise: true, to: trabajo_infraestructura }
+      - id: reparacion_mecanica
+        label: Reparación mecánica
+        unit: mecanico
+        role: mecánico
+        duration: { dist: lognormal, medianMinutes: 70, sigma: 0.5 }
+        sla: { maxMinutes: 720 }
+        next: cierre
+      - id: reparacion_electrica
+        label: Reparación eléctrica
+        unit: electrico
+        role: electricista
+        duration: { dist: lognormal, medianMinutes: 50, sigma: 0.5 }
+        sla: { maxMinutes: 720 }
+        next: cierre
+      - id: trabajo_infraestructura
+        label: Trabajo de infraestructura
+        unit: infraestructura
+        role: operario_mantenimiento
+        duration: { dist: lognormal, medianMinutes: 40, sigma: 0.5 }
+        next: cierre
+      - id: cierre
+        label: Verificar y cerrar la orden
+        unit: mantenimiento
+        role: jefe_mantenimiento
+        duration: { dist: fixed, minutes: 6 }
+        terminal: true
+
+  # ---- Seguridad ----
+  - id: alerta_seguridad
+    name: Alerta de seguridad
+    arrivals: { type: poisson, ratePerHour: 0.8 }
+    stages:
+      - id: deteccion
+        label: Detectar la alerta en cámaras
+        unit: cctv
+        role: operador_cctv
+        duration: { dist: normal, meanMinutes: 3, sdMinutes: 1 }
+        next: ronda
+      - id: ronda
+        label: Verificar en sitio
+        unit: patrimonial
+        role: supervisor_ronda
+        duration: { dist: normal, meanMinutes: 14, sdMinutes: 4 }
+        sla: { maxMinutes: 60 }
+        exceptions:
+          - { id: falsa_alarma, probability: 0.55, action: goto, target: cerrada }
+        next: informe
+      - id: informe
+        label: Informe al jefe de seguridad
+        unit: seguridad
+        role: jefe_seguridad
+        duration: { dist: normal, meanMinutes: 20, sdMinutes: 6 }
+        terminal: true
+      - id: cerrada
+        label: Cerrada, falsa alarma
+        terminal: true

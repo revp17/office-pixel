@@ -31,9 +31,24 @@ export interface MeetingDef {
  * Planta (la empresa) → áreas → subáreas. Los nodos de primer nivel son áreas; sus hijos, subáreas.
  * Cada unidad tiene su propio nombre y las personas se asignan a ella como responsables o colaboradores.
  */
+export type Facility = 'oficina' | 'bodega' | 'ingreso' | 'despacho' | 'seguridad' | 'mantenimiento' | 'transporte';
+
+/** Instalaciones que una sala puede representar; solo cambian cómo se ve, no la simulación. */
+export const FACILITIES: Record<Facility, { label: string; icon: string; hint: string }> = {
+  oficina: { label: 'Oficina', icon: '🖥', hint: 'Escritorios y computadores (por defecto)' },
+  bodega: { label: 'Bodega / almacén', icon: '📦', hint: 'Estanterías con mercadería' },
+  ingreso: { label: 'Ingreso de productos', icon: '🚚', hint: 'Muelle de recepción con camión y pallets' },
+  despacho: { label: 'Despacho', icon: '📤', hint: 'Muelle de salida con pedidos listos' },
+  seguridad: { label: 'Seguridad', icon: '🛡', hint: 'Garita, cámaras y control de acceso' },
+  mantenimiento: { label: 'Mantenimiento', icon: '🔧', hint: 'Taller con banco de trabajo y herramientas' },
+  transporte: { label: 'Transporte y flota', icon: '🚛', hint: 'Vehículos de reparto' },
+};
+
 export interface UnitDef {
   id: string;
   name?: string;
+  /** qué instalación es (por defecto, oficina); define su aspecto en el plano */
+  facility?: Facility;
   /** @deprecated formato antiguo: al leer un YAML se convierte en `kind: responsable` de esa persona */
   head?: string;
   children?: UnitDef[];
