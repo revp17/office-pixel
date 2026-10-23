@@ -3,6 +3,12 @@ import { emptyCompany } from '../application/editing/model';
 
 export type Mode = 'explain' | 'week';
 
+/** días, semilla y velocidad (min/s) con los que arranca cada modo si no hay nada guardado */
+export const MODE_DEFAULTS: Record<Mode, { days: number; seed: number; speed: number }> = {
+  explain: { days: 2, seed: 1, speed: 2 },
+  week: { days: 5, seed: 1, speed: 30 },
+};
+
 /** casos propios por día y proceso en el modo «cómo funciona» */
 export const SAMPLE_PER_DAY = 4;
 

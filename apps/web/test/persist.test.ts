@@ -212,3 +212,43 @@ describe('sin conexión', () => {
     expect(f.calls).not.toContain('save');
   });
 });
+
+describe('días, semilla y velocidad se guardan por empresa y modo', () => {
+  it('se recuperan al volver a abrir y no se mezclan entre empresas ni modos', async () => {
+    const f = fakeBackend();
+    const p = new Persistence(f.backend, cache);
+    await p.boot();
+    await p.create(co('A'));
+    p.saveSimPrefs('explain', { days: 3, seed: 7, speed: 5 });
+    p.saveSimPrefs('week', { days: 10, seed: 2, speed: 60 });
+    await p.settled();
+    expect(await p.simPrefs('explain')).toEqual({ days: 3, seed: 7, speed: 5 });
+    expect(await p.simPrefs('week')).toEqual({ days: 10, seed: 2, speed: 60 });
+    await p.create(co('B'));
+    expect(await p.simPrefs('explain')).toBeUndefined();
+    // una sesión nueva ve lo mismo
+    const q = new Persistence(f.backend, memoryCache());
+    await q.open(f.rows[0].id).catch(() => undefined);
+    expect(await q.simPrefs('explain')).toEqual({ days: 3, seed: 7, speed: 5 });
+  });
+
+  it('un valor guardado inválido se ignora y los días se limitan a 1–30', async () => {
+    const f = fakeBackend();
+    const p = new Persistence(f.backend, cache);
+    await p.boot();
+    await p.create(co('A'));
+    f.settings[`sim.${p.currentId}.week`] = '{"days":999,"seed":1,"speed":30}';
+    f.settings[`sim.${p.currentId}.explain`] = 'no es json';
+    expect((await p.simPrefs('week'))?.days).toBe(30);
+    expect(await p.simPrefs('explain')).toBeUndefined();
+  });
+
+  it('sin base de datos no guarda nada y no falla', async () => {
+    const f = fakeBackend(false);
+    const p = new Persistence(f.backend, cache);
+    await p.boot();
+    p.saveSimPrefs('week', { days: 5, seed: 1, speed: 30 });
+    expect(await p.simPrefs('week')).toBeUndefined();
+    expect(Object.keys(f.settings)).toEqual([]);
+  });
+});

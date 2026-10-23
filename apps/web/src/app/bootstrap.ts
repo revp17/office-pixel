@@ -8,6 +8,7 @@ import { bindHud } from './hud';
 import { bindModes } from './modes';
 import { bindSceneHost, scene } from './sceneHost';
 import { backend, persist } from './services';
+import { bindSimPrefs, restoreSimPrefs } from './simPrefs';
 import { bindToolbar } from './toolbar';
 
 /**
@@ -37,7 +38,10 @@ async function startup() {
     out.textContent = `🚪 Cerrar sesión (${account.user?.email ?? ''})`;
   }
   const first = await persist.boot();
-  if (first) run(first, undefined, false);
+  if (first) {
+    await restoreSimPrefs();
+    run(first, undefined, false);
+  }
   else setEmpty(true);
 }
 
@@ -47,6 +51,7 @@ bindCompanyMenu();
 bindEmptyState();
 bindToolbar();
 bindModes();
+bindSimPrefs();
 
 if (import.meta.env.DEV) (window as unknown as { __op: unknown }).__op = { scene, persist };
 

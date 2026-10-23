@@ -75,3 +75,7 @@ Todo bajo `/api`, en JSON:
 - **Un solo servidor y un solo archivo**: pensado para uso personal o de un equipo pequeño en una máquina. No hay usuarios ni permisos: quien llegue a la API puede ver y cambiar todo. **No la expongas a internet** sin ponerle delante algo que autentique.
 - El contenido de cada empresa se guarda como **un bloque**: no se puede consultar con SQL «todas las personas de todas las empresas». Es una decisión para mantenerlo simple y que ninguna parte quede desfasada.
 - Las versiones anteriores ocupan espacio (cada una es una copia completa); por eso solo se guardan las últimas 40.
+
+## Preferencias de simulación
+
+Los **días**, la **semilla** y la **velocidad** de la barra superior se guardan en la base de datos (tabla `settings`, clave `sim.<empresa>.<modo>`), por empresa y por modo («Cómo funciona» y «Semana completa» recuerdan cada uno lo suyo). Se guardan al cambiar el campo y se recuperan al abrir la empresa, en otro navegador o en otro equipo. Sin base de datos (modo «solo navegador») no se guardan.

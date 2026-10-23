@@ -1,7 +1,8 @@
 import { dom } from './dom';
 import { run } from './controller';
 import { scene, story } from './sceneHost';
-import { state, type Mode } from './state';
+import { restoreSimPrefs, setSimFields } from './simPrefs';
+import { MODE_DEFAULTS, state, type Mode } from './state';
 
 /** Dos modos de ver la simulación: «cómo funciona» (despacio, pocos casos, con relato) o «semana completa». */
 
@@ -20,9 +21,7 @@ export function applyMode(m: Mode, rerun: boolean) {
   state.mode = m;
   dom.mode.value = m;
   const explain = m === 'explain';
-  dom.days.value = explain ? '2' : '5';
-  dom.speed.value = explain ? '2' : '30';
-  scene.speed = Number(dom.speed.value);
+  setSimFields(MODE_DEFAULTS[m]);
   scene.skipIdle = explain;
   story.show(explain);
   dom.step.hidden = !explain;
@@ -31,7 +30,10 @@ export function applyMode(m: Mode, rerun: boolean) {
   } catch {
     /* sin almacenamiento */
   }
-  if (rerun) run();
+  // lo guardado de esta empresa en este modo reemplaza los valores por defecto antes de simular
+  void restoreSimPrefs().then(() => {
+    if (rerun) run();
+  });
 }
 
 export function bindModes() {

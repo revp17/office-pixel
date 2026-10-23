@@ -7,6 +7,7 @@ import { $, dom } from './dom';
 import { paintDetail, renderPanels } from './hud';
 import { scene, story } from './sceneHost';
 import { persist } from './services';
+import { restoreSimPrefs } from './simPrefs';
 import { SAMPLE_PER_DAY, state } from './state';
 
 /** El orquestador de la pantalla: simular, abrir la configuración o la gestión de procesos, cambiar de empresa. */
@@ -57,7 +58,9 @@ export async function switchTo(load: () => Promise<CompanyDef>) {
   closeOverlays();
   scene.playing = false;
   try {
-    run(await load(), undefined, false);
+    const def = await load();
+    await restoreSimPrefs();
+    run(def, undefined, false);
   } catch (e) {
     alert((e as Error).message);
     persist.onList?.();
@@ -67,7 +70,9 @@ export async function switchTo(load: () => Promise<CompanyDef>) {
 /** Crea la primera empresa (o una nueva) con este contenido y la abre. */
 export async function startWith(def: CompanyDef) {
   try {
-    run(await persist.create(def), undefined, false);
+    const created = await persist.create(def);
+    await restoreSimPrefs();
+    run(created, undefined, false);
   } catch (e) {
     alert((e as Error).message);
   }
@@ -79,8 +84,10 @@ export async function removeCurrentCompany() {
   scene.playing = false;
   try {
     const next = await persist.removeCurrent();
-    if (next) run(next, undefined, false);
-    else setEmpty(true);
+    if (next) {
+      await restoreSimPrefs();
+      run(next, undefined, false);
+    } else setEmpty(true);
   } catch (e) {
     alert((e as Error).message);
   }

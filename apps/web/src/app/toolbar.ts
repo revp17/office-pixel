@@ -4,7 +4,8 @@ import { downloadBackup } from './companyMenu';
 import { closeOverlays, run, showConfig, showHub, switchTo } from './controller';
 import { scene } from './sceneHost';
 import { persist } from './services';
-import { state } from './state';
+import { setSimFields } from './simPrefs';
+import { MODE_DEFAULTS, state } from './state';
 
 /** Los botones de la barra superior y los atajos de teclado. */
 export function bindToolbar() {
@@ -28,8 +29,7 @@ export function bindToolbar() {
         /* sin almacenamiento: solo se limpia lo que hay en pantalla */
       }
     }
-    dom.seed.value = '1';
-    dom.days.value = state.mode === 'explain' ? '2' : '5';
+    setSimFields(MODE_DEFAULTS[state.mode]);
     if (inDb) void switchTo(() => persist.create(emptyCompany()));
     else {
       closeOverlays();

@@ -5,6 +5,30 @@ export type DbStatus = 'checking' | 'db' | 'saving' | 'local' | 'error';
 
 const CURRENT = 'current_company';
 
+/** Lo que el usuario ajusta en la barra para simular. */
+export interface SimPrefs {
+  days: number;
+  seed: number;
+  /** minutos simulados por segundo */
+  speed: number;
+}
+
+const simKey = (companyId: string, mode: string) => `sim.${companyId}.${mode}`;
+
+/** Lee las preferencias guardadas; descarta lo que no sea válido en vez de fallar. */
+export function readSimPrefs(text: string): SimPrefs | undefined {
+  try {
+    const o = JSON.parse(text) as Record<string, unknown>;
+    const days = Math.trunc(Number(o.days));
+    const seed = Math.trunc(Number(o.seed));
+    const speed = Number(o.speed);
+    if (!Number.isFinite(days) || !Number.isFinite(seed) || !Number.isFinite(speed) || speed <= 0) return undefined;
+    return { days: Math.min(30, Math.max(1, days)), seed, speed };
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Dónde viven las empresas: en la base de datos (SQLite local o Nhost). Si no hay servidor o sesión,
  * la app sigue funcionando guardando solo en este navegador, y lo avisa.
@@ -124,6 +148,22 @@ export class Persistence {
         this.set('db');
       })
       .catch((e: unknown) => this.set('error', e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo guardar.'));
+  }
+
+  /** Días, semilla y velocidad de la última simulación de esta empresa en este modo (guardados en la base de datos). */
+  async simPrefs(mode: string): Promise<SimPrefs | undefined> {
+    if (!this.currentId || this.status === 'local') return undefined;
+    try {
+      const text = await this.backend.setting(simKey(this.currentId, mode));
+      return text ? readSimPrefs(text) : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
+  saveSimPrefs(mode: string, prefs: SimPrefs) {
+    if (!this.currentId || this.status === 'local') return;
+    this.backend.setSetting(simKey(this.currentId, mode), JSON.stringify(prefs)).catch(() => undefined);
   }
 
   /** Espera a que terminen los guardados pendientes. */
