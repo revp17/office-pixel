@@ -252,3 +252,27 @@ describe('días, semilla y velocidad se guardan por empresa y modo', () => {
     expect(Object.keys(f.settings)).toEqual([]);
   });
 });
+
+describe('modo y disposición son de la cuenta', () => {
+  it('se guardan en la base de datos y los lee una sesión nueva, aun sin empresas', async () => {
+    const f = fakeBackend();
+    const p = new Persistence(f.backend, cache);
+    await p.boot();
+    p.saveViewPref('mode', 'week');
+    p.saveViewPref('layout', 'horizontal');
+    const q = new Persistence(f.backend, memoryCache());
+    await q.boot();
+    expect(await q.viewPref('mode')).toBe('week');
+    expect(await q.viewPref('layout')).toBe('horizontal');
+    expect(await q.viewPref('otra')).toBeUndefined();
+  });
+
+  it('sin base de datos no guarda ni falla', async () => {
+    const f = fakeBackend(false);
+    const p = new Persistence(f.backend, cache);
+    await p.boot();
+    p.saveViewPref('mode', 'week');
+    expect(await p.viewPref('mode')).toBeUndefined();
+    expect(Object.keys(f.settings)).toEqual([]);
+  });
+});

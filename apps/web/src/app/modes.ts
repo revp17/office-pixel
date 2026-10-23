@@ -6,18 +6,7 @@ import { MODE_DEFAULTS, state, type Mode } from './state';
 
 /** Dos modos de ver la simulación: «cómo funciona» (despacio, pocos casos, con relato) o «semana completa». */
 
-const MODE_KEY = 'office-pixel.mode.v1';
-
-export function loadMode(): Mode {
-  try {
-    if (localStorage.getItem(MODE_KEY) === 'week') return 'week';
-  } catch {
-    /* sin almacenamiento: se usa el modo por defecto */
-  }
-  return 'explain';
-}
-
-export function applyMode(m: Mode, rerun: boolean) {
+export function applyMode(m: Mode, rerun: boolean): Promise<void> {
   state.mode = m;
   dom.mode.value = m;
   const explain = m === 'explain';
@@ -25,22 +14,20 @@ export function applyMode(m: Mode, rerun: boolean) {
   scene.skipIdle = explain;
   story.show(explain);
   dom.step.hidden = !explain;
-  try {
-    localStorage.setItem(MODE_KEY, m);
-  } catch {
-    /* sin almacenamiento */
-  }
   // lo guardado de esta empresa en este modo reemplaza los valores por defecto antes de simular
-  void restoreSimPrefs().then(() => {
+  return restoreSimPrefs().then(() => {
     if (rerun) run();
   });
 }
 
-export function bindModes() {
-  state.mode = loadMode();
+export function bindModes(onModeChosen: (m: Mode) => void) {
   scene.onEvents = (events, jumped) => {
     if (state.mode === 'explain') story.feed(state.def, events, jumped);
   };
-  dom.mode.addEventListener('change', () => applyMode(dom.mode.value as Mode, true));
-  applyMode(state.mode, false);
+  dom.mode.addEventListener('change', () => {
+    const m = dom.mode.value as Mode;
+    void applyMode(m, true);
+    onModeChosen(m);
+  });
+  void applyMode('explain', false); // modo inicial; el guardado de la cuenta se aplica al abrir la base de datos
 }

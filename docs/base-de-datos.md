@@ -79,3 +79,7 @@ Todo bajo `/api`, en JSON:
 ## Preferencias de simulación
 
 Los **días**, la **semilla** y la **velocidad** de la barra superior se guardan en la base de datos (tabla `settings`, clave `sim.<empresa>.<modo>`), por empresa y por modo («Cómo funciona» y «Semana completa» recuerdan cada uno lo suyo). Se guardan al cambiar el campo y se recuperan al abrir la empresa, en otro navegador o en otro equipo. Sin base de datos (modo «solo navegador») no se guardan.
+
+## Preferencias de vista
+
+El **modo** (Cómo funciona / Semana completa) y la **disposición** del plano (vertical / horizontal) son de la cuenta: se guardan en `settings` (claves `view.mode` y `view.layout`) y te siguen a otro navegador o equipo. Solo sin base de datos se recuerdan en el navegador.

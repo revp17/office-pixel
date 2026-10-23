@@ -166,6 +166,21 @@ export class Persistence {
     this.backend.setSetting(simKey(this.currentId, mode), JSON.stringify(prefs)).catch(() => undefined);
   }
 
+  /** Preferencias de vista de la cuenta (modo, disposición del plano): guardadas en la base de datos, no en el navegador. */
+  async viewPref(name: string): Promise<string | undefined> {
+    if (!this.online) return undefined;
+    try {
+      return await this.backend.setting(`view.${name}`);
+    } catch {
+      return undefined;
+    }
+  }
+
+  saveViewPref(name: string, value: string) {
+    if (!this.online) return;
+    this.backend.setSetting(`view.${name}`, value).catch(() => undefined);
+  }
+
   /** Espera a que terminen los guardados pendientes. */
   settled() {
     return this.chain;
