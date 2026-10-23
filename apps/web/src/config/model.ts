@@ -341,3 +341,19 @@ export function defaultDist(dist: DistSpec['dist'], minutes: boolean): DistSpec 
   for (const x of f) spec[x.key] = defaults[x.key] ?? 10;
   return spec;
 }
+
+// ---------- escribir números y nombres con fluidez ----------
+
+/** ¿Es un texto numérico a medio escribir? Acepta «», «-», «0.», «0,5» y «12». */
+export const isNumText = (s: string) => /^-?\d*[.,]?\d*$/.test(s);
+
+/** Texto → número (admite coma decimal). undefined si está vacío o aún no es un número («-», «.»). */
+export function parseNumText(s: string): number | undefined {
+  const t = s.trim().replace(',', '.');
+  if (t === '' || t === '-' || t === '.' || t === '-.') return undefined;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : undefined;
+}
+
+/** Nombre de un dato: letras, números y guion bajo (lo demás se vuelve «_»). */
+export const normalizeAttrName = (s: string) => s.trim().replace(/[^A-Za-z0-9_]/g, '_');

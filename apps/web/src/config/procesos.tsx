@@ -7,6 +7,7 @@ import {
   addProcess,
   addStage,
   moveProcess,
+  normalizeAttrName,
   defaultDist,
   flatUnits,
   formatCondition,
@@ -19,7 +20,7 @@ import {
   usage,
   type Op,
 } from './model';
-import { AddBtn, Card, DistEditor, Field, IconBtn, Num, Pct, Sel, Section, Text, type TabProps } from './ui';
+import { AddBtn, Card, DistEditor, Field, IconBtn, NameInput, Num, Pct, Sel, Section, Text, type TabProps } from './ui';
 
 type PMut = (fn: (p: OrgProcessDef, d: CompanyDef) => void) => void;
 
@@ -101,7 +102,7 @@ export function ProcesosTab({ d, up, note }: TabProps) {
 
           <Llegadas proc={proc} P={P} />
           <Dependencias d={d} proc={proc} P={P} onSelect={setSel} />
-          <Datos proc={proc} P={P} />
+          <Datos proc={proc} P={P} note={note} />
 
           <Section title="Etapas" hint="El caso recorre las etapas en orden. Cada etapa la hace una persona con el rol indicado, en el área o subárea indicada.">
             {proc.stages.map((st, i) => (
@@ -146,21 +147,24 @@ function Llegadas({ proc, P }: { proc: OrgProcessDef; P: PMut }) {
   );
 }
 
-function Datos({ proc, P }: { proc: OrgProcessDef; P: PMut }) {
+function Datos({ proc, P, note }: { proc: OrgProcessDef; P: PMut; note: (m: string) => void }) {
   const entries = Object.entries(proc.attributes ?? {});
   return (
     <Section
       title="Datos de cada caso"
       hint="Valores que lleva cada caso (por ejemplo, un monto). Sirven para decidir el camino en «Según condiciones»."
     >
-      {entries.map(([key, spec]) => (
-        <div class="inline wrap" key={key}>
-          <Field label="Nombre del dato">
-            <Text
+      {entries.map(([key, spec], idx) => (
+        <div class="inline wrap" key={idx}>
+          <Field label="Nombre del dato" hint="Se confirma al salir del campo. Solo letras, números y _ (los espacios se vuelven _).">
+            <NameInput
               value={key}
-              onChange={(v) => {
-                const nk = v.replace(/[^A-Za-z0-9_]/g, '_');
-                if (nk && nk !== key && !(proc.attributes ?? {})[nk]) P((p) => renameAttribute(p, key, nk));
+              onCommit={(v) => {
+                const nk = normalizeAttrName(v);
+                if (!nk) return note('El nombre del dato no puede quedar vacío.') ?? 'vacío';
+                if (nk === key) return;
+                if ((proc.attributes ?? {})[nk]) return note(`Ya hay un dato llamado «${nk}».`) ?? 'repetido';
+                P((p) => renameAttribute(p, key, nk));
               }}
             />
           </Field>

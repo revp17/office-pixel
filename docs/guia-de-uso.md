@@ -398,3 +398,10 @@ En **Configurar empresa → Procesos**, la lista de la izquierda está numerada 
 El orden es el de la lista `processes` del YAML y define cómo se muestran los procesos en **Gestión de procesos** (con su número), en el mapa de dependencias, en la ficha y en los colores de los casos del plano. **No cambia por sí solo cómo se ejecutan**: cada proceso sigue recibiendo sus propios casos. Para que uno **nazca cuando termina otro**, declara una dependencia «dispara» (ver [gestion-de-procesos.md](gestion-de-procesos.md#dependencias-entre-procesos)).
 
 Reordenar puede cambiar ligeramente los números de una simulación con la misma semilla, porque el azar se reparte en el orden de la lista.
+
+---
+
+## Escribir en los formularios
+
+- **Números** (duraciones, dispersión, plazos, porcentajes…): puedes **borrar el campo y escribir de nuevo**, usar **punto o coma** decimal (`0.45` o `0,45`) y las flechas ↑ ↓ para subir o bajar. El valor se aplica en cuanto es un número; al salir del campo se ajusta a los límites (por ejemplo, un porcentaje no pasa de 100).
+- **Nombre de un dato del caso** (en «Datos de cada caso»): se **confirma al salir del campo o con Enter** (Esc lo restaura). Solo admite letras, números y `_`: los espacios se convierten en `_` (`monto total` → `monto_total`). Si el nombre está vacío o ya existe, avisa y vuelve al anterior. Al renombrar un dato se actualizan las condiciones que lo usan (`case.monto > 5000`).

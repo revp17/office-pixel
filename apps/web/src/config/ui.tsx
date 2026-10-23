@@ -1,6 +1,7 @@
 import type { ComponentChildren } from 'preact';
+import { useEffect, useState } from 'preact/hooks';
 import type { CompanyDef, DistSpec } from '@office-pixel/sim';
-import { DAY_NAMES, DAY_TITLES, DIST_LABELS, defaultDist, distFields, getParam } from './model';
+import { DAY_NAMES, DAY_TITLES, DIST_LABELS, defaultDist, distFields, getParam, isNumText, parseNumText } from './model';
 
 export type Up = (fn: (d: CompanyDef) => void) => void;
 export interface TabProps {
@@ -73,6 +74,11 @@ export function TextArea(p: { value: string; onChange: (v: string) => void; plac
   );
 }
 
+/**
+ * Número editable. Mientras se escribe se conserva el texto tal cual («0.», vacío, «-»…) y el valor se
+ * aplica en cuanto es un número; al salir del campo se ajusta a los límites y se muestra limpio.
+ * Admite coma decimal y las flechas ↑ ↓ cambian el valor en el paso indicado.
+ */
 export function Num(p: {
   value: number | undefined;
   onChange: (v: number | undefined) => void;
@@ -83,22 +89,68 @@ export function Num(p: {
   placeholder?: string;
   class?: string;
 }) {
+  const [text, setText] = useState<string | null>(null); // null = no se está editando
+  const shown = text ?? (p.value === undefined ? '' : String(p.value));
+  const clamp = (n: number) => Math.min(p.max ?? Infinity, Math.max(p.min ?? -Infinity, n));
   return (
     <span class={`num ${p.class ?? ''}`}>
       <input
-        type="number"
-        value={p.value ?? ''}
-        min={p.min}
-        max={p.max}
-        step={p.step ?? 1}
+        type="text"
+        inputMode="decimal"
+        value={shown}
         placeholder={p.placeholder}
         onInput={(e) => {
-          const v = val(e);
-          p.onChange(v === '' ? undefined : Number(v));
+          const el = e.currentTarget as HTMLInputElement;
+          if (!isNumText(el.value)) {
+            el.value = shown; // un carácter que no es de un número: se descarta
+            return;
+          }
+          setText(el.value);
+          p.onChange(parseNumText(el.value));
+        }}
+        onBlur={() => {
+          const n = parseNumText(text ?? '');
+          if (n !== undefined && clamp(n) !== n) p.onChange(clamp(n));
+          setText(null);
+        }}
+        onKeyDown={(e) => {
+          if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+          e.preventDefault();
+          const step = p.step ?? 1;
+          const n = clamp(Math.round(((parseNumText(shown) ?? 0) + (e.key === 'ArrowUp' ? step : -step)) * 1e6) / 1e6);
+          setText(String(n));
+          p.onChange(n);
         }}
       />
       {p.suffix && <i>{p.suffix}</i>}
     </span>
+  );
+}
+
+/**
+ * Nombre que se confirma al salir del campo (o con Enter), para no renombrar con cada tecla.
+ * `onCommit` devuelve un texto de error si el nombre no vale; entonces se vuelve al anterior.
+ */
+export function NameInput(p: { value: string; onCommit: (v: string) => string | void; placeholder?: string }) {
+  const [draft, setDraft] = useState(p.value);
+  useEffect(() => setDraft(p.value), [p.value]);
+  const commit = () => {
+    if (draft === p.value) return;
+    const err = p.onCommit(draft);
+    if (err) setDraft(p.value);
+  };
+  return (
+    <input
+      type="text"
+      value={draft}
+      placeholder={p.placeholder}
+      onInput={(e) => setDraft((e.currentTarget as HTMLInputElement).value)}
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') (e.currentTarget as HTMLInputElement).blur();
+        if (e.key === 'Escape') setDraft(p.value);
+      }}
+    />
   );
 }
 
