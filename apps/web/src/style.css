@@ -490,3 +490,10 @@ svg.decor-canvas { width: 100%; max-height: 56vh; border-radius: 8px; border: 1p
 #story .line.warn em { color: #ffb36b; }
 #story .line.people em { color: #9aa6c2; }
 #step[hidden] { display: none; }
+
+/* orden de los procesos */
+.procrow { display: flex; align-items: stretch; gap: 4px; }
+.procrow .procbtn { flex: 1; min-width: 0; }
+.procmove { display: flex; flex-direction: column; gap: 2px; justify-content: center; }
+.procmove .ibtn { padding: 1px 6px; font-size: 10px; line-height: 1.2; }
+.procnum { color: var(--accent); }

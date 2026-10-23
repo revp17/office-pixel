@@ -6,6 +6,7 @@ import {
   OPS,
   addProcess,
   addStage,
+  moveProcess,
   defaultDist,
   flatUnits,
   formatCondition,
@@ -35,11 +36,25 @@ export function ProcesosTab({ d, up, note }: TabProps) {
   return (
     <div class="procs">
       <aside class="proclist">
-        {d.processes.map((p) => (
-          <button key={p.id} type="button" class={`procbtn${p.id === proc?.id ? ' on' : ''}`} onClick={() => setSel(p.id)}>
-            {p.name ?? p.id}
-            <small>{p.stages.length} etapas</small>
-          </button>
+        {d.processes.map((p, i) => (
+          <div class="procrow" key={p.id}>
+            <button type="button" class={`procbtn${p.id === proc?.id ? ' on' : ''}`} onClick={() => setSel(p.id)}>
+              <span>
+                <b class="procnum">{i + 1}.</b> {p.name ?? p.id}
+              </span>
+              <small>{p.stages.length} etapas</small>
+            </button>
+            {d.processes.length > 1 && (
+              <span class="procmove">
+                <IconBtn title="Subir (va antes)" disabled={i === 0} onClick={() => up((x) => void moveProcess(x, p.id, 'up'))}>
+                  ▲
+                </IconBtn>
+                <IconBtn title="Bajar (va después)" disabled={i === d.processes.length - 1} onClick={() => up((x) => void moveProcess(x, p.id, 'down'))}>
+                  ▼
+                </IconBtn>
+              </span>
+            )}
+          </div>
         ))}
         <AddBtn
           onClick={() => {
@@ -47,6 +62,7 @@ export function ProcesosTab({ d, up, note }: TabProps) {
             const probe = structuredClone(d);
             const created = addProcess(probe);
             up((x) => void addProcess(x));
+            note('Proceso añadido al final de la lista. Usa ▲ ▼ para ponerlo donde lo necesites.');
             setSel(created.id);
           }}
         >

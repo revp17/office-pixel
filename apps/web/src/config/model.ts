@@ -187,6 +187,18 @@ export function removePerson(def: CompanyDef, id: string) {
 
 // ---------- procesos ----------
 
+/** Mueve un proceso en la lista: el orden de la lista es el orden en que se muestran (pantallas, mapa y ficha). */
+export function moveProcess(def: CompanyDef, id: string, to: 'up' | 'down' | 'first' | 'last'): boolean {
+  const list = def.processes;
+  const index = list.findIndex((p) => p.id === id);
+  if (index < 0) return false;
+  const target = to === 'up' ? index - 1 : to === 'down' ? index + 1 : to === 'first' ? 0 : list.length - 1;
+  if (target < 0 || target >= list.length || target === index) return false;
+  const [p] = list.splice(index, 1);
+  list.splice(target, 0, p);
+  return true;
+}
+
 export function addProcess(def: CompanyDef, name = 'Nuevo proceso'): OrgProcessDef {
   const unit = def.people[0]?.unit ?? flatUnits(def.units)[0]?.unit.id;
   const role = def.people[0]?.role;

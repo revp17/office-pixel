@@ -95,9 +95,11 @@ function Hub(props: HubProps) {
       <div class="cfg-body hub-body">
         <nav class="cfg-nav hub-list">
           <h4>Procesos</h4>
-          {draft.processes.map((p) => (
+          {draft.processes.map((p, i) => (
             <button key={p.id} type="button" class={p.id === proc?.id ? 'on' : ''} onClick={() => choose(p.id)}>
-              <span class="pname">{p.name ?? p.id}</span>
+              <span class="pname">
+                <b class="procnum">{i + 1}.</b> {p.name ?? p.id}
+              </span>
               <span class="prog">
                 <span title="Fases de documentación">Doc {phasesDone(p)}/5</span>
                 <span title="Pasos de optimización">Opt {stepsDone(p)}/5</span>

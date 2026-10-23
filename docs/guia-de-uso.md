@@ -388,3 +388,13 @@ El relato cuenta: llegadas de casos, a qué etapa y área pasa cada uno, quién 
 Cambiar de modo **vuelve a simular** (cambia los días y la carga). Los resultados de abajo en modo «Cómo funciona» son de la **muestra**, no de la carga real: para medir tiempos y cuellos de botella usa «Semana completa». El modo se recuerda en el navegador.
 
 Al seguir un proceso con dependencias, el caso nuevo que nace en otro proceso se cuenta con su origen («Nace porque terminó…»). Las llegadas que provienen de una dependencia «dispara» no se limitan: dependen de los casos del proceso de origen.
+
+---
+
+## Ordenar los procesos
+
+En **Configurar empresa → Procesos**, la lista de la izquierda está numerada (**1.**, **2.**, **3.**…) y cada proceso tiene **▲** (va antes) y **▼** (va después). Un proceso nuevo entra **al final**; súbelo con ▲ hasta donde lo necesites, por ejemplo para que quede **antes** de uno ya creado.
+
+El orden es el de la lista `processes` del YAML y define cómo se muestran los procesos en **Gestión de procesos** (con su número), en el mapa de dependencias, en la ficha y en los colores de los casos del plano. **No cambia por sí solo cómo se ejecutan**: cada proceso sigue recibiendo sus propios casos. Para que uno **nazca cuando termina otro**, declara una dependencia «dispara» (ver [gestion-de-procesos.md](gestion-de-procesos.md#dependencias-entre-procesos)).
+
+Reordenar puede cambiar ligeramente los números de una simulación con la misma semilla, porque el azar se reparte en el orden de la lista.

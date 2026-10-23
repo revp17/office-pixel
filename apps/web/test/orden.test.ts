@@ -63,3 +63,35 @@ describe('orden de las áreas y subáreas', () => {
     expect(d.people.length).toBe(people);
   });
 });
+
+describe('orden de los procesos', () => {
+  it('un proceso nuevo se puede subir hasta quedar antes de los ya creados', async () => {
+    const { moveProcess, addProcess } = await import('../src/config/model');
+    const d = base();
+    const before = d.processes.map((p) => p.id);
+    const nuevo = addProcess(d);
+    expect(d.processes.map((p) => p.id)).toEqual([...before, nuevo.id]); // entra al final
+    expect(moveProcess(d, nuevo.id, 'first')).toBe(true);
+    expect(d.processes.map((p) => p.id)).toEqual([nuevo.id, ...before]);
+    expect(moveProcess(d, nuevo.id, 'down')).toBe(true);
+    expect(d.processes.map((p) => p.id)).toEqual([before[0], nuevo.id, ...before.slice(1)]);
+    expect(moveProcess(d, nuevo.id, 'up')).toBe(true);
+    expect(moveProcess(d, nuevo.id, 'up')).toBe(false); // ya es el primero
+    expect(moveProcess(d, d.processes.at(-1)!.id, 'down')).toBe(false);
+    expect(moveProcess(d, 'no_existe', 'up')).toBe(false);
+    expect(validateCompany(d).errors).toEqual([]);
+  });
+
+  it('reordenar no pierde nada: mismas etapas, procedimientos y dependencias', () => {
+    const d = base();
+    d.processes.find((p) => p.id === 'reclamo_cliente')!.dependsOn = [{ process: 'solicitud_credito', kind: 'requiere' }];
+    const snapshot = JSON.stringify([...d.processes].sort((a, b) => a.id.localeCompare(b.id)));
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return import('../src/config/model').then(({ moveProcess }) => {
+      moveProcess(d, 'reclamo_cliente', 'first');
+      expect(d.processes[0].id).toBe('reclamo_cliente');
+      expect(JSON.stringify([...d.processes].sort((a, b) => a.id.localeCompare(b.id)))).toBe(snapshot);
+      expect(validateCompany(d).errors).toEqual([]);
+    });
+  });
+});
