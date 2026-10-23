@@ -49,6 +49,7 @@ const DOT: Record<PersonState, number> = {
   absent: 0xff6b5a,
 };
 const SEMANTIC_ZOOM = 0.28;
+const HEADER_Y = 40; // desde la parte superior de una sala hasta donde empiezan los escritorios
 const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const FONT = '"Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif';
 
@@ -265,11 +266,11 @@ export class OrgScene extends Phaser.Scene {
     this.onModel?.();
   }
 
-  get floorNames(): string[] {
-    return this.b?.floors.map((f) => f.name) ?? [];
+  get areaNames(): string[] {
+    return this.b?.areas.map((a) => a.name) ?? [];
   }
 
-  /** Cambia entre plantas apiladas (vertical) o en fila (horizontal) sin perder el momento ni la selección. */
+  /** Cambia la disposición de las áreas en la planta (vertical u horizontal) sin perder el momento ni la selección. */
   setOrientation(o: Orientation) {
     if (o === this.orientation) return;
     this.orientation = o;
@@ -291,11 +292,11 @@ export class OrgScene extends Phaser.Scene {
     cam.centerOn(this.b.width / 2, this.b.height / 2);
   }
 
-  /** Acerca la cámara a una planta (o a todo el edificio si index < 0). */
-  focusFloor(index: number) {
+  /** Acerca la cámara a un área (o a toda la planta si index < 0). */
+  focusArea(index: number) {
     if (!this.b) return;
     if (index < 0) return this.fit();
-    const f = this.b.floors[index];
+    const f = this.b.areas[index];
     const cam = this.cameras.main;
     const horizontal = this.b.orientation === 'horizontal';
     const z = Math.min(cam.width / (f.w + (horizontal ? 130 : 190)), cam.height / (f.h + (horizontal ? 190 : 90)), 2.4);
@@ -322,7 +323,20 @@ export class OrgScene extends Phaser.Scene {
     const horizontal = b.orientation === 'horizontal';
     const g = this.add.graphics().setDepth(1);
 
-    // escalera (vertical) o pasarela (horizontal) que une las plantas
+    // la planta (empresa): el contorno que contiene todas las áreas
+    const P = b.planta;
+    g.fillStyle(0x07090d, 1);
+    g.fillRoundedRect(P.x - 4, P.y - 4, P.w + 8, P.h + 8, 22);
+    g.fillStyle(0x0f131b, 1);
+    g.fillRoundedRect(P.x, P.y, P.w, P.h, 18);
+    g.lineStyle(2, 0x2f3b57, 1);
+    g.strokeRoundedRect(P.x, P.y, P.w, P.h, 18);
+    const tx = horizontal ? P.x + 76 : P.x + 20;
+    const ty = horizontal ? P.y + 8 : P.y + 14;
+    const tag = this.add.text(tx, ty + 2, 'PLANTA', TXT(10, '#9ab4e8', '700')).setDepth(3);
+    this.add.text(tx + tag.width + 10, ty - 2, P.name, TXT(17, '#f2f5fc', '700')).setDepth(3);
+
+    // pasillo principal que une las áreas
     const L = b.link;
     g.fillStyle(0x07090d, 1);
     g.fillRoundedRect(L.x - 4, L.y - 4, L.w + 8, L.h + 8, 10);
@@ -333,15 +347,17 @@ export class OrgScene extends Phaser.Scene {
     else for (let y = L.y; y < L.y + L.h; y += 9) g.lineBetween(L.x, y, L.x + L.w, y);
     this.add.text(b.entrance.x, b.entrance.y + 24, 'ENTRADA', TXT(9, '#8f9bb8', '700')).setOrigin(0.5).setDepth(2);
 
-    b.floors.forEach((f, fi) => {
+    b.areas.forEach((f, fi) => {
       const color = AREA_COLORS[fi % AREA_COLORS.length];
-      this.areaOf.set(f.areaId, color);
+      this.areaOf.set(f.id, color);
 
-      // losa + pasillo
+      // zona del área (con el color del área) + su pasillo
       g.fillStyle(0x07090d, 1);
       g.fillRoundedRect(f.x - 7, f.y - 7, f.w + 14, f.h + 14, 14);
-      g.fillStyle(0x151a25, 1);
+      g.fillStyle(mix(0x151a25, color, 0.07), 1);
       g.fillRoundedRect(f.x - 2, f.y - 2, f.w + 4, f.h + 4, 11);
+      g.lineStyle(2, color, 0.55);
+      g.strokeRoundedRect(f.x - 5, f.y - 5, f.w + 10, f.h + 10, 13);
       g.fillStyle(0x1d2432, 1);
       g.fillRect(f.corridor.x, f.corridor.y, f.corridor.w, f.corridor.h);
       g.lineStyle(2, 0xffffff, 0.08);
@@ -349,10 +365,10 @@ export class OrgScene extends Phaser.Scene {
       else for (let x = f.x; x < f.x + f.w; x += 22) g.lineBetween(x, f.corridorC, x + 11, f.corridorC);
 
       const lx = horizontal ? f.rooms[0].x : f.x + 2;
-      this.add
-        .text(lx, f.y - 26, `PLANTA ${fi + 1}`, TXT(10, '#' + color.toString(16).padStart(6, '0'), '700'))
+      const label = this.add
+        .text(lx, f.y - 28, 'ÁREA', TXT(10, '#' + color.toString(16).padStart(6, '0'), '700'))
         .setDepth(3);
-      this.add.text(lx + 60, f.y - 26, f.name, TXT(10, '#9aa6c2', '600')).setDepth(3);
+      this.add.text(lx + label.width + 8, f.y - 31, f.name, TXT(14, '#eef2fb', '700')).setDepth(3);
 
       for (const r of f.rooms) this.buildRoom(g, r, color);
       this.buildCommon(g, f.common, color);
@@ -377,7 +393,7 @@ export class OrgScene extends Phaser.Scene {
     g.fillCircle(x, y - 7, 5.5);
   }
 
-  private desk(g: Phaser.GameObjects.Graphics, x: number, y: number, seat: Pt, color: number) {
+  private desk(g: Phaser.GameObjects.Graphics, x: number, y: number, seat: Pt, color: number, responsable: boolean) {
     g.fillStyle(0x000000, 0.28);
     g.fillRoundedRect(x - 25, y - 12, 50, 32, 6);
     g.fillStyle(0x8a6238, 1);
@@ -398,6 +414,13 @@ export class OrgScene extends Phaser.Scene {
     // teclado
     g.fillStyle(0xe3e8f4, 0.7);
     g.fillRoundedRect(x - 9, y + 3, 18, 5, 1.5);
+    if (responsable) {
+      // el responsable tiene una placa dorada en su escritorio
+      g.fillStyle(0xf5c451, 1);
+      g.fillRoundedRect(x - 12, y + 10, 24, 4, 2);
+      g.lineStyle(1, 0x8a6a1a, 0.9);
+      g.strokeRoundedRect(x - 12, y + 10, 24, 4, 2);
+    }
     // silla
     g.fillStyle(0x000000, 0.25);
     g.fillEllipse(seat.x, seat.y - 1, 18, 7);
@@ -416,8 +439,14 @@ export class OrgScene extends Phaser.Scene {
     g.lineStyle(1, 0xffffff, 0.035);
     for (let x = r.x + 32; x < r.x + r.w; x += 32) g.lineBetween(x, r.y + 24, x, r.y + r.h - 4);
     for (let y = r.y + 54; y < r.y + r.h; y += 32) g.lineBetween(r.x + 4, y, r.x + r.w - 4, y);
-    g.fillStyle(color, 0.96);
+    // cabecera: el área con su color pleno; las subáreas, con el color más apagado
+    const isArea = r.kind === 'area';
+    g.fillStyle(isArea ? color : mix(color, 0x0c0f16, 0.38), 0.96);
     g.fillRoundedRect(r.x, r.y, r.w, 24, { tl: 7, tr: 7, bl: 0, br: 0 });
+    if (!isArea) {
+      g.fillStyle(color, 1);
+      g.fillRoundedRect(r.x, r.y, 5, 24, { tl: 7, tr: 0, bl: 0, br: 0 });
+    }
     g.fillStyle(0xffffff, 0.18);
     g.fillRoundedRect(r.x + 2, r.y + 2, r.w - 4, 5, { tl: 5, tr: 5, bl: 0, br: 0 });
     g.lineStyle(1.5, color, 0.3);
@@ -434,13 +463,22 @@ export class OrgScene extends Phaser.Scene {
     g.lineStyle(1, 0xffffff, 0.08);
     g.strokeRoundedRect(r.inbox.x - 4, r.inbox.y - 4, tw, th, 6);
 
-    for (const d of r.desks) this.desk(g, d.x, d.y, d.seat, color);
+    for (const d of r.desks) this.desk(g, d.x, d.y, d.seat, color, d.kind === 'responsable');
+    if (r.desks.length === 0) {
+      this.add
+        .text(r.x + 12 + 4, r.y + HEADER_Y, 'Sin personas aún', TXT(10, '#6f7b97', '600'))
+        .setDepth(3);
+    }
     this.plant(g, r.x + 14, r.y + r.h - 16);
 
+    const full = r.kind === 'subarea' && r.path.length > 2 ? r.path.slice(-2).join(' › ') : r.name;
     const maxChars = Math.max(4, Math.floor((r.w - 62) / 6.6));
-    const title = r.name.length > maxChars ? `${r.name.slice(0, maxChars - 1)}…` : r.name;
-    this.add.text(r.x + 8, r.y + 5, title, TXT(11, '#0c0f16', '700')).setDepth(3);
-    const stats = this.add.text(r.x + r.w - 6, r.y + 7, '', TXT(9, '#0c0f16', '700')).setOrigin(1, 0).setDepth(3);
+    const title = full.length > maxChars ? `${full.slice(0, maxChars - 1)}…` : full;
+    this.add.text(r.x + (isArea ? 8 : 12), r.y + 5, title, TXT(11, isArea ? '#0c0f16' : '#f2f5fc', '700')).setDepth(3);
+    const stats = this.add
+      .text(r.x + r.w - 6, r.y + 7, '', TXT(9, isArea ? '#0c0f16' : '#dfe6f7', '700'))
+      .setOrigin(1, 0)
+      .setDepth(3);
     const overflow = this.add
       .text(r.inbox.x + r.inbox.cols * INBOX_STEP - 2, r.y + r.h - 6, '', TXT(10, '#ffd479', '700'))
       .setOrigin(1, 1)
@@ -485,7 +523,8 @@ export class OrgScene extends Phaser.Scene {
     const b = this.b!;
     const def = this.def!;
     def.people.forEach((p, i) => {
-      const color = this.areaOf.get(b.floors[b.personFloor.get(p.id)!].areaId) ?? 0x5aa9ff;
+      const color = this.areaOf.get(b.areas[b.personArea.get(p.id)!].id) ?? 0x5aa9ff;
+      const responsable = p.kind === 'responsable';
       const skin = SKIN[i % SKIN.length];
       const hair = HAIR[(i * 3) % HAIR.length];
       const dark = mix(color, 0x000000, 0.3);
@@ -506,6 +545,14 @@ export class OrgScene extends Phaser.Scene {
       g.fillRoundedRect(-7.5, -24, 15, 17, 5);
       g.fillStyle(0xffffff, 0.22);
       g.fillRoundedRect(-5.5, -23, 11, 4, 2);
+      if (responsable) {
+        // el responsable lleva un hombro dorado y una insignia en el pecho
+        g.fillStyle(0xf5c451, 1);
+        g.fillRoundedRect(-7.5, -24, 15, 3, 2);
+        g.fillCircle(3.5, -15, 3);
+        g.lineStyle(1, 0x8a6a1a, 1);
+        g.strokeCircle(3.5, -15, 3);
+      }
       // cabeza
       g.fillStyle(skin, 1);
       g.fillCircle(0, -30, 7);
@@ -525,7 +572,9 @@ export class OrgScene extends Phaser.Scene {
         .setBackgroundColor('#0b0e14dd')
         .setPadding(4, 1, 4, 1);
       const first = (p.name ?? p.id).split(' ')[0];
-      const name = this.add.text(0, 6, first, TXT(9, '#cdd6ee', '600')).setOrigin(0.5, 0);
+      const name = this.add
+        .text(0, 6, responsable ? `★ ${first}` : first, TXT(9, responsable ? '#ffd98a' : '#cdd6ee', '600'))
+        .setOrigin(0.5, 0);
       const hit = this.add.rectangle(0, -18, 24, 44, 0xffffff, 0.001).setInteractive({ useHandCursor: true });
       hit.on('pointerdown', () => this.select(p.id));
       const container = this.add
@@ -692,12 +741,12 @@ export class OrgScene extends Phaser.Scene {
         queued.set(room.id, l);
       } else if ((c.status === 'working' || c.status === 'paused') && c.person) {
         const { room: pr, desk } = b.personDesk.get(c.person)!;
-        place.set(c.id, { key: `desk:${c.person}`, dest: { x: desk.x + 15, y: desk.y - 3, floor: pr.floor, zone: pr.id } });
+        place.set(c.id, { key: `desk:${c.person}`, dest: { x: desk.x + 15, y: desk.y - 3, area: pr.area, zone: pr.id } });
       } else if (c.status === 'transit' && c.toUnit) {
         const to = b.unitRoom(c.toUnit);
         if (to) {
           const s = inboxSlot(to, 0);
-          place.set(c.id, { key: `transit:${to.id}`, dest: { x: s.x, y: s.y, floor: to.floor, zone: to.id } });
+          place.set(c.id, { key: `transit:${to.id}`, dest: { x: s.x, y: s.y, area: to.area, zone: to.id } });
         } else place.set(c.id, null);
       } else place.set(c.id, null);
       live.add(c.id);
@@ -711,7 +760,7 @@ export class OrgScene extends Phaser.Scene {
       list.forEach((c, i) => {
         const slot = Math.min(i, cap - 1);
         const s = inboxSlot(room, slot);
-        place.set(c.id, { key: `inbox:${roomId}:${slot}`, dest: { x: s.x, y: s.y, floor: room.floor, zone: roomId } });
+        place.set(c.id, { key: `inbox:${roomId}:${slot}`, dest: { x: s.x, y: s.y, area: room.area, zone: roomId } });
         if (i >= cap - 1) overflow.add(c.id);
         live.add(c.id);
       });

@@ -1,67 +1,70 @@
 # Office-Pixel — Guía de uso
 
-Office-Pixel simula una **empresa virtual**: tú defines sus áreas, equipos, personas y procesos, y la app los muestra como un edificio donde la gente trabaja, camina y se pasa casos de una mesa a otra.
+Office-Pixel simula una **empresa virtual**: tú defines su estructura (planta, áreas, subáreas y las personas de cada una) y sus procesos, y la app los muestra como un plano donde la gente trabaja, camina y se pasa casos de una mesa a otra.
 
 Esta guía tiene dos partes:
 
-1. [Cómo se dibujan las áreas y los empleados](#1-cómo-se-dibujan-las-áreas-y-los-empleados)
+1. [Cómo se dibujan la planta, las áreas, las subáreas y las personas](#1-cómo-se-dibuja-la-empresa)
 2. [Cómo se configura todo, paso a paso](#2-cómo-se-configura-todo-paso-a-paso)
 
 Para abrir la app: `npm run dev` y entra en <http://localhost:5173>.
 
 ---
 
-## 1. Cómo se dibujan las áreas y los empleados
+## 1. Cómo se dibuja la empresa
 
-No dibujas nada a mano. **El edificio se genera solo** a partir de lo que configuras. La regla es siempre la misma:
+No dibujas nada a mano: **el plano se genera solo** a partir de lo que configuras.
+
+### 1.1 La estructura
+
+```
+Planta (o empresa)                  ← una sola, con el nombre de tu empresa
+ └─ Área                            ← 1 o varias, cada una con su nombre
+     ├─ Responsables y colaboradores del área
+     └─ Subárea                     ← 0 o varias dentro de cada área, cada una con su nombre
+         └─ Responsables y colaboradores de la subárea
+```
+
+- **Cada área y cada subárea tiene su propio nombre.**
+- **Cada área y cada subárea puede tener uno o varios responsables y uno o varios colaboradores.** (También pueden no tener ninguno todavía.)
+- Una persona pertenece a **una** unidad (un área o una subárea) y es **responsable** o **colaborador** de ella.
+
+### 1.2 Qué se ve para cada nivel
 
 | Lo que configuras | Lo que ves |
 |---|---|
-| Un **área** (primer nivel del organigrama) | Una **planta** del edificio |
-| Un **equipo** (subárea) con personas | Una **sala** dentro de esa planta |
-| Una **persona** | Un **escritorio** con su avatar |
-| Un **caso** (solicitud, reclamo…) | Una **caja** de color |
+| La **planta** (empresa) | Un contorno grande que contiene todo, con el letrero **PLANTA · nombre de la empresa** |
+| Un **área** | Una zona con el color del área y el rótulo **ÁREA · nombre** |
+| Las **personas del área** | Una sala con la cabecera en el color pleno del área, con el nombre del área |
+| Una **subárea** | Una sala dentro del área, con su propio nombre y la cabecera en tono más apagado y una franja de color a la izquierda |
+| Una **persona** | Un escritorio con su avatar |
+| Un **responsable** | Se sienta **primero** en su sala, con una **placa dorada** en el escritorio, un hombro y una insignia doradas en el avatar, y una ★ delante de su nombre |
+| Un **colaborador** | Escritorio y avatar normales, después de los responsables |
+| Un **caso** (solicitud, reclamo…) | Una caja de color |
 
-### 1.1 Plantas
+Detalles:
 
-- Hay **una planta por área**, apiladas de arriba (la primera área) hacia abajo.
-- **Un área sin ninguna persona no se dibuja.** Para que aparezca, tiene que haber al menos una persona en ella o en alguno de sus equipos.
-- Una **escalera** (o, en disposición horizontal, una **pasarela**) conecta todas las plantas. Junto a ella está la **ENTRADA**: por ahí llegan las personas y los casos nuevos.
-- Cada planta tiene un color distinto. Ese color se usa en las cabeceras de sus salas y en la ropa de sus avatares, para reconocer de qué área es cada persona.
-- Si pulsas los botones **P1, P2…** sobre el edificio, la cámara se acerca a esa planta. **Todo** o **Vista general** vuelve a encuadrar todo.
+- Un área solo tiene **sala propia** si tiene personas asignadas directamente al área (por ejemplo, su responsable) o si no tiene subáreas. Si todas sus personas están en subáreas, el área se ve como la zona que agrupa a sus subáreas.
+- **Las áreas y subáreas vacías también se dibujan**, con el aviso «Sin personas aún», para que veas la estructura mientras la armas.
+- Las subáreas anidadas (una subárea dentro de otra) muestran su camino: `Subárea › Sub-subárea`.
+- Cada sala tiene su **puerta**, su **bandeja de entrada** (a la derecha: aquí esperan los casos que nadie ha tomado) y una cabecera con `presentes/total · cN` (personas en su sitio sobre el total, y casos en cola).
+- Cada área tiene además una **Sala común** (con sofá y mesa) donde van las personas en las pausas y reuniones.
+- Los escritorios se reparten en cuadrícula, hasta 4 por fila: primero los responsables y luego los colaboradores, en el orden de la lista.
 
-#### Disposición: vertical u horizontal
+### 1.3 Disposición de las áreas: vertical u horizontal
 
-En la barra superior, el selector **▤ Vertical / ▥ Horizontal** cambia cómo se colocan las plantas. Puedes alternar en cualquier momento: la simulación sigue en el mismo instante y la persona seleccionada se mantiene. La opción elegida se recuerda al recargar.
+El selector **▤ Vertical / ▥ Horizontal** de la barra superior cambia cómo se colocan las áreas dentro de la planta. Puedes alternar en cualquier momento: la simulación sigue en el mismo instante y la persona seleccionada se mantiene. La opción se recuerda al recargar.
 
 | | **Vertical** (por defecto) | **Horizontal** |
 |---|---|---|
-| Plantas | Apiladas de arriba abajo | En fila, de izquierda a derecha |
-| Cada planta | Una franja: salas en fila y el pasillo debajo | Una columna: salas apiladas y el pasillo a su izquierda |
-| Conexión entre plantas | **Escalera** vertical a la izquierda | **Pasarela** horizontal en la parte de arriba |
-| Entrada | Abajo del todo, junto a la escalera | A la izquierda de la pasarela |
+| Áreas | Apiladas de arriba abajo | En fila, de izquierda a derecha |
+| Cada área | Una franja: salas en fila y su pasillo debajo | Una columna: salas apiladas y su pasillo a la izquierda |
+| Pasillo principal (une las áreas) | Vertical, a la izquierda | Horizontal, arriba |
+| Entrada | Abajo del todo, junto al pasillo principal | A la izquierda del pasillo principal |
 | Puertas de las salas | En el borde inferior | En el borde izquierdo |
-| Va mejor en | Ventanas altas o estrechas | Pantallas anchas (aprovecha mejor el espacio) |
+| Va mejor en | Ventanas altas o estrechas | Pantallas anchas |
 
-El contenido de cada sala (escritorios, bandeja, avatares) se ve igual en las dos. Los botones **P1, P2…** acercan la cámara a esa planta en cualquiera de ellas.
-
-### 1.2 Salas
-
-- Se dibuja **una sala por cada equipo que tenga personas sentadas**, de izquierda a derecha en el orden del organigrama.
-- Si un área tiene personas directamente (por ejemplo, su responsable) y además equipos, el área tiene su propia sala y los equipos tienen las suyas.
-- Al final de cada planta hay una **Sala común** (con sofá y mesa). Allí van las personas durante pausas y reuniones.
-- Junto a las salas corre el **pasillo** (debajo en vertical, a la izquierda en horizontal). Cada sala tiene una **puerta** hacia el pasillo.
-- La cabecera de cada sala muestra:
-  - el nombre del equipo,
-  - `presentes/total · cN`: cuántas personas están en su sitio sobre el total del equipo, y cuántos casos hay en cola (`c` = cola).
-- A la derecha de cada sala está la **bandeja de entrada**: aquí esperan los casos que aún nadie ha tomado.
-
-### 1.3 Escritorios y personas
-
-- Cada persona tiene **su escritorio** (con monitor, teclado y silla) en la sala de su equipo.
-- Los escritorios se reparten en una cuadrícula: hasta 4 por fila, en el mismo orden en que las personas aparecen en la lista de **Personas**.
-- El avatar tiene el color del área, y su cara y pelo varían de una persona a otra para distinguirlas. Bajo el avatar aparece su nombre de pila cuando haces zoom.
-- Al alejar la cámara, los iconos crecen para seguir siendo legibles. Si te alejas mucho, se ocultan y cada sala muestra un número grande con su cola.
+Los botones con el nombre de cada área, sobre el plano, acercan la cámara a esa área. **Planta completa** (o **Vista general**) encuadra todo.
 
 ### 1.4 Qué hace cada avatar según su estado
 
@@ -69,20 +72,20 @@ El contenido de cada sala (escritorios, bandeja, avatares) se ve igual en las do
 |---|---|
 | **Libre** (en jornada, sin caso) | Sentado en su escritorio, punto gris sobre la cabeza |
 | **Trabajando** | Sentado, con la caja del caso sobre su escritorio, punto azul |
-| **En pausa** (almuerzo, descanso) | Camina a la sala común y se queda allí con la etiqueta «pausa» |
+| **En pausa** (almuerzo, descanso) | Camina a la sala común de su área y se queda allí con la etiqueta «pausa» |
 | **En reunión** | Va a la sala común con la etiqueta «reunión» |
 | **Ausente** | Su avatar aparece semitransparente en su silla, con la etiqueta «ausente» |
-| **Fuera de jornada** | No está en el edificio: sale por la entrada al terminar su turno y vuelve al empezar |
+| **Fuera de jornada** | No está en el plano: sale por la entrada al terminar su turno y vuelve al empezar |
 
-Para ir de un sitio a otro, los avatares **salen por la puerta, recorren el pasillo y suben o bajan por la escalera** (o cruzan la pasarela, en horizontal) si hace falta. Mientras caminan, el punto de estado desaparece.
+Para ir de un sitio a otro, los avatares **salen por la puerta de su sala, recorren el pasillo del área y el pasillo principal** si cambian de área, y entran por la puerta de la sala de destino.
 
-Haz **clic en un avatar** (o en una fila de la lista «Personas») para ver su ficha: estado actual, caso que trabaja, utilización, tareas hechas y una barra con su día (de 6 a 22 h).
+Haz **clic en un avatar** (o en una fila de la lista «Personas») para ver su ficha: si es responsable o colaborador, su área › subárea, estado actual, caso que trabaja, utilización, tareas hechas y una barra con su día (de 6 a 22 h).
 
 ### 1.5 Cajas (casos)
 
-- Los casos nuevos **entran por la entrada**, suben hasta la sala de su primera etapa y esperan en la **bandeja**.
+- Los casos nuevos **entran por la entrada**, van hasta la sala de su primera etapa y esperan en la **bandeja**.
 - Cuando alguien lo toma, la caja se posa en su escritorio.
-- Cuando el caso pasa a otro equipo, **la caja viaja** por el pasillo hasta la bandeja de la sala siguiente.
+- Cuando el caso pasa a otra sala, **la caja viaja** por los pasillos hasta la bandeja de la sala siguiente.
 - El color de la caja indica el proceso (el primer proceso es ámbar, el segundo rosa, el tercero celeste…).
 - Una caja semitransparente está **pausada** (la persona se fue a almorzar o terminó su jornada con el caso a medias).
 - Una **insignia roja parpadeante** en la caja indica que ese caso ya rompió su plazo (SLA).
@@ -98,11 +101,11 @@ Cada sala mide su **carga** como `casos en cola ÷ (personas × 1,5)`:
 | 70 % a 100 % | Barra ámbar y la sala se tiñe de ámbar |
 | Más de 100 % | Barra roja y la sala **parpadea en rojo** |
 
-Si la bandeja se llena, aparece `+N` con los casos que no caben. En el panel inferior, la **utilización por unidad** pinta en ámbar (más de 70 %) y en rojo (más de 85 %) los equipos más saturados.
+Si la bandeja se llena, aparece `+N`. En el panel inferior, la **utilización por unidad** pinta en ámbar (más de 70 %) y en rojo (más de 85 %) las unidades más saturadas.
 
 ### 1.7 Noche y controles
 
-- Entre las 18:00 y las 21:00 el edificio se va oscureciendo, y de 21:00 a 06:00 está a oscuras. Se aclara de 6:00 a 8:00.
+- Entre las 18:00 y las 21:00 el plano se va oscureciendo, y de 21:00 a 06:00 está a oscuras. Se aclara de 6:00 a 8:00.
 - **Rueda del ratón:** acerca o aleja hacia donde apuntas. **Arrastrar:** mueve la vista.
 - **Velocidad:** de 10 min/s hasta 12 h/s. A velocidades altas los avatares llegan a su sitio con algo de retraso visual; lo importante es el resultado.
 - **Línea de tiempo:** arrastra para saltar a cualquier momento (también hacia atrás).
@@ -125,51 +128,58 @@ El panel tiene **6 pestañas** a la izquierda y, abajo, el estado de la configur
 
 Arriba a la derecha del panel:
 
-- **Cargar ejemplo**: carga *Banco Pixel* (32 personas, 5 áreas, 2 procesos). Útil para ver cómo se ve una empresa completa.
-- **Empezar en blanco**: una empresa mínima (1 área, 1 equipo, 2 personas, 1 proceso) que ya es válida y puedes ir ampliando.
+- **Cargar ejemplo**: carga *Banco Pixel* (32 personas, 5 áreas, 2 procesos, con responsables en áreas y subáreas).
+- **Empezar en blanco**: una empresa mínima (1 área con 1 subárea, 2 personas y 1 proceso) que ya es válida y puedes ir ampliando.
 
 Ambas te piden confirmar porque **reemplazan lo que haya en el formulario**.
 
-### Paso 1 — Pestaña «Empresa»
+### Paso 1 — Pestaña «Empresa» (la planta)
 
-1. **Nombre de la empresa.**
+1. **Nombre de la planta o empresa.**
 2. **Jornada:** hora de entrada y de salida.
 3. **Días laborables:** pulsa las letras (L M X J V S D) para activarlas o apagarlas.
 4. **Pausas:** el almuerzo u otros descansos. Pulsa **+ Añadir pausa** para otra. Quien está en pausa no trabaja.
 5. **Ausentismo diario:** probabilidad de que cada persona falte un día cualquiera (por ejemplo, 3 %).
 6. **Traslado de casos:** cuántos minutos tarda un caso en llegar a otro lugar:
-   - dentro del mismo equipo,
-   - entre equipos de una misma área,
+   - dentro de la misma subárea,
+   - entre subáreas de una misma área,
    - entre áreas distintas.
 
 > Las llegadas de casos, los plazos (SLA) y los tiempos de ciclo se cuentan solo en **horas hábiles** (dentro de la jornada y en días laborables).
 
-### Paso 2 — Pestaña «Áreas y equipos»
+### Paso 2 — Pestaña «Áreas y subáreas»
 
-1. Pulsa **+ Añadir área**. Cada área será una planta. Escribe su nombre y, si quieres, elige un **responsable**.
-2. Dentro de cada área pulsa **+ Añadir equipo**. Cada equipo será una sala. Escribe su nombre.
-3. A cada equipo se le muestra cuántas personas tiene (`N personas`) y puede tener su propio responsable.
-4. Para borrar, usa la papelera (área) o la ✕ (equipo). **No te deja borrar** una unidad que aún tenga personas, etapas de procesos o reuniones: te avisa con un mensaje y tienes que moverlas o borrarlas antes.
+Aquí armas la estructura y, en cada área y subárea, a sus responsables y colaboradores.
 
-> El «responsable» es solo informativo: no cambia cómo se asigna el trabajo.
+1. Arriba ves la **Planta / empresa** (su nombre).
+2. Pulsa **+ Añadir área**. Escribe su **nombre**.
+3. Dentro del área hay dos columnas:
+   - **Responsables:** pulsa **+ Responsable** para añadir uno. Aparece un campo con el nombre: escríbelo. Repite para tener varios.
+   - **Colaboradores:** igual con **+ Colaborador**.
+4. En cada persona, el botón **⇄** la pasa de responsable a colaborador (y al revés) y la **✕** la borra.
+5. Para crear una **subárea**, pulsa **+ Añadir subárea** dentro del área. Tiene su propio nombre y sus propias columnas de responsables y colaboradores.
+6. Para borrar, usa la papelera (área) o la ✕ (subárea). **No te deja borrar** una unidad que aún tenga personas, etapas de procesos o reuniones: te avisa y tienes que moverlas o borrarlas antes.
+
+> Las personas que creas aquí tienen un rol y valores por defecto. Para ajustar su rol, velocidad, errores, etc., ve a la pestaña **Personas**.
 
 ### Paso 3 — Pestaña «Personas»
 
-Una fila por persona. Pulsa **+ Añadir persona** (se añade al equipo que tengas filtrado arriba, en «Mostrar»).
+Una fila por persona (la misma que creaste en el paso 2, con todos sus detalles). Pulsa **+ Añadir persona** (se añade a la unidad que tengas filtrada arriba, en «Mostrar»).
 
 | Columna | Qué significa |
 |---|---|
-| **Nombre** | Cómo se muestra en el edificio |
-| **Equipo** | En qué sala se sienta |
+| **Nombre** | Cómo se muestra en el plano |
+| **Área / subárea** | Dónde se sienta |
+| **Tipo** | **Responsable** (franja dorada en la tabla) o **Colaborador** |
 | **Rol** | Lo que piden las etapas de los procesos (por ejemplo `analista`, `vendedor`). Al escribir, te sugiere los roles ya existentes |
 | **Jefe** | Informativo |
 | **Veloc.** | `1` = normal; `1,2` = 20 % más rápido; `0,8` = 20 % más lento |
 | **Errores** | % de tareas que hay que rehacer. Si falla, el caso vuelve a la misma etapa |
 | **Ausent.** | Ausentismo propio. Vacío = usa el general de la pestaña Empresa |
 | **Horario** | «Horario general» o uno de los turnos que crees en la pestaña Horarios |
-| **Habilidades** | Opcional, separadas por coma. Se usa si una etapa pide una habilidad concreta (solo desde el YAML) |
+| **Habilidades** | Opcional, separadas por coma |
 
-> **Lo importante:** una persona puede tomar una etapa si está en el equipo que pide la etapa **y** tiene el rol que pide. Si pones un rol distinto, esa persona no hará esa etapa.
+> **Lo importante:** una persona puede tomar una etapa si está en el área o subárea que pide la etapa **y** tiene el rol que pide. Ser responsable o colaborador **no cambia** quién puede hacer qué: solo cómo se ve y cómo se agrupa a las personas.
 
 ### Paso 4 — Pestaña «Procesos»
 
@@ -196,7 +206,7 @@ Cada etapa es una **tarjeta numerada**. El caso las recorre según el camino que
 Para cada etapa:
 
 1. **Nombre.**
-2. **Equipo que la hace** y **Rol de quien la hace.** Solo se ofrecen los roles que existen en ese equipo.
+2. **Área / subárea que la hace** y **Rol de quien la hace.** Solo se ofrecen los roles que existen ahí.
 3. **Cuánto tarda** (a velocidad normal): elige el tipo de variación y sus minutos. Por ejemplo: *normal, media 35 min, desviación 10 min*.
 4. **Plazo máximo (SLA):** en horas hábiles, desde que el caso llega a la etapa. Vacío = sin plazo. Si se supera, el caso se marca en rojo y cuenta como incumplido.
 5. Con ↑ ↓ cambias el orden y con la papelera borras la etapa.
@@ -220,7 +230,7 @@ Para cada etapa no final, elige:
 
   Pulsa **+ Añadir condición** para más. Se evalúan **en orden** y gana la primera que se cumple; usa ↑ ↓ para ordenarlas. Siempre existe **«En cualquier otro caso, ir a…»** para los que no cumplen ninguna.
 
-  Para usar condiciones necesitas haber creado antes un *dato de cada caso* (4.2). Si una condición viene de un YAML con `&&` o `||`, se muestra como texto editable.
+  Para usar condiciones necesitas haber creado antes un *dato de cada caso* (4.2).
 
 #### 4.5 Excepciones
 
@@ -235,17 +245,14 @@ Dentro de una etapa con trabajo, **+ Añadir excepción** crea algo que puede sa
 
 Se evalúan en orden al terminar la etapa; si ninguna se dispara, el caso sigue su camino normal.
 
-Hay otros tres «imprevistos» que no se configuran aquí:
-- el **error humano** de cada persona (pestaña Personas),
-- el **ausentismo** (pestaña Empresa o Personas),
-- los **plazos (SLA)** de cada etapa.
+Hay otros tres «imprevistos» que no se configuran aquí: el **error humano** de cada persona, el **ausentismo** y los **plazos (SLA)**.
 
 ### Paso 5 — Pestaña «Horarios y reuniones»
 
 Tres bloques, todos opcionales:
 
 1. **Horarios especiales (turnos):** pulsa **+ Añadir horario**, ponle un nombre (por ejemplo `turno_tarde`), su entrada, salida y pausas. Después, asígnalo a las personas en la pestaña Personas (columna Horario).
-2. **Reuniones recurrentes:** nombre, equipo, hora de inicio, duración y días. Bloquea a **todo el equipo y sus subequipos** mientras dura (van a la sala común). Si dejas los días vacíos, se repite todos los días laborables.
+2. **Reuniones recurrentes:** nombre, área o subárea, hora de inicio, duración y días. Bloquea a **todas las personas de esa unidad y de sus subáreas** mientras dura (van a la sala común). Si dejas los días vacíos, se repite todos los días laborables.
 3. **Ausencias planificadas:** elige una persona y escribe los días en que falta, separados por coma. El **día 0 es el primer lunes** de la simulación, el 1 es el martes, etc.
 
 ### Paso 6 — Aplicar y simular
@@ -266,18 +273,18 @@ En el panel de abajo (la simulación completa ya está calculada):
 | Panel | Qué cuenta |
 |---|---|
 | **Resultado** | Casos cerrados / creados por proceso, ciclo medio y P90 (el tiempo que tardan 9 de cada 10 casos), plazos incumplidos y las etapas con mayor espera |
-| **Utilización por unidad** | Cuánto trabajan los equipos: verde, ámbar > 70 %, rojo > 85 % |
+| **Utilización por unidad** | Cuánto trabajan las áreas y subáreas: verde, ámbar > 70 %, rojo > 85 % |
 | **Personas** | Todas, ordenadas por utilización. Clic para ver su ficha |
-| **Ficha** | Estado, caso, utilización y su día |
+| **Ficha** | Responsable o colaborador, su área › subárea, estado, caso, utilización y su día |
 
 > Todos los tiempos de ciclo y espera están en **horas hábiles**.
 
 ### Paso 8 — Itera
 
-El uso típico es: simular, encontrar el cuello de botella (la sala roja, el equipo al 90 %), **cambiar algo** y comparar.
+El uso típico es: simular, encontrar el cuello de botella (la sala roja, la unidad al 90 %), **cambiar algo** y comparar.
 
 1. Abre ⚙ Configurar empresa.
-2. Cambia una cosa (por ejemplo, añade una persona al equipo saturado, sube su velocidad, o reduce la probabilidad de una excepción).
+2. Cambia una cosa (por ejemplo, añade un colaborador a la subárea saturada, sube su velocidad, o reduce la probabilidad de una excepción).
 3. **Aplicar y simular** con la **misma semilla** que antes para que la comparación sea justa.
 4. Compara los resultados.
 
@@ -287,7 +294,7 @@ La pestaña **YAML (avanzado)** muestra exactamente lo mismo que los formularios
 
 - **Descargar .yaml** para guardar o compartir la empresa.
 - **Abrir archivo…** o pegar un YAML y pulsar **Cargar en los formularios**.
-- Algunas opciones solo existen en el YAML, como las *habilidades requeridas por una etapa* (`skill`).
+- En el YAML, cada persona tiene `kind: responsable` o `kind: colaborador` (sin `kind` es colaborador). El formato antiguo con `head:` en una unidad se convierte solo al cargarlo: esa persona pasa a ser responsable.
 
 ---
 
@@ -295,21 +302,23 @@ La pestaña **YAML (avanzado)** muestra exactamente lo mismo que los formularios
 
 | Mensaje | Qué hacer |
 |---|---|
-| `people: debe haber al menos una persona` | Añade una persona en la pestaña Personas |
-| `etapa "x": nadie en "y" cumple role/skill` | Ninguna persona del equipo de esa etapa tiene el rol que pide. Cambia el rol de la etapa o el de alguna persona |
+| `people: debe haber al menos una persona` | Añade una persona en «Áreas y subáreas» o en «Personas» |
+| `etapa "x": nadie en "y" cumple role/skill` | Ninguna persona de esa área o subárea tiene el rol que pide. Cambia el rol de la etapa o el de alguna persona |
 | `etapa "x": falta "next"` | La etapa no tiene siguiente. Elige a dónde va, o márcala como final |
 | `la etapa "x" no existe` | Una etapa, excepción o condición apunta a una etapa que borraste. Elige otra |
-| `Aún tiene N persona(s)…` (al borrar) | Mueve o borra primero lo que usa esa área o equipo |
+| `Aún tiene N persona(s)…` (al borrar) | Mueve o borra primero lo que usa esa área o subárea |
 | `Primero añade un «Dato de cada caso»` | Para usar condiciones hay que crear antes un dato (paso 4.2) |
-| Un área no aparece en el edificio | No tiene personas ni en ella ni en sus equipos |
-| Un equipo cuya cola crece sin parar | Faltan personas con el rol correcto, o van más lentas que la llegada de casos |
+| Una sala dice «Sin personas aún» | Añade responsables o colaboradores a esa área o subárea |
+| Una subárea cuya cola crece sin parar | Faltan personas con el rol correcto, o van más lentas que la llegada de casos |
 
 ## Qué no se puede configurar (todavía)
 
+- **Varias plantas** (por ejemplo, varias sedes): hoy hay una sola planta por empresa.
+- Que ser responsable dé poderes: no asigna trabajo ni toma decisiones, solo organiza y distingue a las personas.
 - Prioridades entre casos, ni asignar a alguien concreto.
 - Que una persona tenga varios roles o trabaje en dos casos a la vez.
 - Picos de demanda, bajas o contrataciones a mitad de la simulación.
 - Ausencias por horas (solo días completos).
 - Costos por persona o por etapa.
 - Deshacer en los formularios.
-- Editar el organigrama o el flujo arrastrando y soltando.
+- Editar la estructura arrastrando y soltando.

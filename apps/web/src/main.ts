@@ -83,6 +83,18 @@ let personEvents = new Map<string, Array<{ t: number; state: PersonState }>>();
 const fmtMin = (m: number) => (m >= 90 ? `${(m / 60).toFixed(1)} h` : `${m.toFixed(0)} min`);
 const pct = (x: number) => `${Math.round(x * 100)}%`;
 const nameOf = (id: string) => def.people.find((p) => p.id === id)?.name ?? id;
+/** "Área › Subárea" a partir del id de una unidad. */
+function unitLabel(id: string): string {
+  const trail = (list: UnitDef[], path: string[]): string[] | undefined => {
+    for (const u of list) {
+      const p = [...path, u.name ?? u.id];
+      if (u.id === id) return p;
+      const r = u.children && trail(u.children, p);
+      if (r) return r;
+    }
+  };
+  return (trail(def.units, []) ?? [id]).join(' › ');
+}
 const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!);
 
 const STATE_LABEL: Record<PersonState, string> = {
@@ -212,7 +224,8 @@ function paintDetail(h?: OrgHud, force = false) {
   push(start, to, cur);
   const nowPct = Math.min(100, Math.max(0, ((t - from) / (to - from)) * 100));
   detail.innerHTML = `
-    <h3>${esc(p.name ?? p.id)} <small>${esc(p.role)} · ${esc(p.unit)}</small></h3>
+    <h3>${p.kind === 'responsable' ? '★ ' : ''}${esc(p.name ?? p.id)} <small>${p.kind === 'responsable' ? 'Responsable' : 'Colaborador'} · ${esc(unitLabel(p.unit))}</small></h3>
+    <p class="hint">Rol: ${esc(p.role)}</p>
     <p><span class="dot" style="background:${STATE_COLOR[state]}"></span>${STATE_LABEL[state]}${h?.selectedCase ? ` · caso <b>${esc(h.selectedCase)}</b>` : ''}</p>
     <p>Velocidad ${p.speed ?? 1} · error ${pct(p.errorRate ?? 0)} · jefe: ${p.reportsTo ? esc(nameOf(p.reportsTo)) : '—'}</p>
     <p>Utilización ${pct(s.utilization)} · ${s.tasks} tareas · ${fmtMin(s.workedMinutes)} trabajados</p>
@@ -225,13 +238,13 @@ function paintDetail(h?: OrgHud, force = false) {
 const chips = $<HTMLDivElement>('floors');
 function renderFloorChips() {
   chips.innerHTML =
-    `<button data-f="-1" class="chip on">Todo</button>` +
-    scene.floorNames.map((n, i) => `<button data-f="${i}" class="chip">P${i + 1} · ${esc(n)}</button>`).join('');
+    `<button data-f="-1" class="chip on">Planta completa</button>` +
+    scene.areaNames.map((n, i) => `<button data-f="${i}" class="chip">${esc(n)}</button>`).join('');
   chips.querySelectorAll<HTMLButtonElement>('button').forEach((btn) =>
     btn.addEventListener('click', () => {
       chips.querySelectorAll('button').forEach((x) => x.classList.remove('on'));
       btn.classList.add('on');
-      scene.focusFloor(Number(btn.dataset.f));
+      scene.focusArea(Number(btn.dataset.f));
     }),
   );
 }

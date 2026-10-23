@@ -24,13 +24,15 @@ tags: [gestión, roadmap]
 - [x] Validación del YAML de empresa (elegibilidad, referencias, horas)
 - [x] `examples/banco_pixel.yaml`: 32 personas, 5 áreas, 2 procesos cruzados
 - [x] `OrgReplayer` y 16 tests nuevos
-- [x] Edificio generado desde el organigrama (plantas, salas, escritorios, sala común, escalera) — `apps/web/src/building.ts`
-- [x] Avatares que caminan por puertas, pasillo y escalera según su estado (`person.state`)
+- [x] Plano generado desde el organigrama: planta → áreas → subáreas → escritorios, sala común por área, pasillos — `apps/web/src/building.ts`
+- [x] Avatares que caminan por puertas y pasillos según su estado (`person.state`)
 - [x] Casos como cajas: bandeja por sala, sobre el escritorio al trabajarse, viajan en los traspasos
 - [x] Panel de persona (su día, carga, caso actual) y utilización por unidad
 - [x] Web migrada del motor de proceso al de empresa (la vista de proceso único se eliminó)
 - [x] Panel de configuración con formularios (Preact): empresa, áreas, personas, procesos con reglas y excepciones, horarios, YAML avanzado; validación en vivo; guardado en `localStorage`
 - [ ] Panel de unidad con cola histórica y comparación entre corridas
+- [x] Responsables y colaboradores por área y subárea (`kind`), con su aspecto propio, y formularios para gestionarlos
+- [ ] Varias plantas (sedes)
 - [ ] Mensajes de validación con nombres en vez de ids; deshacer/rehacer en los formularios
 - [ ] Editor visual del organigrama (arrastrar) y del flujo del proceso (diagrama)
 

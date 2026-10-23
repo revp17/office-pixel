@@ -40,4 +40,21 @@ Decisiones tomadas con el usuario (2026-10-20):
 Por proceso (ciclo medio/P90 hábil, SLA), por etapa (espera, cola final), por persona (utilización = trabajado / disponible, tareas) y por unidad (utilización agregada).
 
 ## Pendiente / siguientes fases
-Edificio generado desde el árbol (plantas, salas, escritorios) y avatares que caminan; bandejas por persona; políticas de asignación *push*; picos de demanda y bajas como escenarios; costo por persona; editores visuales de organigrama. Ver [[13 Roadmap del prototipo]].
+Edificio generado desde el árbol (planta → áreas → subáreas → escritorios) y avatares que caminan; bandejas por persona; políticas de asignación *push*; picos de demanda y bajas como escenarios; costo por persona; editores visuales de organigrama. Ver [[13 Roadmap del prototipo]].
+
+## Estructura vigente (2026-10-23)
+
+```
+Planta (o empresa)          ← una sola; el contorno que lo contiene todo
+ └─ Área                    ← 1 o varias; cada una con su nombre
+     ├─ responsables y colaboradores del área
+     └─ Subárea             ← 0 o varias; cada una con su nombre
+         └─ responsables y colaboradores de la subárea
+```
+
+- En el modelo, `units` son las áreas (primer nivel) y sus hijos son subáreas; el nombre de la planta es `company`.
+- Cada persona pertenece a **una** unidad y tiene `kind: responsable | colaborador` (por defecto, colaborador). Una unidad puede tener varios de cada tipo.
+- `kind` **no afecta** a la asignación de trabajo (sigue siendo unidad + rol); solo organiza y se muestra (los responsables se sientan primero, con placa dorada y ★).
+- El campo antiguo `head` de una unidad se migra al leer el YAML: esa persona pasa a `kind: responsable`.
+- Visual: las áreas son zonas coloreadas dentro de la planta (apiladas o en fila según el selector); el área tiene sala propia si tiene gente directa, y las subáreas y áreas vacías también se dibujan.
+- Pendiente: varias plantas (sedes).

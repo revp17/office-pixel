@@ -22,68 +22,63 @@ meetings:
 units:
   - id: comercial
     name: Comercial
-    head: gerente_comercial
     children:
       - { id: ventas, name: Ventas }
   - id: operaciones
     name: Operaciones
-    head: jefa_ops
     children:
       - { id: kyc, name: Validación KYC }
       - { id: formalizacion, name: Formalización }
   - id: riesgos
     name: Riesgos
-    head: jefe_riesgos
     children:
       - { id: analisis, name: Análisis }
       - { id: senior, name: Riesgos senior }
   - id: legal
     name: Legal y Cumplimiento
-    head: jefa_legal
     children:
       - { id: contratos, name: Contratos }
       - { id: cumplimiento, name: Cumplimiento }
   - id: atencion
     name: Atención al cliente
-    head: supervisor_atencion
     children:
       - { id: contact_center, name: Contact center }
 
 people:
   # Comercial
-  - { id: gerente_comercial, name: Marcos Rivera, unit: comercial, role: gerente }
+  - { id: gerente_comercial, name: Marcos Rivera, unit: comercial, role: gerente, kind: responsable }
   - { id: e1, name: Sofía Luna,    unit: ventas, role: ejecutivo, reportsTo: gerente_comercial, speed: 1.1 }
   - { id: e2, name: Diego Paz,     unit: ventas, role: ejecutivo, reportsTo: gerente_comercial }
   - { id: e3, name: Valeria Cruz,  unit: ventas, role: ejecutivo, reportsTo: gerente_comercial, speed: 0.9 }
   - { id: e4, name: Andrés Mora,   unit: ventas, role: ejecutivo, reportsTo: gerente_comercial }
   - { id: e5, name: Camila Soto,   unit: ventas, role: ejecutivo, reportsTo: gerente_comercial }
   # Operaciones
-  - { id: jefa_ops, name: Laura Núñez, unit: operaciones, role: jefe }
-  - { id: k1, name: Pablo Reyes,   unit: kyc, role: operador_kyc, reportsTo: jefa_ops }
+  - { id: jefa_ops, name: Laura Núñez, unit: operaciones, role: jefe, kind: responsable }
+  - { id: k1, name: Pablo Reyes,   unit: kyc, role: operador_kyc, reportsTo: jefa_ops, kind: responsable }
   - { id: k2, name: Irene Vidal,   unit: kyc, role: operador_kyc, reportsTo: jefa_ops, speed: 1.15 }
   - { id: k3, name: Tomás Ortega,  unit: kyc, role: operador_kyc, reportsTo: jefa_ops }
   - { id: k4, name: Elena Ríos,    unit: kyc, role: operador_kyc, reportsTo: jefa_ops, errorRate: 0.04 }
-  - { id: f1, name: Hugo Salas,    unit: formalizacion, role: formalizador, reportsTo: jefa_ops }
+  - { id: f1, name: Hugo Salas,    unit: formalizacion, role: formalizador, reportsTo: jefa_ops, kind: responsable }
   - { id: f2, name: Marta Gil,     unit: formalizacion, role: formalizador, reportsTo: jefa_ops, speed: 1.1 }
   - { id: f3, name: Raúl Vega,     unit: formalizacion, role: formalizador, reportsTo: jefa_ops, errorRate: 0.03 }
   # Riesgos
-  - { id: jefe_riesgos, name: Carlos Duarte, unit: riesgos, role: jefe }
+  - { id: jefe_riesgos, name: Carlos Duarte, unit: riesgos, role: jefe, kind: responsable }
   - { id: a1, name: Ana Beltrán,   unit: analisis, role: analista, reportsTo: jefe_riesgos, speed: 1.1 }
   - { id: a2, name: Luis Herrera,  unit: analisis, role: analista, reportsTo: jefe_riesgos }
   - { id: a3, name: Nuria Campos,  unit: analisis, role: analista, reportsTo: jefe_riesgos, errorRate: 0.05 }
   - { id: a4, name: Iván Prieto,   unit: analisis, role: analista, reportsTo: jefe_riesgos, speed: 0.9 }
-  - { id: s1, name: Patricia Lara, unit: senior, role: analista_senior, reportsTo: jefe_riesgos, speed: 1.1 }
+  - { id: s1, name: Patricia Lara, unit: senior, role: analista_senior, reportsTo: jefe_riesgos, speed: 1.1, kind: responsable }
   - { id: s2, name: Jorge Medina,  unit: senior, role: analista_senior, reportsTo: jefe_riesgos }
   # Legal y Cumplimiento
-  - { id: jefa_legal, name: Beatriz Ferrer, unit: legal, role: jefe }
-  - { id: l1, name: Rodrigo Pineda, unit: contratos, role: abogado, reportsTo: jefa_legal }
+  - { id: jefa_legal, name: Beatriz Ferrer, unit: legal, role: jefe, kind: responsable }
+  - { id: l1, name: Rodrigo Pineda, unit: contratos, role: abogado, reportsTo: jefa_legal, kind: responsable }
   - { id: l2, name: Silvia Ramos,   unit: contratos, role: abogado, reportsTo: jefa_legal }
-  - { id: c1, name: Álvaro Nieto,   unit: cumplimiento, role: oficial, reportsTo: jefa_legal }
+  - { id: c1, name: Álvaro Nieto,   unit: cumplimiento, role: oficial, reportsTo: jefa_legal, kind: responsable }
   - { id: c2, name: Lucía Barrios,  unit: cumplimiento, role: oficial, reportsTo: jefa_legal }
   # Atención al cliente
-  - { id: supervisor_atencion, name: Gonzalo Peña, unit: atencion, role: supervisor }
-  - { id: g1, name: Daniela Cano,  unit: contact_center, role: agente, reportsTo: supervisor_atencion }
-  - { id: g2, name: Mateo Ibáñez,  unit: contact_center, role: agente, reportsTo: supervisor_atencion, speed: 1.1 }
+  - { id: supervisor_atencion, name: Gonzalo Peña, unit: atencion, role: supervisor, kind: responsable }
+  - { id: g1, name: Daniela Cano,  unit: contact_center, role: agente, reportsTo: supervisor_atencion, kind: responsable }
+  - { id: g2, name: Mateo Ibáñez,  unit: contact_center, role: agente, reportsTo: supervisor_atencion, speed: 1.1, kind: responsable }
   - { id: g3, name: Paula Segura,  unit: contact_center, role: agente, reportsTo: supervisor_atencion }
   - { id: g4, name: Emilio Rojas,  unit: contact_center, role: agente, reportsTo: supervisor_atencion, schedule: turno_tarde }
   - { id: g5, name: Julia Mendoza, unit: contact_center, role: agente, reportsTo: supervisor_atencion, schedule: turno_tarde }

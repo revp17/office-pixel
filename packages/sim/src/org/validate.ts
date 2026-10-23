@@ -19,7 +19,28 @@ export function parseCompany(yamlText: string): CompanyParseResult {
   } catch (e) {
     return { errors: [`YAML inválido: ${(e as Error).message}`] };
   }
-  return validateCompany(raw);
+  const res = validateCompany(raw);
+  if (res.def) normalizeCompany(res.def);
+  return res;
+}
+
+/**
+ * Formato antiguo: `head` en una unidad. Ahora cada persona es responsable o colaborador de su
+ * unidad, así que se marca a esa persona como responsable y se elimina `head`.
+ */
+export function normalizeCompany(def: CompanyDef): CompanyDef {
+  const walk = (list: UnitDef[]) => {
+    for (const u of list) {
+      if (u.head !== undefined) {
+        const p = def.people.find((q) => q.id === u.head);
+        if (p && p.unit === u.id && !p.kind) p.kind = 'responsable';
+        delete u.head;
+      }
+      if (u.children) walk(u.children);
+    }
+  };
+  walk(def.units);
+  return def;
 }
 
 function checkHours(h: unknown, path: string, errors: string[]): void {
@@ -97,6 +118,8 @@ export function validateCompany(raw: unknown): CompanyParseResult {
       seen.add(p.id);
       if (typeof p.unit !== 'string' || !unitIds.has(p.unit)) errors.push(`${id}: la unidad "${String(p.unit)}" no existe`);
       if (typeof p.role !== 'string' || !p.role) errors.push(`${id}: falta "role"`);
+      if (p.kind !== undefined && p.kind !== 'responsable' && p.kind !== 'colaborador')
+        errors.push(`${id}.kind: debe ser "responsable" o "colaborador"`);
       if (p.reportsTo !== undefined && !personIds.has(String(p.reportsTo))) errors.push(`${id}: reportsTo "${String(p.reportsTo)}" no existe`);
       if (p.schedule !== undefined && !scheduleIds.has(String(p.schedule))) errors.push(`${id}: el horario "${String(p.schedule)}" no existe`);
       if (p.speed !== undefined && !(typeof p.speed === 'number' && p.speed > 0)) errors.push(`${id}.speed: debe ser > 0`);

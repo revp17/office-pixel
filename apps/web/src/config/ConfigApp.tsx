@@ -40,7 +40,7 @@ function ConfigApp({ initial, example, onApply, onClose }: Props) {
 
   const tabs: Array<{ id: TabId; label: string; count?: number }> = [
     { id: 'empresa', label: 'Empresa' },
-    { id: 'areas', label: 'Áreas y equipos', count: draft.units.length },
+    { id: 'areas', label: 'Áreas y subáreas', count: draft.units.length },
     { id: 'personas', label: 'Personas', count: draft.people.length },
     { id: 'procesos', label: 'Procesos', count: draft.processes.length },
     { id: 'horarios', label: 'Horarios y reuniones' },

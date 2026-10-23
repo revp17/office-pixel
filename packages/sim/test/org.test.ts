@@ -42,6 +42,34 @@ describe('validación de empresa', () => {
   });
 });
 
+describe('responsables y colaboradores', () => {
+  it('el ejemplo tiene responsables en áreas y subáreas, y varios en una misma unidad', () => {
+    const def = load();
+    const resp = def.people.filter((p) => p.kind === 'responsable');
+    expect(resp.length).toBeGreaterThanOrEqual(10);
+    expect(def.units.every((u) => u.head === undefined)).toBe(true);
+    expect(resp.filter((p) => p.unit === 'contact_center').length).toBeGreaterThanOrEqual(2);
+    expect(def.people.some((p) => !p.kind)).toBe(true); // el resto son colaboradores por defecto
+  });
+  it('el formato antiguo (head) se convierte en responsable', () => {
+    const legacy = text.replace('- id: riesgos\n    name: Riesgos', '- id: riesgos\n    name: Riesgos\n    head: a2');
+    const r = parseCompany(legacy);
+    expect(r.errors).toEqual([]);
+    expect(r.def!.people.find((p) => p.id === 'jefe_riesgos')!.kind).toBe('responsable');
+    expect(r.def!.units.find((u) => u.id === 'riesgos')!.head).toBeUndefined();
+  });
+  it('rechaza un tipo desconocido', () => {
+    const bad = text.replace('id: e1, name: Sofía Luna,', 'id: e1, kind: jefazo, name: Sofía Luna,');
+    expect(parseCompany(bad).errors.some((e) => e.includes('kind'))).toBe(true);
+  });
+  it('no cambia el resultado de la simulación', () => {
+    const def = load();
+    const a = simulateCompany(def, { seed: 3, horizonDays: 3 });
+    const stripped: CompanyDef = { ...def, people: def.people.map(({ kind: _k, ...p }) => p) };
+    expect(simulateCompany(stripped, { seed: 3, horizonDays: 3 }).events).toEqual(a.events);
+  });
+});
+
 describe('motor de empresa', () => {
   const def = load();
   const res = simulateCompany(def, opts);

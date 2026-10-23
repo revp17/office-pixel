@@ -27,17 +27,26 @@ export interface MeetingDef {
   days?: number[];
 }
 
+/**
+ * Planta (la empresa) → áreas → subáreas. Los nodos de primer nivel son áreas; sus hijos, subáreas.
+ * Cada unidad tiene su propio nombre y las personas se asignan a ella como responsables o colaboradores.
+ */
 export interface UnitDef {
   id: string;
   name?: string;
+  /** @deprecated formato antiguo: al leer un YAML se convierte en `kind: responsable` de esa persona */
   head?: string;
   children?: UnitDef[];
 }
+
+export type PersonKind = 'responsable' | 'colaborador';
 
 export interface PersonDef {
   id: string;
   name?: string;
   unit: string;
+  /** responsable o colaborador de su área/subárea (por defecto, colaborador) */
+  kind?: PersonKind;
   role: string;
   skills?: string[];
   reportsTo?: string;

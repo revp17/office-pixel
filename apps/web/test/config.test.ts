@@ -8,7 +8,9 @@ import {
   addUnit,
   emptyCompany,
   formatCondition,
+  kindOf,
   parseCondition,
+  peopleOf,
   removePerson,
   removeStage,
   removeUnit,
@@ -62,7 +64,7 @@ describe('unidades', () => {
   });
   it('no deja borrar una unidad en uso', () => {
     const d = emptyCompany();
-    const r = removeUnit(d, 'equipo_1');
+    const r = removeUnit(d, 'subarea_1');
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.reason).toContain('persona');
     expect(usage(d, 'operaciones')).toEqual({ people: 2, stages: 1, meetings: 0 });
@@ -71,22 +73,48 @@ describe('unidades', () => {
     const d = emptyCompany();
     const id = addUnit(d, 'operaciones', 'Temporal');
     expect(removeUnit(d, id).ok).toBe(true);
-    expect(d.units[0].children!.map((u) => u.id)).toEqual(['equipo_1']);
+    expect(d.units[0].children!.map((u) => u.id)).toEqual(['subarea_1']);
   });
 });
 
 describe('personas', () => {
   it('añadir hereda el rol de su equipo y borrar limpia referencias', () => {
     const d = emptyCompany();
-    const p = addPerson(d, 'equipo_1', 'Marta Gil');
+    const p = addPerson(d, 'subarea_1', 'Marta Gil');
     expect(p.role).toBe('analista');
     expect(rolesIn(d, 'operaciones')).toEqual(['analista']);
     d.people[0].reportsTo = p.id;
-    d.units[0].head = p.id;
     removePerson(d, p.id);
     expect(d.people[0].reportsTo).toBeUndefined();
-    expect(d.units[0].head).toBeUndefined();
     expect(validateCompany(d).errors).toEqual([]);
+  });
+
+  it('cada área y subárea puede tener varios responsables y varios colaboradores', () => {
+    const d = emptyCompany();
+    // área: dos responsables y un colaborador directos
+    addPerson(d, 'operaciones', 'Jefa 1', 'responsable');
+    addPerson(d, 'operaciones', 'Jefe 2', 'responsable');
+    addPerson(d, 'operaciones', 'Apoyo');
+    // subárea: ya tiene a Ana (responsable) y Luis (colaborador); añadimos más
+    addPerson(d, 'subarea_1', 'Otro responsable', 'responsable');
+    addPerson(d, 'subarea_1', 'Otro colaborador');
+    expect(peopleOf(d, 'operaciones', 'responsable').map((p) => p.name)).toEqual(['Jefa 1', 'Jefe 2']);
+    expect(peopleOf(d, 'operaciones', 'colaborador').map((p) => p.name)).toEqual(['Apoyo']);
+    expect(peopleOf(d, 'subarea_1', 'responsable')).toHaveLength(2);
+    expect(peopleOf(d, 'subarea_1', 'colaborador')).toHaveLength(2);
+    expect(validateCompany(d).errors).toEqual([]);
+    // sobrevive al YAML
+    expect(parseCompany(companyToYaml(d)).def).toEqual(d);
+  });
+
+  it('el tipo por defecto es colaborador y los nombres por defecto lo indican', () => {
+    const d = emptyCompany();
+    const a = addPerson(d, 'subarea_1');
+    const b = addPerson(d, 'subarea_1', undefined, 'responsable');
+    expect([kindOf(a), a.name]).toEqual(['colaborador', 'Nuevo colaborador']);
+    expect([kindOf(b), b.name]).toEqual(['responsable', 'Nuevo responsable']);
+    delete a.kind;
+    expect(kindOf(a)).toBe('colaborador');
   });
 });
 

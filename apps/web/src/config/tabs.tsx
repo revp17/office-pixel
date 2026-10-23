@@ -1,26 +1,30 @@
 import { useState } from 'preact/hooks';
+import type { PersonDef, PersonKind } from '@office-pixel/sim';
 import {
+  KIND_LABEL,
   addPerson,
   addUnit,
   allRoles,
   findUnit,
   flatUnits,
+  kindOf,
+  peopleOf,
   removePerson,
   removeUnit,
   subtreeIds,
   usage,
 } from './model';
-import { AddBtn, Card, Days, Field, IconBtn, Num, Pct, Sel, Section, Text, Time, type TabProps } from './ui';
+import { AddBtn, Card, Days, Field, IconBtn, Num, Pct, Sel, Section, Text, Time, type TabProps, type Up } from './ui';
 
-// ---------- Empresa ----------
+// ---------- Planta / empresa ----------
 
 export function EmpresaTab({ d, up }: TabProps) {
   const cal = d.calendar;
   const travel = d.travel ?? {};
   return (
     <div class="form">
-      <Section title="Empresa">
-        <Field label="Nombre de la empresa">
+      <Section title="Planta / empresa" hint="Es el contenedor de todo: dentro tiene áreas, y cada área puede tener subáreas.">
+        <Field label="Nombre de la planta o empresa">
           <Text value={d.company} onChange={(v) => up((x) => void (x.company = v))} />
         </Field>
       </Section>
@@ -59,12 +63,12 @@ export function EmpresaTab({ d, up }: TabProps) {
         </Field>
       </Section>
 
-      <Section title="Traslado de casos" hint="Minutos que tarda un caso en llegar a otro equipo cuando cambia de lugar.">
+      <Section title="Traslado de casos" hint="Minutos que tarda un caso en llegar a otro lugar cuando cambia de subárea o de área.">
         <div class="row">
-          <Field label="Dentro del mismo equipo">
+          <Field label="Dentro de la misma subárea">
             <Num value={travel.sameTeam ?? 0} min={0} suffix="min" onChange={(v) => up((x) => void ((x.travel ??= {}).sameTeam = v ?? 0))} />
           </Field>
-          <Field label="Entre equipos de una misma área">
+          <Field label="Entre subáreas de una misma área">
             <Num value={travel.sameArea ?? 2} min={0} suffix="min" onChange={(v) => up((x) => void ((x.travel ??= {}).sameArea = v ?? 0))} />
           </Field>
           <Field label="Entre áreas distintas">
@@ -76,19 +80,46 @@ export function EmpresaTab({ d, up }: TabProps) {
   );
 }
 
-// ---------- Áreas y equipos ----------
+// ---------- Áreas y subáreas (con sus responsables y colaboradores) ----------
+
+/** Dos columnas: responsables y colaboradores de una unidad, editables en línea. */
+function PeopleBox({ d, up, unitId }: { d: TabProps['d']; up: Up; unitId: string }) {
+  const edit = (id: string, fn: (p: PersonDef) => void) => up((x) => void fn(x.people.find((q) => q.id === id)!));
+  const col = (kind: PersonKind, title: string, hint: string) => {
+    const list = peopleOf(d, unitId, kind);
+    const other: PersonKind = kind === 'responsable' ? 'colaborador' : 'responsable';
+    return (
+      <div class={`pcol ${kind}`}>
+        <div class="pcol-head">
+          <span>{title}</span>
+          <span class="badge">{list.length}</span>
+        </div>
+        {list.length === 0 && <p class="empty">{hint}</p>}
+        {list.map((p) => (
+          <div class="pchip" key={p.id}>
+            <Text value={p.name ?? ''} onChange={(v) => edit(p.id, (q) => void (q.name = v))} />
+            <IconBtn title={`Pasar a ${KIND_LABEL[other].toLowerCase()}`} onClick={() => edit(p.id, (q) => void (q.kind = other))}>
+              ⇄
+            </IconBtn>
+            <IconBtn title="Borrar persona" danger onClick={() => up((x) => void removePerson(x, p.id))}>
+              ✕
+            </IconBtn>
+          </div>
+        ))}
+        <AddBtn onClick={() => up((x) => void addPerson(x, unitId, undefined, kind))}>{KIND_LABEL[kind]}</AddBtn>
+      </div>
+    );
+  };
+  return (
+    <div class="peoplebox">
+      {col('responsable', 'Responsables', 'Sin responsables todavía.')}
+      {col('colaborador', 'Colaboradores', 'Sin colaboradores todavía.')}
+    </div>
+  );
+}
 
 export function AreasTab({ d, up, note }: TabProps) {
-  const people = d.people.map((p) => ({ value: p.id, label: p.name ?? p.id }));
-  const headOptions = [{ value: '', label: '— sin responsable —' }, ...people];
-
   const rename = (id: string, name: string) => up((x) => void (findUnit(x.units, id)!.name = name));
-  const setHead = (id: string, v: string) =>
-    up((x) => {
-      const u = findUnit(x.units, id)!;
-      if (v) u.head = v;
-      else delete u.head;
-    });
   const remove = (id: string) => {
     const probe = structuredClone(d);
     const r = removeUnit(probe, id);
@@ -99,8 +130,16 @@ export function AreasTab({ d, up, note }: TabProps) {
   return (
     <div class="form">
       <p class="lead">
-        Cada <b>área</b> es una planta del edificio y cada <b>equipo</b> es una sala donde se sientan las personas.
+        La <b>planta</b> (tu empresa) tiene <b>áreas</b>, y cada área puede tener <b>subáreas</b>. Cada área y cada subárea tiene su
+        propio nombre y sus <b>responsables</b> y <b>colaboradores</b>.
       </p>
+
+      <Card title={<span class="pill plant">Planta / empresa</span>}>
+        <Field label="Nombre">
+          <Text value={d.company} onChange={(v) => up((x) => void (x.company = v))} />
+        </Field>
+      </Card>
+
       {d.units.map((area) => {
         const rows = flatUnits([area]).slice(1);
         return (
@@ -113,28 +152,27 @@ export function AreasTab({ d, up, note }: TabProps) {
               </IconBtn>
             }
           >
-            <div class="row">
-              <Field label="Nombre del área" grow>
-                <Text value={area.name ?? area.id} onChange={(v) => rename(area.id, v)} />
-              </Field>
-              <Field label="Responsable del área" grow>
-                <Sel value={area.head ?? ''} options={headOptions} onChange={(v) => setHead(area.id, v)} />
-              </Field>
-            </div>
+            <Field label="Nombre del área">
+              <Text value={area.name ?? area.id} onChange={(v) => rename(area.id, v)} />
+            </Field>
+            <PeopleBox d={d} up={up} unitId={area.id} />
+
             <div class="sublist">
-              {rows.length === 0 && <p class="empty">Esta área aún no tiene equipos. Añade uno para poder sentar personas.</p>}
+              {rows.length === 0 && <p class="empty">Esta área no tiene subáreas. Es opcional: añade una si quieres separar equipos dentro del área.</p>}
               {rows.map(({ unit, depth }) => (
-                <div class="subrow" key={unit.id} style={{ marginLeft: `${(depth - 1) * 18}px` }}>
-                  <span class="pill sub">Equipo</span>
-                  <Text value={unit.name ?? unit.id} onChange={(v) => rename(unit.id, v)} />
-                  <span class="badge">{usage(d, unit.id).people} personas</span>
-                  <Sel value={unit.head ?? ''} options={headOptions} onChange={(v) => setHead(unit.id, v)} />
-                  <IconBtn title="Borrar equipo" danger onClick={() => remove(unit.id)}>
-                    ✕
-                  </IconBtn>
+                <div class="subcard" key={unit.id} style={{ marginLeft: `${(depth - 1) * 18}px` }}>
+                  <div class="subhead">
+                    <span class="pill sub">Subárea</span>
+                    <Text value={unit.name ?? unit.id} onChange={(v) => rename(unit.id, v)} />
+                    <span class="badge">{usage(d, unit.id).people} personas</span>
+                    <IconBtn title="Borrar subárea" danger onClick={() => remove(unit.id)}>
+                      ✕
+                    </IconBtn>
+                  </div>
+                  <PeopleBox d={d} up={up} unitId={unit.id} />
                 </div>
               ))}
-              <AddBtn onClick={() => up((x) => void addUnit(x, area.id, 'Nuevo equipo'))}>Añadir equipo</AddBtn>
+              <AddBtn onClick={() => up((x) => void addUnit(x, area.id, 'Nueva subárea'))}>Añadir subárea</AddBtn>
             </div>
           </Card>
         );
@@ -154,20 +192,22 @@ export function PersonasTab({ d, up, note }: TabProps) {
   const rows = d.people.map((p, i) => ({ p, i })).filter(({ p }) => !ids || ids.has(p.unit));
   const bosses = [{ value: '', label: '— sin jefe —' }, ...d.people.map((p) => ({ value: p.id, label: p.name ?? p.id }))];
   const schedules = [{ value: '', label: 'Horario general' }, ...Object.keys(d.schedules ?? {}).map((k) => ({ value: k, label: k }))];
+  const kinds = (Object.keys(KIND_LABEL) as PersonKind[]).map((k) => ({ value: k, label: KIND_LABEL[k] }));
 
   const edit = (id: string, fn: (p: (typeof d.people)[number]) => void) => up((x) => void fn(x.people.find((q) => q.id === id)!));
 
   const add = () => {
     const target = filter || units.find((u) => !u.unit.children?.length)?.unit.id || units[0]?.unit.id;
-    if (!target) return note('Crea primero un área y un equipo.');
+    if (!target) return note('Crea primero un área.');
     up((x) => void addPerson(x, target));
   };
 
   return (
     <div class="form">
       <p class="lead">
-        Una fila por persona. El <b>rol</b> es lo que piden las etapas de los procesos: quien tenga ese rol (y esté en el equipo
-        correcto) puede tomar el trabajo.
+        Una fila por persona. Cada una pertenece a un <b>área o subárea</b> y es <b>responsable</b> o <b>colaborador</b>. El{' '}
+        <b>rol</b> es lo que piden las etapas de los procesos: quien tenga ese rol (y esté en la subárea correcta) puede tomar el
+        trabajo.
       </p>
       <div class="toolbar-row">
         <Field label="Mostrar">
@@ -186,7 +226,8 @@ export function PersonasTab({ d, up, note }: TabProps) {
           <thead>
             <tr>
               <th>Nombre</th>
-              <th>Equipo</th>
+              <th>Área / subárea</th>
+              <th>Tipo</th>
               <th>Rol</th>
               <th>Jefe</th>
               <th title="1 = velocidad normal; 1.2 = 20 % más rápido">Veloc.</th>
@@ -199,12 +240,15 @@ export function PersonasTab({ d, up, note }: TabProps) {
           </thead>
           <tbody>
             {rows.map(({ p }) => (
-              <tr key={p.id}>
+              <tr key={p.id} class={kindOf(p)}>
                 <td>
                   <Text value={p.name ?? ''} onChange={(v) => edit(p.id, (q) => void (q.name = v))} />
                 </td>
                 <td>
                   <Sel value={p.unit} options={unitOptions} onChange={(v) => edit(p.id, (q) => void (q.unit = v))} />
+                </td>
+                <td>
+                  <Sel value={kindOf(p)} options={kinds} onChange={(v) => edit(p.id, (q) => void (q.kind = v as PersonKind))} />
                 </td>
                 <td>
                   <Text value={p.role} list="roles" onChange={(v) => edit(p.id, (q) => void (q.role = v))} />

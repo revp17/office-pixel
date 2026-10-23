@@ -17,8 +17,8 @@ Simulador visual de procesos para Forward Deployed Engineers: define un proceso 
 
 La web (`apps/web`) la muestra como un **edificio**:
 
-- Una **planta por área**, una **sala por unidad**, un **escritorio por persona**, una sala común (pausas y reuniones) y una escalera con la entrada abajo.
-- Las personas llegan por la entrada, suben por la escalera, caminan a su escritorio, se van a la sala común en pausas y reuniones, y se ven fantasma si están ausentes.
+- Una **planta** (la empresa) que contiene **áreas**; cada área puede tener **subáreas**. Cada área y subárea tiene su nombre y sus **responsables** y **colaboradores** (los responsables se sientan primero, con placa dorada y ★).
+- Las personas llegan por la entrada, recorren los pasillos, caminan a su escritorio, se van a la sala común en pausas y reuniones, y se ven fantasma si están ausentes.
 - Los casos son cajas: llegan por la entrada, esperan en la **bandeja** de la sala, se posan en el escritorio de quien los trabaja y viajan entre salas en los traspasos.
 - Cuello de botella: cada sala muestra `presentes/total · c<cola>`, una barra de carga y un tinte ámbar/rojo.
 - Clic en una persona (o en la lista) para ver su día, su carga y su caso actual. Con la noche el edificio se oscurece.
@@ -40,7 +40,7 @@ El botón **⚙ Configurar empresa** abre un panel de formularios, sin tocar YAM
 | Pestaña | Qué se configura |
 |---|---|
 | Empresa | nombre, jornada, días laborables, pausas, ausentismo, tiempos de traslado |
-| Áreas y equipos | áreas (plantas), equipos (salas) y responsables |
+| Áreas y subáreas | la planta, sus áreas y subáreas, y los responsables y colaboradores de cada una |
 | Personas | una fila por persona: equipo, rol, jefe, velocidad, errores, ausentismo, horario, habilidades |
 | Procesos | llegadas, datos de cada caso, etapas (equipo, rol, duración, plazo), camino siguiente o por condiciones, excepciones |
 | Horarios y reuniones | turnos, reuniones recurrentes y ausencias planificadas |
@@ -50,9 +50,9 @@ Los problemas se validan en vivo (el botón **Aplicar y simular** se bloquea has
 
 ## Uso de la interfaz
 
-- **▤ Vertical / ▥ Horizontal** (barra superior) cambia la disposición de las plantas: apiladas de arriba abajo, o en fila de izquierda a derecha. Se recuerda al recargar.
+- **▤ Vertical / ▥ Horizontal** (barra superior) cambia la disposición de las áreas dentro de la planta: apiladas de arriba abajo, o en fila de izquierda a derecha. Se recuerda al recargar.
 - Los días y la semilla de la simulación están en la barra superior (**↻ Simular** repite con otros valores).
-- Velocidad de 10 min/s a 12 h/s, línea de tiempo arrastrable, zoom con la rueda (hacia el cursor) y arrastre para mover. Los chips **P1…P5** acercan la cámara a una planta; **Vista general** encuadra todo. Con zoom muy alejado se ven solo contadores por sala.
+- Velocidad de 10 min/s a 12 h/s, línea de tiempo arrastrable, zoom con la rueda (hacia el cursor) y arrastre para mover. Los botones con el nombre de cada área acercan la cámara a ella; **Planta completa** y **Vista general** encuadran todo. Con zoom muy alejado se ven solo contadores por sala.
 - Aspecto: formas suavizadas (sin `pixelArt`), render a la resolución real de la pantalla (`devicePixelRatio`), texto nítido y avatares/cajas que crecen al alejar la cámara para seguir siendo legibles.
 - Misma semilla → misma simulación (reproducible).
 

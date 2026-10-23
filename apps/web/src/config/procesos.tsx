@@ -81,7 +81,7 @@ export function ProcesosTab({ d, up, note }: TabProps) {
           <Llegadas proc={proc} P={P} />
           <Datos proc={proc} P={P} />
 
-          <Section title="Etapas" hint="El caso recorre las etapas en orden. Cada etapa la hace una persona con el rol indicado, en el equipo indicado.">
+          <Section title="Etapas" hint="El caso recorre las etapas en orden. Cada etapa la hace una persona con el rol indicado, en el área o subárea indicada.">
             {proc.stages.map((st, i) => (
               <StageCard key={st.id} d={d} proc={proc} st={st} i={i} P={P} note={note} />
             ))}
@@ -274,7 +274,7 @@ function StageCard(props: { d: CompanyDef; proc: OrgProcessDef; st: OrgStageDef;
       {needsWork && (
         <>
           <div class="row">
-            <Field label="Equipo que la hace" grow>
+            <Field label="Área / subárea que la hace" grow>
               <Sel
                 value={st.unit ?? ''}
                 options={unitOptions}
@@ -287,7 +287,7 @@ function StageCard(props: { d: CompanyDef; proc: OrgProcessDef; st: OrgStageDef;
                 }
               />
             </Field>
-            <Field label="Rol de quien la hace" grow hint={roles.length ? undefined : 'Nadie en ese equipo tiene aún un rol.'}>
+            <Field label="Rol de quien la hace" grow hint={roles.length ? undefined : 'Nadie ahí tiene aún un rol.'}>
               <Sel
                 value={st.role ?? ''}
                 options={roleOptions}

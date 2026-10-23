@@ -90,14 +90,14 @@ export function HorariosTab({ d, up, note }: TabProps) {
         </AddBtn>
       </Section>
 
-      <Section title="Reuniones recurrentes" hint="Bloquean a todas las personas del equipo (y sus subequipos) mientras duran.">
+      <Section title="Reuniones recurrentes" hint="Bloquean a todas las personas del área o subárea (y de sus subáreas) mientras duran.">
         {meetings.length === 0 && <p class="empty">No hay reuniones.</p>}
         {meetings.map((m, i) => (
           <div class="inline wrap" key={i}>
             <Field label="Reunión">
               <Text value={m.id} onChange={(v) => up((x) => void (x.meetings![i].id = v))} />
             </Field>
-            <Field label="Equipo">
+            <Field label="Área / subárea">
               <Sel value={m.unit} options={unitOptions} onChange={(v) => up((x) => void (x.meetings![i].unit = v))} />
             </Field>
             <Field label="Empieza">
@@ -124,7 +124,7 @@ export function HorariosTab({ d, up, note }: TabProps) {
         ))}
         <AddBtn
           onClick={() => {
-            if (!unitOptions.length) return note('Crea primero un equipo.');
+            if (!unitOptions.length) return note('Crea primero un área.');
             up((x) => void (x.meetings = [...(x.meetings ?? []), { id: 'Reunión semanal', unit: unitOptions[0].value, start: '09:30', minutes: 30, days: [0] }]));
           }}
         >

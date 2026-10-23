@@ -1,4 +1,4 @@
-import type { CompanyDef, DistSpec, NextRule, OrgProcessDef, OrgStageDef, PersonDef, UnitDef } from '@office-pixel/sim';
+import type { CompanyDef, DistSpec, NextRule, OrgProcessDef, OrgStageDef, PersonDef, PersonKind, UnitDef } from '@office-pixel/sim';
 
 /** Texto → identificador interno estable (sin tildes ni espacios). */
 export function slug(s: string): string {
@@ -31,10 +31,10 @@ export function emptyCompany(): CompanyDef {
       absenteeism: 0.03,
     },
     travel: { sameTeam: 0, sameArea: 2, crossArea: 5 },
-    units: [{ id: 'operaciones', name: 'Operaciones', children: [{ id: 'equipo_1', name: 'Equipo 1' }] }],
+    units: [{ id: 'operaciones', name: 'Operaciones', children: [{ id: 'subarea_1', name: 'Subárea 1' }] }],
     people: [
-      { id: 'ana', name: 'Ana', unit: 'equipo_1', role: 'analista' },
-      { id: 'luis', name: 'Luis', unit: 'equipo_1', role: 'analista' },
+      { id: 'ana', name: 'Ana', unit: 'subarea_1', kind: 'responsable', role: 'analista' },
+      { id: 'luis', name: 'Luis', unit: 'subarea_1', kind: 'colaborador', role: 'analista' },
     ],
     processes: [
       {
@@ -45,7 +45,7 @@ export function emptyCompany(): CompanyDef {
           {
             id: 'atencion',
             label: 'Atención',
-            unit: 'equipo_1',
+            unit: 'subarea_1',
             role: 'analista',
             duration: { dist: 'normal', meanMinutes: 20, sdMinutes: 5 },
             next: 'cierre',
@@ -134,10 +134,22 @@ export function allRoles(def: CompanyDef): string[] {
 
 // ---------- personas ----------
 
-export function addPerson(def: CompanyDef, unit: string, name = 'Nueva persona'): PersonDef {
+export const KIND_LABEL: Record<PersonKind, string> = { responsable: 'Responsable', colaborador: 'Colaborador' };
+
+export function kindOf(p: PersonDef): PersonKind {
+  return p.kind === 'responsable' ? 'responsable' : 'colaborador';
+}
+
+/** Personas de una unidad (directas, sin contar subunidades) de un tipo. */
+export function peopleOf(def: CompanyDef, unitId: string, kind: PersonKind): PersonDef[] {
+  return def.people.filter((p) => p.unit === unitId && kindOf(p) === kind);
+}
+
+export function addPerson(def: CompanyDef, unit: string, name?: string, kind: PersonKind = 'colaborador'): PersonDef {
+  const label = name ?? (kind === 'responsable' ? 'Nuevo responsable' : 'Nuevo colaborador');
   const taken = new Set(def.people.map((p) => p.id));
-  const sample = def.people.find((p) => p.unit === unit);
-  const p: PersonDef = { id: uniqueId(name, taken), name, unit, role: sample?.role ?? 'empleado' };
+  const sample = def.people.find((p) => p.unit === unit && kindOf(p) === kind) ?? def.people.find((p) => p.unit === unit);
+  const p: PersonDef = { id: uniqueId(label, taken), name: label, unit, kind, role: sample?.role ?? 'empleado' };
   def.people.push(p);
   return p;
 }
@@ -145,7 +157,6 @@ export function addPerson(def: CompanyDef, unit: string, name = 'Nueva persona')
 export function removePerson(def: CompanyDef, id: string) {
   def.people = def.people.filter((p) => p.id !== id);
   for (const p of def.people) if (p.reportsTo === id) delete p.reportsTo;
-  for (const f of flatUnits(def.units)) if (f.unit.head === id) delete f.unit.head;
   if (def.scenario?.absences) def.scenario.absences = def.scenario.absences.filter((a) => a.person !== id);
 }
 
