@@ -476,6 +476,10 @@ export interface ProcessDependency {
   atStage?: string;
   /** solo "dispara": probabilidad de que cada caso del origen genere uno aquí (por defecto 1) */
   probability?: number;
+  /** solo "dispara": etapa de ESTE proceso por la que entra el caso nuevo (por defecto, la primera) */
+  toStage?: string;
+  /** solo "dispara": el caso nuevo hereda los datos (atributos) del caso de origen */
+  inherit?: boolean;
   note?: string;
 }
 

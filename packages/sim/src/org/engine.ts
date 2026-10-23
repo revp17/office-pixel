@@ -279,18 +279,19 @@ export function simulateCompany(def: CompanyDef, options: OrgSimOptions): OrgSim
   }
 
   /** Procesos que dependen (con "dispara") de cada proceso de origen. */
-  const triggers = new Map<string, Array<{ target: OrgProcessDef; atStage?: string; probability: number }>>();
+  const triggers = new Map<string, Array<{ target: OrgProcessDef; atStage?: string; probability: number; toStage?: string; inherit?: boolean }>>();
   for (const proc of def.processes)
     for (const d of proc.dependsOn ?? []) {
       if (d.kind !== 'dispara') continue;
       const l = triggers.get(d.process) ?? [];
-      l.push({ target: proc, atStage: d.atStage, probability: d.probability ?? 1 });
+      l.push({ target: proc, atStage: d.atStage, probability: d.probability ?? 1, toStage: d.toStage, inherit: d.inherit });
       triggers.set(d.process, l);
     }
   /** Dispara los procesos dependientes: al terminar la etapa `stageId`, o al completarse el caso (`stageId` null). */
   function fire(c: CaseRT, stageId: string | null) {
     for (const t of triggers.get(c.proc.id) ?? [])
-      if ((t.atStage ?? null) === stageId && (t.probability >= 1 || rng() < t.probability)) createCase(t.target, c.id);
+      if ((t.atStage ?? null) === stageId && (t.probability >= 1 || rng() < t.probability))
+        createCase(t.target, c.id, { entry: t.toStage, inherit: t.inherit ? c.attrs : undefined });
   }
 
   function complete(c: CaseRT, st: StageRT) {
@@ -406,16 +407,18 @@ export function simulateCompany(def: CompanyDef, options: OrgSimOptions): OrgSim
 
   // ---------- llegadas ----------
   /** Crea un caso del proceso; `cause` es el caso que lo disparó, si lo hubo. */
-  function createCase(proc: OrgProcessDef, cause?: string) {
+  function createCase(proc: OrgProcessDef, cause?: string, opt?: { entry?: string; inherit?: Record<string, number> }) {
     const n = (caseSeq.get(proc.id) ?? 0) + 1;
     caseSeq.set(proc.id, n);
     const attrs: Record<string, number> = {};
     for (const [k, d] of Object.entries(proc.attributes ?? {})) attrs[k] = Math.round(sampleDist(d, rng) * 100) / 100;
+    // un caso que continúa desde otro proceso trae los datos del caso de origen
+    if (opt?.inherit) Object.assign(attrs, opt.inherit);
     const c: CaseRT = { id: `${proc.id}#${n}`, proc, attrs, createdAt: now, stage: null, enteredAt: now, visit: 0, done: false };
     created++;
     procStats.get(proc.id)!.created++;
     emit({ t: now, type: 'case.created', caseId: c.id, process: proc.id, attrs, ...(cause ? { cause } : {}) });
-    enterStage(c, stagesByKey.get(`${proc.id}.${proc.stages[0].id}`)!);
+    enterStage(c, stagesByKey.get(`${proc.id}.${opt?.entry ?? proc.stages[0].id}`)!);
   }
 
   // minutos hábiles de un día; con `arrivalsPerDay` ninguna proceso recibe más casos propios por día que ese tope

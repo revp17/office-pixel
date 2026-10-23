@@ -182,3 +182,61 @@ describe('requisitos entre procedimientos', () => {
     expect(a.prerequisites).toBeUndefined();
   });
 });
+
+describe('continuar en otra etapa de otro proceso (toStage / inherit)', () => {
+  /** solicitud_credito termina en «formalizacion» y el reclamo entra por «investigacion», heredando los datos */
+  const cont = (opt: { toStage?: string; inherit?: boolean } = { toStage: 'investigacion', inherit: true }): CompanyDef => {
+    const d = base();
+    const rec = d.processes.find((p) => p.id === 'reclamo_cliente')!;
+    rec.attributes = { ...(rec.attributes ?? {}) };
+    rec.dependsOn = [{ process: 'solicitud_credito', kind: 'dispara', atStage: 'formalizacion', ...opt }];
+    return d;
+  };
+  const spawned = (d: CompanyDef) => simulateCompany(d, { seed: 5, horizonDays: 6 }).events;
+
+  it('el caso nuevo entra por la etapa elegida y no por la primera', () => {
+    const ev = spawned(cont());
+    const ids = ev.filter((e) => e.type === 'case.created' && e.cause).map((e) => e.type === 'case.created' && e.caseId);
+    expect(ids.length).toBeGreaterThan(0);
+    for (const id of ids) {
+      const first = ev.find((e) => e.type === 'stage.entered' && e.caseId === id);
+      expect(first && first.type === 'stage.entered' && first.stage).toBe('investigacion');
+    }
+    // sin toStage entra por la primera etapa
+    const normal = spawned(cont({}));
+    const f = normal.find((e) => e.type === 'case.created' && e.cause)!;
+    const first = normal.find((e) => e.type === 'stage.entered' && f.type === 'case.created' && e.caseId === f.caseId)!;
+    expect(first.type === 'stage.entered' && first.stage).toBe('atencion_n1');
+  });
+
+  it('con inherit el caso nuevo trae los datos del caso de origen (por ejemplo el monto)', () => {
+    const ev = spawned(cont());
+    const created = ev.filter((e) => e.type === 'case.created');
+    const child = created.find((e) => e.type === 'case.created' && e.cause)!;
+    expect(child.type === 'case.created' && child.attrs.amount).toBeGreaterThan(0);
+    const parent = created.find((e) => child.type === 'case.created' && e.type === 'case.created' && e.caseId === child.cause)!;
+    expect(parent.type === 'case.created' && child.type === 'case.created' && child.attrs.amount).toBe(parent.type === 'case.created' ? parent.attrs.amount : -1);
+    // sin inherit el monto no existe en el reclamo
+    const noInh = spawned(cont({ toStage: 'investigacion' })).find((e) => e.type === 'case.created' && e.cause)!;
+    expect(noInh.type === 'case.created' && noInh.attrs.amount).toBeUndefined();
+  });
+
+  it('valida toStage e inherit, y los limpia si la etapa desaparece', () => {
+    const d = cont();
+    expect(validateCompany(d).errors).toEqual([]);
+    d.processes.find((p) => p.id === 'reclamo_cliente')!.dependsOn![0].toStage = 'nada';
+    expect(validateCompany(d).errors.join('\n')).toMatch(/toStage/);
+    const e = cont();
+    e.processes.find((p) => p.id === 'reclamo_cliente')!.stages = e.processes.find((p) => p.id === 'reclamo_cliente')!.stages.filter((s) => s.id !== 'investigacion');
+    dropDanglingDependencies(e);
+    expect(e.processes.find((p) => p.id === 'reclamo_cliente')!.dependsOn![0].toStage).toBeUndefined();
+  });
+
+  it('el texto y la ficha explican por dónde entra y que hereda los datos', () => {
+    const d = cont();
+    const edge = dependencyEdges(d)[0];
+    expect(dependencyText(d, edge, 'to')).toMatch(/entra por «Investigación», con los datos del caso de origen/);
+    expect(dependencyText(d, edge, 'from')).toMatch(/Dispara «Reclamo de cliente».*entra por/);
+    expect(edge.toStage).toBe('investigacion');
+  });
+});

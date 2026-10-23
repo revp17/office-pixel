@@ -14,7 +14,7 @@ import { Section } from '../config/ui';
 
 const W = 214;
 const H = 66;
-const GAP_X = 200;
+const GAP_X = 250;
 const GAP_Y = 26;
 const PAD = 18;
 
@@ -65,7 +65,8 @@ export function DependencyMap(props: {
   const stageLabel = (e: DepEdge) => {
     const base = e.atStage ? (def.processes.find((p) => p.id === e.from)?.stages.find((s) => s.id === e.atStage)?.label ?? e.atStage) : 'al cerrar';
     const pct = e.kind === 'dispara' && e.probability < 1 ? ` · ${Math.round(e.probability * 100)} %` : '';
-    return trim(`${e.kind === 'dispara' ? '' : 'requiere · '}${base}${pct}`, 32);
+    const into = e.kind === 'dispara' && e.toStage ? ` → ${def.processes.find((p) => p.id === e.to)?.stages.find((s) => s.id === e.toStage)?.label ?? e.toStage}` : '';
+    return trim(`${e.kind === 'dispara' ? '' : 'requiere · '}${base}${pct}${into}`, 44);
   };
 
   // varias flechas que salen del mismo nodo se separan un poco

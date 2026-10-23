@@ -115,6 +115,8 @@ Los procesos no viven aislados: un pedido dispara su despacho, un ingreso de mer
 | **Tipo** | **Dispara**: cuando el origen termina la etapa indicada, **nace un caso** en este proceso (se simula). **Requiere**: necesita su resultado, pero no se crea nada (informativa) |
 | **¿En qué momento?** | Al terminar una etapa del origen, o cuando se completa un caso |
 | **Casos que lo disparan** | Solo en «dispara»: 100 % = cada caso genera uno; 25 % = uno de cada cuatro |
+| **¿Por qué etapa entra el caso nuevo?** | Solo en «dispara»: la etapa de este proceso donde empieza el caso que nace. Por defecto, la primera |
+| **Hereda los datos del caso de origen** | Solo en «dispara»: el caso nuevo trae los datos (atributos) del caso que lo originó, por ejemplo el monto; los que no existan en el origen se generan con las reglas del proceso |
 | **Nota** | Por qué existe la dependencia |
 
 Dónde se ve:
@@ -128,6 +130,15 @@ Dónde se ve:
 Reglas: un proceso no puede depender de sí mismo, y los procesos que se **disparan** unos a otros no pueden formar un ciclo (se crearían casos sin fin). Los «requiere» sí pueden formar ciclos. Las llegadas propias del proceso dependiente (**Cada cuánto llegan casos nuevos**) se **suman** a las que dispara el origen: ponle una tasa baja si casi todo viene de la dependencia.
 
 Si borras una etapa o un proceso, las dependencias que lo apuntaban se limpian solas. En las variantes de la optimización, si se elimina la etapa que disparaba a otro proceso, ese proceso pasa a dispararse cuando se completa el caso.
+
+### Continuar desde una etapa en otro proceso
+
+Es lo mismo visto desde el proceso de origen. En **Procesos → [el proceso] → la etapa → ¿Continúa en otro proceso?** elige **«Sigue en…»** y escoge la etapa de otro proceso donde debe seguir el trabajo (por ejemplo, *Reclamo de cliente › Investigación*). Eso crea la dependencia «dispara» en el otro proceso, con «entra por esa etapa» y **heredando los datos** (puedes quitarlo con la casilla).
+
+- Si esa es la **última** etapa del proceso de origen, márcala como **final**: el caso se cierra ahí y sigue como caso nuevo en el otro proceso.
+- Si **no** es final, el caso original sigue su camino y además nace uno en el otro proceso (como una bifurcación).
+- Los dos procesos siguen siendo casos distintos: el segundo tiene su propio número, su propio tiempo de ciclo y sus propios plazos desde que nace.
+- El selector «Siguiente etapa» solo lista las etapas **del mismo proceso**; por eso una etapa de otro proceso no aparece ahí. Para pasar a otro proceso se usa «Sigue en…».
 
 ## Procedimientos
 

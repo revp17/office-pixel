@@ -375,6 +375,9 @@ export function validateCompany(raw: unknown): CompanyParseResult {
         if (d.process === pr.id) return void errors.push(`${at}: un proceso no puede depender de sí mismo`);
         if (!procById.has(d.process)) return void errors.push(`${at}: el proceso "${d.process}" no existe`);
         if (d.kind !== 'dispara' && d.kind !== 'requiere') errors.push(`${at}.kind: "dispara" o "requiere"`);
+        if (d.toStage !== undefined && !stagesOf.get(String(pr.id))!.has(String(d.toStage)))
+          errors.push(`${at}.toStage: la etapa "${String(d.toStage)}" no existe en este proceso`);
+        if (d.inherit !== undefined && typeof d.inherit !== 'boolean') errors.push(`${at}.inherit: true o false`);
         if (d.atStage !== undefined && !stagesOf.get(d.process)!.has(String(d.atStage)))
           errors.push(`${at}.atStage: la etapa "${String(d.atStage)}" no existe en "${d.process}"`);
         if (d.probability !== undefined && !(typeof d.probability === 'number' && d.probability > 0 && d.probability <= 1))

@@ -383,7 +383,9 @@ function withProcess(def: CompanyDef, id: string, variant: OrgProcessDef): Compa
       if (p.id === id) {
         // los procedimientos de una etapa eliminada quedan sin etapa en la variante
         const procedures = variant.procedures?.map((pc) => (pc.stageId && !stages.has(pc.stageId) ? { ...pc, stageId: undefined } : pc));
-        return { ...variant, id, name: p.name, ...(procedures ? { procedures } : {}) };
+        // si la variante eliminó la etapa por la que entraban casos de otro proceso, ahora entran por la primera
+        const dependsOn = variant.dependsOn?.map((d) => (d.toStage && !stages.has(d.toStage) ? { ...d, toStage: undefined } : d));
+        return { ...variant, id, name: p.name, ...(procedures ? { procedures } : {}), ...(dependsOn ? { dependsOn } : {}) };
       }
       // si la variante eliminó la etapa que disparaba a otro proceso, ahora dispara al completarse el caso
       if (!p.dependsOn?.some((d) => d.process === id && d.atStage && !stages.has(d.atStage))) return p;

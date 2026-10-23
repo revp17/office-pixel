@@ -8,6 +8,9 @@ export interface DepEdge {
   kind: DependencyKind;
   atStage?: string;
   probability: number;
+  /** etapa del proceso que depende por la que entra el caso nuevo (si no, la primera) */
+  toStage?: string;
+  inherit?: boolean;
   note?: string;
 }
 
@@ -22,7 +25,7 @@ export function dependencyEdges(def: CompanyDef): DepEdge[] {
   const out: DepEdge[] = [];
   for (const p of def.processes)
     for (const d of p.dependsOn ?? [])
-      if (ids.has(d.process)) out.push({ from: d.process, to: p.id, kind: d.kind, atStage: d.atStage, probability: d.probability ?? 1, note: d.note });
+      if (ids.has(d.process)) out.push({ from: d.process, to: p.id, kind: d.kind, atStage: d.atStage, probability: d.probability ?? 1, toStage: d.toStage, inherit: d.inherit, note: d.note });
   return out;
 }
 
@@ -67,11 +70,13 @@ export function dependencyText(def: CompanyDef, e: DepEdge, perspective: 'to' | 
     sid ? (def.processes.find((p) => p.id === pid)?.stages.find((s) => s.id === sid)?.label ?? sid) : undefined;
   const when = e.atStage ? `al terminar «${stage(e.from, e.atStage)}»` : 'al completarse un caso';
   const prob = e.probability < 1 ? ` (en el ${Math.round(e.probability * 100)} % de los casos)` : '';
+  const entry = e.toStage ? ` y entra por «${stage(e.to, e.toStage)}»` : '';
+  const inh = e.inherit ? ', con los datos del caso de origen' : '';
   if (perspective === 'to')
     return e.kind === 'dispara'
-      ? `Nace de «${name(e.from)}» ${when}${prob}`
+      ? `Nace de «${name(e.from)}» ${when}${prob}${entry}${inh}`
       : `Requiere el resultado de «${name(e.from)}»${e.atStage ? ` (${stage(e.from, e.atStage)})` : ''}`;
-  return e.kind === 'dispara' ? `Dispara «${name(e.to)}» ${when}${prob}` : `Alimenta a «${name(e.to)}», que lo requiere`;
+  return e.kind === 'dispara' ? `Dispara «${name(e.to)}» ${when}${prob}${entry}${inh}` : `Alimenta a «${name(e.to)}», que lo requiere`;
 }
 
 // ---------- procedimientos ----------
@@ -123,7 +128,10 @@ export function dropDanglingDependencies(def: CompanyDef): void {
   for (const p of def.processes) {
     if (p.dependsOn) {
       p.dependsOn = p.dependsOn.filter((d) => pids.has(d.process));
-      for (const d of p.dependsOn) if (d.atStage && !stages.get(d.process)!.has(d.atStage)) delete d.atStage;
+      for (const d of p.dependsOn) {
+        if (d.atStage && !stages.get(d.process)!.has(d.atStage)) delete d.atStage;
+        if (d.toStage && !stages.get(p.id)!.has(d.toStage)) delete d.toStage;
+      }
       if (!p.dependsOn.length) delete p.dependsOn;
     }
     for (const pc of p.procedures ?? []) {

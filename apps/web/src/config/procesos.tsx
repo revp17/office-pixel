@@ -262,6 +262,35 @@ export function StageCard(props: {
 
   const mode: 'single' | 'rules' = Array.isArray(st.next) ? 'rules' : 'single';
 
+  // continuación en otro proceso: vive en el proceso destino, como una dependencia «dispara» desde esta etapa
+  const otherProcs = d.processes.filter((q) => q.id !== proc.id);
+  const links = d.processes.flatMap((q) =>
+    (q.dependsOn ?? []).filter((dep) => dep.process === proc.id && dep.kind === 'dispara' && dep.atStage === st.id).map((dep) => ({ q, dep })),
+  );
+  const link = links[0];
+  const crossOptions = [
+    { value: '', label: 'No: el caso termina aquí' },
+    ...otherProcs.flatMap((q) => q.stages.map((s2, k) => ({ value: `${q.id}|${s2.id}`, label: `${q.name ?? q.id} › ${s2.label ?? s2.id}${k === 0 ? ' (primera etapa)' : ''}` }))),
+  ];
+  const setLink = (v: string) =>
+    P((_p, x) => {
+      // se quitan las continuaciones anteriores de esta etapa y se crea la nueva
+      for (const q of x.processes) {
+        if (!q.dependsOn) continue;
+        q.dependsOn = q.dependsOn.filter((dep) => !(dep.process === proc.id && dep.kind === 'dispara' && dep.atStage === st.id));
+        if (!q.dependsOn.length) delete q.dependsOn;
+      }
+      if (!v) return;
+      const [pid, sid] = v.split('|');
+      const target = x.processes.find((q) => q.id === pid)!;
+      (target.dependsOn ??= []).push({ process: proc.id, kind: 'dispara', atStage: st.id, toStage: sid, inherit: true });
+    });
+  const setInherit = (on: boolean) =>
+    P((_p, x) => {
+      for (const q of x.processes)
+        for (const dep of q.dependsOn ?? []) if (dep.process === proc.id && dep.kind === 'dispara' && dep.atStage === st.id) dep.inherit = on || undefined;
+    });
+
   return (
     <Card
       class="stage"
@@ -409,6 +438,29 @@ export function StageCard(props: {
             </Field>
           ) : (
             <Rules proc={proc} st={st} others={others} S={S} note={note} />
+          )}
+        </div>
+      )}
+
+      {!lockTiming && otherProcs.length > 0 && (
+        <div class="subsect">
+          <div class="subtitle">¿Continúa en otro proceso?</div>
+          <p class="sect-hint">
+            Al terminar esta etapa nace un caso en la etapa que elijas de otro proceso (como si ese proceso «heredara» el trabajo). Si esta es la última etapa, márcala como final para que el caso se cierre aquí
+            y siga allá.
+          </p>
+          <Field label="Sigue en…">
+            <Sel value={link ? `${link.q.id}|${link.dep.toStage ?? link.q.stages[0].id}` : ''} options={crossOptions} onChange={setLink} />
+          </Field>
+          {link && (
+            <>
+              <label class="check">
+                <input type="checkbox" checked={!!link.dep.inherit} onChange={(e) => setInherit((e.target as HTMLInputElement).checked)} />
+                El caso nuevo hereda los datos de este caso (monto, prioridad…)
+              </label>
+              {!st.terminal && <p class="hint">Esta etapa no es final: el caso original también sigue su camino aquí, además del caso nuevo en el otro proceso.</p>}
+              {links.length > 1 && <p class="hint">Hay {links.length} continuaciones desde esta etapa; el resto se ven y editan en «Dependencias» de cada proceso.</p>}
+            </>
           )}
         </div>
       )}
@@ -590,6 +642,21 @@ function Dependencias({ d, proc, P, onSelect }: { d: CompanyDef; proc: OrgProces
                 </Field>
               )}
             </div>
+            {dep.kind === 'dispara' && (
+              <div class="row">
+                <Field label="¿Por qué etapa entra el caso nuevo?" hint="Por defecto, la primera de este proceso.">
+                  <Sel
+                    value={dep.toStage ?? ''}
+                    options={[{ value: '', label: 'La primera etapa' }, ...proc.stages.map((s) => ({ value: s.id, label: s.label ?? s.id }))]}
+                    onChange={(v) => edit(i, (x) => void (v ? (x.toStage = v) : delete x.toStage))}
+                  />
+                </Field>
+                <label class="check" style={{ alignSelf: 'end' }}>
+                  <input type="checkbox" checked={!!dep.inherit} onChange={(e) => edit(i, (x) => void ((e.target as HTMLInputElement).checked ? (x.inherit = true) : delete x.inherit))} />
+                  Hereda los datos del caso de origen
+                </label>
+              </div>
+            )}
             <div class="row">
               <Field label="Nota (opcional)">
                 <Text value={dep.note ?? ''} onChange={(v) => edit(i, (x) => void (v ? (x.note = v) : delete x.note))} />

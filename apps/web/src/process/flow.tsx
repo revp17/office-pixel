@@ -110,7 +110,7 @@ export function FlowDiagram(props: { def: CompanyDef; proc: OrgProcessDef; marks
     for (const e of dependencyEdges(def)) {
       const pct = e.probability < 1 ? ` ${Math.round(e.probability * 100)} %` : '';
       if (e.from === proc.id) for (const id of e.atStage ? [e.atStage] : ends) add(id, `${e.kind === 'dispara' ? '⇢' : '⇢ lo requiere'} ${name(e.to)}${pct}`);
-      if (e.to === proc.id) add(first, `⇠ ${e.kind === 'dispara' ? 'nace de' : 'requiere'} ${name(e.from)}`);
+      if (e.to === proc.id) add(e.kind === 'dispara' && e.toStage ? e.toStage : first, `⇠ ${e.kind === 'dispara' ? (e.inherit ? 'continúa de' : 'nace de') : 'requiere'} ${name(e.from)}`);
     }
   }
   // las etapas eliminadas se dibujan atenuadas para ver qué se quitó
