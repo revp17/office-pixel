@@ -53,6 +53,25 @@ export class OrgReplayer {
     this.counters = { created: 0, completed: 0, breaches: 0, exceptions: 0, handoffs: 0 };
   }
 
+  /**
+   * Instante del siguiente evento que aún no se ha aplicado. Con `meaningful` se ignoran los cambios de estado
+   * de las personas (entrar, salir, descansar) y solo cuentan los que mueven un caso. Con `after` solo cuentan
+   * los posteriores a ese instante (útil si se pidió avanzar y el reproductor aún no se ha puesto al día).
+   */
+  nextEventTime(meaningful = false, after = -Infinity): number | undefined {
+    for (let k = this.i; k < this.events.length; k++) {
+      if (this.events[k].t <= after) continue;
+      if (!meaningful || this.events[k].type !== 'person.state') return this.events[k].t;
+    }
+    return undefined;
+  }
+
+  /** ¿Hay algún caso en marcha (trabajándose o viajando)? Uno pausado hasta mañana no cuenta. */
+  get busy(): boolean {
+    for (const c of this.cases.values()) if (c.status === 'working' || c.status === 'transit') return true;
+    return false;
+  }
+
   advanceTo(t: number): OrgEvent[] {
     if (t < this.t) {
       this.reset();

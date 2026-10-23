@@ -10,6 +10,7 @@ import {
   type CompanyDef,
   type OrgCaseView,
   type OrgCounters,
+  type OrgEvent,
   type OrgSimResult,
   type PersonState,
 } from '@office-pixel/sim';
@@ -157,8 +158,17 @@ interface RoomView {
   people: string[];
 }
 
+/** minutos de simulación sin nada en marcha a partir de los cuales se salta (modo «cómo funciona») */
+const IDLE_GAP = 8;
+/** cuánto antes del siguiente evento se retoma la reproducción normal */
+const IDLE_LEAD = 2;
+
 export class OrgScene extends Phaser.Scene {
   onHud?: (h: OrgHud) => void;
+  /** lo que acaba de pasar en la simulación (para narrarlo); `jumped` si se saltó en el tiempo */
+  onEvents?: (events: OrgEvent[], jumped: boolean) => void;
+  /** modo «cómo funciona»: se salta el tiempo en que no pasa nada (noches, esperas sin trabajo en marcha) */
+  skipIdle = false;
   onSelect?: (personId: string | undefined) => void;
   /** se llama cuando el edificio ya está construido (p. ej. para pintar los chips de planta) */
   onModel?: () => void;
@@ -313,6 +323,17 @@ export class OrgScene extends Phaser.Scene {
     const z = Math.min(cam.width / (f.w + (horizontal ? 130 : 190)), cam.height / (f.h + (horizontal ? 190 : 90)), 2.4);
     cam.pan(f.x + f.w / 2 - (horizontal ? 0 : 40), f.y + f.h / 2 - (horizontal ? 30 : 0), 500, 'Sine.easeInOut', true);
     cam.zoomTo(z, 500);
+  }
+
+  /** Paso a paso: pausa y avanza hasta el siguiente hecho (llega un caso, alguien empieza o termina, el caso viaja…). */
+  stepNext() {
+    const rp = this.rp;
+    if (!rp) return false;
+    this.playing = false;
+    const next = rp.nextEventTime(true, this.simT);
+    if (next === undefined) return false;
+    this.simT = Math.min(this.horizon, Math.max(next, this.simT));
+    return true;
   }
 
   seek(t: number) {
@@ -863,7 +884,14 @@ export class OrgScene extends Phaser.Scene {
     const jumped = this.forceSnap || this.simT < this.lastT || this.simT - this.lastT > 90;
     this.forceSnap = false;
     this.lastT = this.simT;
-    rp.advanceTo(this.simT);
+    const applied = rp.advanceTo(this.simT);
+    if (applied.length || jumped) this.onEvents?.(applied, jumped);
+    if (this.playing && this.skipIdle && !rp.busy) {
+      // nadie está trabajando ni hay casos viajando: se avanza hasta poco antes del siguiente evento
+      const next = rp.nextEventTime();
+      if (next === undefined) this.simT = this.horizon;
+      else if (next - this.simT > IDLE_GAP) this.simT = next - IDLE_LEAD;
+    }
 
     const walk = Math.min(1400, 100 + this.speed * 3);
     this.updatePersons(time, dt, walk, jumped);

@@ -12,10 +12,20 @@
           <button id="configure" class="primary" title="Áreas, personas, procesos, reglas y excepciones">⚙ Configurar empresa</button>
           <button id="processes" title="Documentar procesos (5 fases), optimizarlos (5 pasos) y generar la ficha">📋 Procesos</button>
           <button id="reset-all" title="Borra todo lo guardado (empresa, procesos, procedimientos, preferencias) y deja una empresa en blanco para probar la tuya">🧹 Limpiar todo</button>
+          <label class="inl" title="«Cómo funciona»: pocos casos, ritmo lento y relato en palabras para entender el proceso. «Semana completa»: la carga real, rápido, para ver resultados.">Modo
+            <select id="mode">
+              <option value="explain">🎓 Cómo funciona</option>
+              <option value="week">📅 Semana completa</option>
+            </select>
+          </label>
           <button id="play">▶ Reproducir</button>
+          <button id="step" title="Avanza hasta el siguiente hecho (llega un caso, alguien empieza o termina, el caso viaja…) y se detiene">⏭ Siguiente paso</button>
           <button id="restart">⟲ Reiniciar</button>
           <label>Velocidad
             <select id="speed">
+              <option value="1">1 min/s (muy lento)</option>
+              <option value="2">2 min/s</option>
+              <option value="5">5 min/s</option>
               <option value="10">10 min/s</option>
               <option value="30" selected>30 min/s</option>
               <option value="60">1 h/s</option>
@@ -41,7 +51,7 @@
         </div>
         <div id="floors"></div>
         <div id="progress"><div id="progress-fill"></div><span id="progress-text"></span></div>
-        <div id="game"></div>
+        <div id="game"><aside id="story"></aside></div>
         <section id="bottom">
           <div id="kpis"></div>
           <div id="units"></div>

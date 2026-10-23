@@ -365,3 +365,26 @@ El **orden de las tarjetas** en **Configurar empresa → Empresa → Áreas y su
 Cada tarjeta (con dos o más hermanas) tiene cuatro botones: **⤒** primera, **▲** subir, **▼** bajar y **⤓** última. Las áreas dicen «Área 2 de 4». Los botones se desactivan en los extremos. Las subáreas se mueven entre las de su misma área; para pasar una subárea a otra área, bórrala y créala allí (o usa **Quitar área → Mover** si es una área entera).
 
 El orden se guarda con la empresa (es el orden de `units` en el YAML) y no cambia la simulación ni las personas.
+
+---
+
+## Dos modos de ver la simulación: «Cómo funciona» y «Semana completa»
+
+El selector **Modo** de la barra superior cambia el propósito de la simulación:
+
+| | 🎓 **Cómo funciona** (por defecto) | 📅 **Semana completa** |
+|---|---|---|
+| Para qué | **Entender el proceso**: quién hace qué, en qué orden y a dónde va el caso | **Medir**: cuellos de botella, tiempos de ciclo y utilización con la carga real |
+| Casos | Una **muestra**: como máximo 4 casos por día en cada proceso | Los que configuraste (llegadas por hora) |
+| Duración | 2 días | 5 días |
+| Ritmo | **2 min/s**, y se **salta el tiempo muerto** (noches, esperas sin trabajo en marcha) | 30 min/s |
+| Relato | Panel **📖 Qué está pasando** con frases como «Sofía Luna empieza “Captura de solicitud”» | Sin relato |
+| Arranque | **En pausa**: pulsa ▶ o **⏭ Siguiente paso** | Reproduce solo |
+
+**⏭ Siguiente paso** avanza hasta el siguiente hecho (llega un caso, alguien empieza o termina, el caso viaja a otra área, hay una excepción…) y se detiene, para ir viendo el flujo hecho por hecho. Con ▶ corre solo, pero despacio. En **Velocidad** hay ahora **1 min/s**, 2, 5 y 10 min/s además de las rápidas.
+
+El relato cuenta: llegadas de casos, a qué etapa y área pasa cada uno, quién lo toma y quién lo termina, traspasos entre áreas (con minutos de viaje), errores y reprocesos, excepciones, plazos vencidos, pausas, reuniones y ausencias. **Limpiar** borra el relato; ▾ lo pliega.
+
+Cambiar de modo **vuelve a simular** (cambia los días y la carga). Los resultados de abajo en modo «Cómo funciona» son de la **muestra**, no de la carga real: para medir tiempos y cuellos de botella usa «Semana completa». El modo se recuerda en el navegador.
+
+Al seguir un proceso con dependencias, el caso nuevo que nace en otro proceso se cuenta con su origen («Nace porque terminó…»). Las llegadas que provienen de una dependencia «dispara» no se limitan: dependen de los casos del proceso de origen.

@@ -12,6 +12,7 @@ import {
 } from '@office-pixel/sim';
 import defaultYaml from '../../../examples/banco_pixel.yaml?raw';
 import { TEMPLATES } from './templates';
+import { StoryPanel } from './story';
 import { emptyCompany } from './config/model';
 import { closeConfig, openConfig, type TabId } from './config/ConfigApp';
 import { closeHub, openHub } from './process/Hub';
@@ -26,6 +27,8 @@ const previewBanner = $<HTMLDivElement>('preview-banner');
 const previewText = $<HTMLSpanElement>('preview-text');
 const playBtn = $<HTMLButtonElement>('play');
 const speedSel = $<HTMLSelectElement>('speed');
+const modeSel = $<HTMLSelectElement>('mode');
+const stepBtn = $<HTMLButtonElement>('step');
 const timeline = $<HTMLInputElement>('timeline');
 const clock = $<HTMLSpanElement>('clock');
 const fill = $<HTMLDivElement>('progress-fill');
@@ -143,6 +146,39 @@ scene.onHud = (h: OrgHud) => {
 
 scene.onSelect = () => paintDetail(undefined, true);
 
+// ---------- modo: «cómo funciona» (despacio, pocos casos, con relato) o «semana completa» ----------
+type Mode = 'explain' | 'week';
+const MODE_KEY = 'office-pixel.mode.v1';
+/** casos propios por día y proceso en el modo «cómo funciona» */
+const SAMPLE_PER_DAY = 4;
+const story = new StoryPanel($('story'));
+let mode: Mode = 'explain';
+try {
+  if (localStorage.getItem(MODE_KEY) === 'week') mode = 'week';
+} catch {
+  /* sin almacenamiento: se usa el modo por defecto */
+}
+scene.onEvents = (events, jumped) => {
+  if (mode === 'explain') story.feed(def, events, jumped);
+};
+function applyMode(m: Mode, rerun: boolean) {
+  mode = m;
+  modeSel.value = m;
+  const explain = m === 'explain';
+  daysInput.value = explain ? '2' : '5';
+  speedSel.value = explain ? '2' : '30';
+  scene.speed = Number(speedSel.value);
+  scene.skipIdle = explain;
+  story.show(explain);
+  stepBtn.hidden = !explain;
+  try {
+    localStorage.setItem(MODE_KEY, m);
+  } catch {
+    /* sin almacenamiento */
+  }
+  if (rerun) run();
+}
+
 // ---------- paneles ----------
 function flatUnits(list: UnitDef[], depth = 0): Array<{ u: UnitDef; depth: number }> {
   return list.flatMap((u) => [{ u, depth }, ...flatUnits(u.children ?? [], depth + 1)]);
@@ -167,6 +203,7 @@ function renderPanels() {
     .join('');
   kpis.innerHTML = `
     <h3>Resultado (${m.horizonDays} días, semilla ${result.options.seed})</h3>
+    ${mode === 'explain' ? `<p class="hint">Modo «cómo funciona»: una muestra de hasta ${SAMPLE_PER_DAY} casos por día en cada proceso. Para la carga real, cambia a «Semana completa».</p>` : ''}
     <table><tr><th>Proceso</th><th>Cerrados</th><th>Ciclo</th><th>P90</th><th>SLA</th></tr>${procRows}</table>
     <h3>Mayor espera por etapa</h3>
     <table><tr><th>Etapa</th><th>Espera</th><th>Cola final</th></tr>${waits}</table>
@@ -301,11 +338,14 @@ function run(next?: CompanyDef, pv?: { company: CompanyDef; label: string }) {
   const seed = Math.trunc(Number(seedInput.value)) || 0;
   const days = Math.min(30, Math.max(1, Math.trunc(Number(daysInput.value)) || 5));
   def = preview ? preview.company : company;
-  result = simulateCompany(def, { seed, horizonDays: days });
+  result = simulateCompany(def, { seed, horizonDays: days, ...(mode === 'explain' ? { arrivalsPerDay: SAMPLE_PER_DAY } : {}) });
+  story.clear();
   personEvents = new Map(def.people.map((p) => [p.id, []]));
   for (const e of result.events) if (e.type === 'person.state') personEvents.get(e.person)!.push({ t: e.t, state: e.state });
   timeline.max = String(days * DAY);
   scene.setModel(def, result);
+  // «cómo funciona» arranca en pausa: se avanza con ▶ o con «Siguiente paso»
+  if (mode === 'explain') scene.playing = false;
   renderPanels();
   paintDetail(undefined, true);
 }
@@ -406,11 +446,16 @@ playBtn.addEventListener('click', () => {
   scene.playing = !scene.playing;
 });
 speedSel.addEventListener('change', () => (scene.speed = Number(speedSel.value)));
+modeSel.addEventListener('change', () => applyMode(modeSel.value as Mode, true));
+stepBtn.addEventListener('click', () => {
+  if (scene.simT >= Number(timeline.max) - 1) scene.seek(0);
+  scene.stepNext();
+});
 timeline.addEventListener('input', () => {
   scene.playing = false;
   scene.seek(Number(timeline.value));
 });
-scene.speed = Number(speedSel.value);
+applyMode(mode, false);
 
 if (import.meta.env.DEV) (window as unknown as { __op: unknown }).__op = { scene };
 

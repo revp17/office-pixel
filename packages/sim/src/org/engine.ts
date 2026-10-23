@@ -418,11 +418,17 @@ export function simulateCompany(def: CompanyDef, options: OrgSimOptions): OrgSim
     enterStage(c, stagesByKey.get(`${proc.id}.${proc.stages[0].id}`)!);
   }
 
+  // minutos hábiles de un día; con `arrivalsPerDay` ninguna proceso recibe más casos propios por día que ese tope
+  const bizMinutesPerDay = bizEnd - bizStart;
+  const cap = options.arrivalsPerDay && options.arrivalsPerDay > 0 ? options.arrivalsPerDay : undefined;
   for (const proc of def.processes) {
-    const interval = () =>
-      proc.arrivals.type === 'poisson'
-        ? sampleDist({ dist: 'exponential', mean: 60 / proc.arrivals.ratePerHour }, rng)
-        : proc.arrivals.everyMinutes;
+    const interval = () => {
+      if (proc.arrivals.type === 'poisson') {
+        const perHour = cap ? Math.min(proc.arrivals.ratePerHour, cap / (bizMinutesPerDay / 60)) : proc.arrivals.ratePerHour;
+        return sampleDist({ dist: 'exponential', mean: 60 / perHour }, rng);
+      }
+      return cap ? Math.max(proc.arrivals.everyMinutes, bizMinutesPerDay / cap) : proc.arrivals.everyMinutes;
+    };
 
     const arrive = () => {
       createCase(proc);

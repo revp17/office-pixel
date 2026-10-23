@@ -543,6 +543,11 @@ export interface OrgMetrics {
 export interface OrgSimOptions {
   seed: number;
   horizonDays: number;
+  /**
+   * Modo «cómo funciona»: tope de casos propios que llegan por día hábil a cada proceso, para poder seguir
+   * el flujo sin que todo pase de golpe. Si no se indica, llegan con la frecuencia configurada.
+   */
+  arrivalsPerDay?: number;
 }
 
 export interface OrgSimResult {
