@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks';
 import type { CompanyDef, NextRule, OrgProcessDef, OrgStageDef } from '@office-pixel/sim';
-import { describeDuration } from '@office-pixel/sim';
+import { describeDuration, dropDanglingDependencies, type ProcessDependency } from '@office-pixel/sim';
+import { DependencyMap, DependencySummary } from '../process/depmap';
 import {
   OPS,
   addProcess,
@@ -66,7 +67,10 @@ export function ProcesosTab({ d, up, note }: TabProps) {
                 onClick={() => {
                   if (d.processes.length === 1) return note('Debe quedar al menos un proceso.');
                   if (!confirm(`¿Borrar el proceso «${proc.name ?? proc.id}»?`)) return;
-                  up((x) => void (x.processes = x.processes.filter((q) => q.id !== proc.id)));
+                  up((x) => {
+                    x.processes = x.processes.filter((q) => q.id !== proc.id);
+                    dropDanglingDependencies(x);
+                  });
                   setSel('');
                 }}
               >
@@ -80,6 +84,7 @@ export function ProcesosTab({ d, up, note }: TabProps) {
           </Card>
 
           <Llegadas proc={proc} P={P} />
+          <Dependencias d={d} proc={proc} P={P} onSelect={setSel} />
           <Datos proc={proc} P={P} />
 
           <Section title="Etapas" hint="El caso recorre las etapas en orden. Cada etapa la hace una persona con el rol indicado, en el área o subárea indicada.">
@@ -264,7 +269,10 @@ export function StageCard(props: {
             danger
             onClick={() => {
               if (proc.stages.length <= 2) return note('Un proceso necesita al menos dos etapas.');
-              P((p) => void removeStage(p, st.id));
+              P((p, x) => {
+                removeStage(p, st.id);
+                dropDanglingDependencies(x);
+              });
             }}
           >
             🗑
@@ -517,5 +525,72 @@ function Rules(props: {
         Añadir condición
       </AddBtn>
     </div>
+  );
+}
+
+const KIND_OPTIONS = [
+  { value: 'dispara', label: 'Dispara: al terminar nace un caso aquí' },
+  { value: 'requiere', label: 'Requiere: necesita su resultado (informativa)' },
+];
+
+/** De qué otros procesos depende este: cada dependencia se ve en el mapa y, si "dispara", también se simula. */
+function Dependencias({ d, proc, P, onSelect }: { d: CompanyDef; proc: OrgProcessDef; P: PMut; onSelect: (id: string) => void }) {
+  const others = d.processes.filter((p) => p.id !== proc.id);
+  const deps = proc.dependsOn ?? [];
+  const edit = (i: number, fn: (x: ProcessDependency) => void) => P((p) => void fn(p.dependsOn![i]));
+  return (
+    <Section
+      title="Dependencias con otros procesos"
+      hint="Un proceso puede nacer de otro (por ejemplo, un pedido dispara su despacho) o necesitar su resultado. Se ven en el mapa de dependencias."
+    >
+      {deps.length === 0 && <p class="empty">Este proceso no depende de ningún otro.</p>}
+      {deps.map((dep, i) => {
+        const from = d.processes.find((p) => p.id === dep.process);
+        return (
+          <div class="depcard" key={i}>
+            <div class="row">
+              <Field label="Depende de">
+                <Sel
+                  value={dep.process}
+                  options={others.map((p) => ({ value: p.id, label: p.name ?? p.id }))}
+                  onChange={(v) => edit(i, (x) => void ((x.process = v), delete x.atStage))}
+                />
+              </Field>
+              <Field label="Tipo de dependencia">
+                <Sel value={dep.kind} options={KIND_OPTIONS} onChange={(v) => edit(i, (x) => void (x.kind = v as ProcessDependency['kind']))} />
+              </Field>
+            </div>
+            <div class="row">
+              <Field label="¿En qué momento del otro proceso?">
+                <Sel
+                  value={dep.atStage ?? ''}
+                  options={[{ value: '', label: 'Cuando se completa un caso' }, ...(from?.stages ?? []).map((s) => ({ value: s.id, label: `Al terminar «${s.label ?? s.id}»` }))]}
+                  onChange={(v) => edit(i, (x) => void (v ? (x.atStage = v) : delete x.atStage))}
+                />
+              </Field>
+              {dep.kind === 'dispara' && (
+                <Field label="Casos que lo disparan" hint="100 % = cada caso del otro proceso genera uno aquí.">
+                  <Pct value={dep.probability ?? 1} onChange={(v) => edit(i, (x) => void (v === undefined || v >= 1 ? delete x.probability : (x.probability = Math.max(v, 0.01))))} />
+                </Field>
+              )}
+            </div>
+            <div class="row">
+              <Field label="Nota (opcional)">
+                <Text value={dep.note ?? ''} onChange={(v) => edit(i, (x) => void (v ? (x.note = v) : delete x.note))} />
+              </Field>
+              <IconBtn title="Quitar dependencia" danger onClick={() => P((p) => void (p.dependsOn!.splice(i, 1), p.dependsOn!.length || delete p.dependsOn))}>
+                ✕
+              </IconBtn>
+            </div>
+          </div>
+        );
+      })}
+      {others.length > 0 && (
+        <AddBtn onClick={() => P((p) => void (p.dependsOn = [...(p.dependsOn ?? []), { process: others[0].id, kind: 'dispara' }]))}>Añadir dependencia</AddBtn>
+      )}
+      {others.length === 0 && <p class="empty">Hacen falta al menos dos procesos para declarar una dependencia.</p>}
+      <DependencySummary def={d} procId={proc.id} />
+      <DependencyMap def={d} selected={proc.id} onSelect={onSelect} />
+    </Section>
   );
 }

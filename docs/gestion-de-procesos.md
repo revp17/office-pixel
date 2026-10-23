@@ -9,6 +9,7 @@ Se abre con el botón **📋 Procesos**, en la barra superior. A la izquierda es
 | **1 · Documentar (5 fases)** | Levantar y validar el proceso tal como funciona hoy (As-Is) |
 | **2 · Optimizar (5 pasos)** | Mejorarlo con la metodología de 5 pasos, midiendo el efecto de cada uno |
 | **3 · Procedimientos** | El cómo, quién y cuándo de cada etapa ([guía](procedimientos.md)) |
+| **🔗 Dependencias** | Cómo se conectan los procesos y los procedimientos |
 | **Ficha de proceso** | El documento final: ver, descargar, imprimir |
 
 > Los cambios se guardan con **Guardar y cerrar**. La ficha y la optimización viajan con la empresa (también en el YAML), pero **no cambian lo que se simula**: el proceso real sigue siendo el de «Configurar empresa → Procesos».
@@ -103,6 +104,30 @@ En la pestaña **Ficha de proceso** se genera el documento final, siempre actual
 Botones: **Descargar .md** (Markdown), **Imprimir / guardar en PDF**, **Copiar Markdown** e **Incluir comparación de la optimización** (calcula el impacto y lo añade a la ficha). Hasta que se aprueba en la fase 5, la ficha es un **borrador**.
 
 ---
+
+## Dependencias entre procesos
+
+Los procesos no viven aislados: un pedido dispara su despacho, un ingreso de mercadería alimenta la bodega, una alerta de seguridad puede generar una orden de mantenimiento. Se declara en **Configurar empresa → Procesos → Dependencias con otros procesos**, desde el proceso que depende:
+
+| Campo | Qué significa |
+|---|---|
+| **Depende de** | El proceso de origen |
+| **Tipo** | **Dispara**: cuando el origen termina la etapa indicada, **nace un caso** en este proceso (se simula). **Requiere**: necesita su resultado, pero no se crea nada (informativa) |
+| **¿En qué momento?** | Al terminar una etapa del origen, o cuando se completa un caso |
+| **Casos que lo disparan** | Solo en «dispara»: 100 % = cada caso genera uno; 25 % = uno de cada cuatro |
+| **Nota** | Por qué existe la dependencia |
+
+Dónde se ve:
+
+- **Configuración**: bajo cada proceso, un resumen en lenguaje natural («Nace de Alerta de seguridad al terminar Reportar, en el 25 % de los casos») y un mapa con el proceso resaltado.
+- **Proceso → 🔗 Dependencias**: el mapa completo (columnas según de quién dependen; flecha continua = dispara, discontinua = requiere), con clic para resaltar un proceso, y la lista de lo que necesita y dispara. En la lista de procesos aparece 🔗 n.
+- **Diagrama As-Is** (fase 3): bajo la etapa que dispara a otro proceso aparece «⇢ Orden de mantenimiento 25 %», y bajo la primera etapa «⇠ nace de …».
+- **Ficha de proceso**: línea «Dependencias con otros procesos» en el apartado 2.
+- **Plano**: los casos disparados nacen en la primera etapa del proceso dependiente. Cada uno guarda de qué caso vino.
+
+Reglas: un proceso no puede depender de sí mismo, y los procesos que se **disparan** unos a otros no pueden formar un ciclo (se crearían casos sin fin). Los «requiere» sí pueden formar ciclos. Las llegadas propias del proceso dependiente (**Cada cuánto llegan casos nuevos**) se **suman** a las que dispara el origen: ponle una tasa baja si casi todo viene de la dependencia.
+
+Si borras una etapa o un proceso, las dependencias que lo apuntaban se limpian solas. En las variantes de la optimización, si se elimina la etapa que disparaba a otro proceso, ese proceso pasa a dispararse cuando se completa el caso.
 
 ## Procedimientos
 

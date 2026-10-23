@@ -1,4 +1,5 @@
 import { PHASES, STEPS, describeDuration, ensureDoc, meanOfDist, phasesDone, stepCompleted, unitPath, type VariantRow } from './manage';
+import { dependencyEdges, dependencyText } from './deps';
 import { procedureCoverage, procedureStatus } from './procedures';
 import type { CompanyDef, OrgProcessDef, OrgStageDef, ValidationStatus } from './types';
 
@@ -62,6 +63,12 @@ export function fichaMarkdown(def: CompanyDef, proc: OrgProcessDef, impact?: Var
   out.push(`**Dentro del alcance:** ${text(sc.inScope)}`, '');
   out.push(`**Fuera del alcance:** ${text(sc.outOfScope)}`, '');
   out.push(`**Criterios de éxito:** ${text(sc.successCriteria)}`, '');
+  const edges = dependencyEdges(def).filter((e) => e.from === proc.id || e.to === proc.id);
+  if (edges.length) {
+    out.push('**Dependencias con otros procesos:**', '');
+    for (const e of edges) out.push(`- ${dependencyText(def, e, e.to === proc.id ? 'to' : 'from')}`);
+    out.push('');
+  }
 
   out.push('## 3. Involucrados');
   out.push('');

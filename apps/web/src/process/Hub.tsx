@@ -1,12 +1,13 @@
 import { render } from 'preact';
 import { useState } from 'preact/hooks';
 import { PHASES, currentStep, phasesDone, stepCompleted, type CompanyDef, type OrgProcessDef, type PhaseKey } from '@office-pixel/sim';
+import { DependenciasView } from './depmap';
 import { Documentar, type HubCtx } from './documentar';
 import { FichaView } from './fichaView';
 import { Optimizar } from './optimizar';
 import { Procedimientos } from './procedimientos';
 
-type Mode = 'documentar' | 'optimizar' | 'procedimientos' | 'ficha';
+type Mode = 'documentar' | 'optimizar' | 'procedimientos' | 'dependencias' | 'ficha';
 
 export interface HubProps {
   initial: CompanyDef;
@@ -101,6 +102,7 @@ function Hub(props: HubProps) {
                 <span title="Fases de documentación">Doc {phasesDone(p)}/5</span>
                 <span title="Pasos de optimización">Opt {stepsDone(p)}/5</span>
                 <span title="Procedimientos asociados">Proc {(p.procedures ?? []).length}</span>
+                {(p.dependsOn ?? []).length > 0 && <span title="Depende de otros procesos">🔗 {(p.dependsOn ?? []).length}</span>}
                 {p.doc?.version && <span class="ver">v{p.doc.version}</span>}
               </span>
             </button>
@@ -123,6 +125,9 @@ function Hub(props: HubProps) {
                   <button type="button" class={mode === 'procedimientos' ? 'on' : ''} onClick={() => setMode('procedimientos')}>
                     3 · Procedimientos
                   </button>
+                  <button type="button" class={mode === 'dependencias' ? 'on' : ''} onClick={() => setMode('dependencias')}>
+                    🔗 Dependencias
+                  </button>
                   <button type="button" class={mode === 'ficha' ? 'on' : ''} onClick={() => setMode('ficha')}>
                     Ficha de proceso
                   </button>
@@ -134,7 +139,9 @@ function Hub(props: HubProps) {
                       ? 'Proceso de 5 pasos · orden estricto'
                       : mode === 'procedimientos'
                         ? 'El cómo, quién y cuándo de cada etapa'
-                        : 'Documento final'}
+                        : mode === 'dependencias'
+                          ? 'Cómo se conectan los procesos y los procedimientos'
+                          : 'Documento final'}
                 </span>
               </div>
               {mode === 'documentar' && <Documentar ctx={ctx} phase={phase} setPhase={setPhase} />}
@@ -142,6 +149,7 @@ function Hub(props: HubProps) {
                 <Optimizar ctx={ctx} step={step} setStep={setStep} onPreview={(c, label) => props.onPreview(draft, c, label)} />
               )}
               {mode === 'procedimientos' && <Procedimientos key={proc.id} ctx={ctx} />}
+              {mode === 'dependencias' && <DependenciasView d={draft} proc={proc} onSelect={choose} onEdit={ctx.editProcess} />}
               {mode === 'ficha' && <FichaView ctx={ctx} />}
             </>
           )}

@@ -1,5 +1,5 @@
 import type { CompanyDef, OrgProcessDef, OrgStageDef } from '@office-pixel/sim';
-import { describeDuration, unitPath } from '@office-pixel/sim';
+import { dependencyEdges, describeDuration, unitPath } from '@office-pixel/sim';
 
 /** Marcas para comparar variantes: etapa eliminada, automatizada o acelerada. */
 export type FlowMark = 'removed' | 'auto' | 'fast';
@@ -68,7 +68,7 @@ export function layoutFlow(proc: OrgProcessDef) {
   }
   const cols = Math.max(...[...nodes.values()].map((n) => n.depth)) + 1;
   const maxRow = Math.max(...[...nodes.values()].map((n) => n.row)) + 1;
-  return { nodes, edges, width: PAD * 2 + cols * W + (cols - 1) * GAP_X, height: PAD * 2 + maxRow * H + (maxRow - 1) * GAP_Y + 18 };
+  return { nodes, edges, width: PAD * 2 + cols * W + (cols - 1) * GAP_X, height: PAD * 2 + maxRow * H + (maxRow - 1) * GAP_Y + 30 };
 }
 
 function edgePath(a: Node, b: Node, e: Edge, outCount: number): { d: string; lx: number; ly: number } {
@@ -100,6 +100,19 @@ export function FlowDiagram(props: { def: CompanyDef; proc: OrgProcessDef; marks
   // procedimientos asociados a cada etapa (📄 n)
   const procCount: Record<string, number> = {};
   if (props.showProcedures) for (const pc of proc.procedures ?? []) if (pc.stageId) procCount[pc.stageId] = (procCount[pc.stageId] ?? 0) + 1;
+  // dependencias con otros procesos, bajo la etapa que las dispara (⇢) o recibe (⇠)
+  const links: Record<string, string[]> = {};
+  if (props.showProcedures) {
+    const name = (id: string) => def.processes.find((p) => p.id === id)?.name ?? id;
+    const first = proc.stages[0]?.id;
+    const ends = proc.stages.filter((s) => s.terminal).map((s) => s.id);
+    const add = (id: string | undefined, t: string) => id && (links[id] = [...(links[id] ?? []), t]);
+    for (const e of dependencyEdges(def)) {
+      const pct = e.probability < 1 ? ` ${Math.round(e.probability * 100)} %` : '';
+      if (e.from === proc.id) for (const id of e.atStage ? [e.atStage] : ends) add(id, `${e.kind === 'dispara' ? '⇢' : '⇢ lo requiere'} ${name(e.to)}${pct}`);
+      if (e.to === proc.id) add(first, `⇠ ${e.kind === 'dispara' ? 'nace de' : 'requiere'} ${name(e.from)}`);
+    }
+  }
   // las etapas eliminadas se dibujan atenuadas para ver qué se quitó
   const withGhosts: OrgProcessDef = props.ghosts?.length
     ? { ...proc, stages: [...proc.stages, ...props.ghosts.filter((g) => !proc.stages.some((s) => s.id === g.id))] }
@@ -159,6 +172,11 @@ export function FlowDiagram(props: { def: CompanyDef; proc: OrgProcessDef; marks
               <text x={12} y={55} class="t3">
                 {trim(meta, 32)}
               </text>
+              {(links[s.id] ?? []).slice(0, 2).map((t, i) => (
+                <text key={i} x={4} y={H + 12 + i * 11} class="tag link">
+                  {trim(t, 38)}
+                </text>
+              ))}
               {procCount[s.id] > 0 && (
                 <text x={W - 10} y={H - 9} class="tag proc" text-anchor="end">
                   📄 {procCount[s.id]} {procCount[s.id] === 1 ? 'procedimiento' : 'procedimientos'}

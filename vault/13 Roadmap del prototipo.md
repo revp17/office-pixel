@@ -35,6 +35,7 @@ tags: [gestión, roadmap]
 - [x] Gestión de procesos: ciclo de documentación en 5 fases, optimización de 5 pasos en orden estricto con impacto medido, ficha de proceso exportable ([[15 Gestión de procesos y optimización]])
 - [x] Procedimientos asociados a los procesos: levantamiento en 5 pasos, redacción acción-resultado con revisión automática, capturas anotadas, diagrama a nivel de tarea, prueba del novato y firma del ejecutor ([[16 Procedimientos]])
 - [x] Instalaciones operativas (bodega, ingreso, despacho, seguridad, mantenimiento, transporte) y plantillas pequeña/mediana/grande
+- [x] Dependencias entre procesos (dispara / requiere) y requisitos entre procedimientos, con mapa visual
 - [ ] Inventario y capacidad de bodega simulados; vehículos y guardias en movimiento
 - [ ] Varias plantas (sedes)
 - [ ] Mensajes de validación con nombres en vez de ids; deshacer/rehacer en los formularios

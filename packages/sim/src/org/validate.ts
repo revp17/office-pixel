@@ -289,6 +289,81 @@ export function validateCompany(raw: unknown): CompanyParseResult {
       });
       if (!terminal) errors.push(`${P}: debe haber una etapa con terminal: true`);
     });
+
+    // dependencias entre procesos y requisitos entre procedimientos
+    const stagesOf = new Map<string, Set<string>>();
+    const procById = new Map<string, Record<string, unknown>>();
+    for (const pr of procs) {
+      if (!isObj(pr) || typeof pr.id !== 'string') continue;
+      procById.set(pr.id, pr);
+      stagesOf.set(pr.id, new Set(Array.isArray(pr.stages) ? pr.stages.map((s) => (isObj(s) ? String(s.id) : '')) : []));
+    }
+    const triggerEdges = new Map<string, string[]>(); // origen → procesos que dispara
+    for (const pr of procs) {
+      if (!isObj(pr) || typeof pr.id !== 'string' || pr.dependsOn === undefined) continue;
+      const P = `proceso "${pr.id}"`;
+      if (!Array.isArray(pr.dependsOn)) {
+        errors.push(`${P}.dependsOn: debe ser una lista`);
+        continue;
+      }
+      pr.dependsOn.forEach((d, i) => {
+        const at = `${P}.dependsOn[${i}]`;
+        if (!isObj(d) || typeof d.process !== 'string') return void errors.push(`${at}: falta "process"`);
+        if (d.process === pr.id) return void errors.push(`${at}: un proceso no puede depender de sí mismo`);
+        if (!procById.has(d.process)) return void errors.push(`${at}: el proceso "${d.process}" no existe`);
+        if (d.kind !== 'dispara' && d.kind !== 'requiere') errors.push(`${at}.kind: "dispara" o "requiere"`);
+        if (d.atStage !== undefined && !stagesOf.get(d.process)!.has(String(d.atStage)))
+          errors.push(`${at}.atStage: la etapa "${String(d.atStage)}" no existe en "${d.process}"`);
+        if (d.probability !== undefined && !(typeof d.probability === 'number' && d.probability > 0 && d.probability <= 1))
+          errors.push(`${at}.probability: debe estar entre 0 (sin incluir) y 1`);
+        if (d.kind === 'dispara') triggerEdges.set(d.process, [...(triggerEdges.get(d.process) ?? []), String(pr.id)]);
+      });
+    }
+    // un ciclo de disparos crearía casos sin fin
+    const visiting = new Set<string>();
+    const done = new Set<string>();
+    const hasCycle = (id: string): boolean => {
+      if (visiting.has(id)) return true;
+      if (done.has(id)) return false;
+      visiting.add(id);
+      const bad = (triggerEdges.get(id) ?? []).some(hasCycle);
+      visiting.delete(id);
+      done.add(id);
+      return bad;
+    };
+    if ([...triggerEdges.keys()].some(hasCycle)) errors.push('dependencias: los procesos que se disparan unos a otros forman un ciclo');
+
+    const pcIds = new Set<string>();
+    for (const pr of procs)
+      if (isObj(pr) && Array.isArray(pr.procedures)) for (const pc of pr.procedures) if (isObj(pc) && typeof pc.id === 'string') pcIds.add(pc.id);
+    const reqEdges = new Map<string, string[]>();
+    for (const pr of procs)
+      if (isObj(pr) && Array.isArray(pr.procedures))
+        for (const pc of pr.procedures) {
+          if (!isObj(pc) || typeof pc.id !== 'string' || pc.prerequisites === undefined) continue;
+          const at = `procedimiento "${String(pc.code ?? pc.id)}".prerequisites`;
+          if (!Array.isArray(pc.prerequisites)) {
+            errors.push(`${at}: debe ser una lista`);
+            continue;
+          }
+          for (const r of pc.prerequisites) {
+            if (r === pc.id) errors.push(`${at}: un procedimiento no puede ser requisito de sí mismo`);
+            else if (!pcIds.has(String(r))) errors.push(`${at}: el procedimiento "${String(r)}" no existe`);
+          }
+          reqEdges.set(pc.id, pc.prerequisites.map(String));
+        }
+    const vis2 = new Set<string>();
+    const done2 = new Set<string>();
+    const cyc2 = (id: string): boolean => {
+      if (vis2.has(id)) return true;
+      if (done2.has(id)) return false;
+      vis2.add(id);
+      const bad = (reqEdges.get(id) ?? []).some(cyc2);
+      vis2.delete(id);
+      done2.add(id);
+      return bad;
+    };
+    if ([...reqEdges.keys()].some(cyc2)) errors.push('procedimientos: los requisitos entre procedimientos forman un ciclo');
   }
 
   // escenario

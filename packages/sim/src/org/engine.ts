@@ -278,6 +278,21 @@ export function simulateCompany(def: CompanyDef, options: OrgSimOptions): OrgSim
     });
   }
 
+  /** Procesos que dependen (con "dispara") de cada proceso de origen. */
+  const triggers = new Map<string, Array<{ target: OrgProcessDef; atStage?: string; probability: number }>>();
+  for (const proc of def.processes)
+    for (const d of proc.dependsOn ?? []) {
+      if (d.kind !== 'dispara') continue;
+      const l = triggers.get(d.process) ?? [];
+      l.push({ target: proc, atStage: d.atStage, probability: d.probability ?? 1 });
+      triggers.set(d.process, l);
+    }
+  /** Dispara los procesos dependientes: al terminar la etapa `stageId`, o al completarse el caso (`stageId` null). */
+  function fire(c: CaseRT, stageId: string | null) {
+    for (const t of triggers.get(c.proc.id) ?? [])
+      if ((t.atStage ?? null) === stageId && (t.probability >= 1 || rng() < t.probability)) createCase(t.target, c.id);
+  }
+
   function complete(c: CaseRT, st: StageRT) {
     c.done = true;
     completed++;
@@ -285,6 +300,7 @@ export function simulateCompany(def: CompanyDef, options: OrgSimOptions): OrgSim
     ps.completed++;
     ps.cycles.push(biz.bizBetween(c.createdAt, now));
     emit({ t: now, type: 'case.completed', caseId: c.id, stage: st.def.id });
+    fire(c, null);
   }
 
   const canTake = (p: PersonRT) => !p.busy && currentWindow(p, now) !== null;
@@ -380,6 +396,7 @@ export function simulateCompany(def: CompanyDef, options: OrgSimOptions): OrgSim
         return moveTo(c, st, ex.target, ex.penaltyMinutes ?? 0);
       }
     }
+    fire(c, st.def.id);
     if (st.def.terminal) return complete(c, st);
     if (typeof st.def.next === 'string') return moveTo(c, st, st.def.next);
     const scope = { case: c.attrs };
@@ -388,23 +405,27 @@ export function simulateCompany(def: CompanyDef, options: OrgSimOptions): OrgSim
   }
 
   // ---------- llegadas ----------
+  /** Crea un caso del proceso; `cause` es el caso que lo disparó, si lo hubo. */
+  function createCase(proc: OrgProcessDef, cause?: string) {
+    const n = (caseSeq.get(proc.id) ?? 0) + 1;
+    caseSeq.set(proc.id, n);
+    const attrs: Record<string, number> = {};
+    for (const [k, d] of Object.entries(proc.attributes ?? {})) attrs[k] = Math.round(sampleDist(d, rng) * 100) / 100;
+    const c: CaseRT = { id: `${proc.id}#${n}`, proc, attrs, createdAt: now, stage: null, enteredAt: now, visit: 0, done: false };
+    created++;
+    procStats.get(proc.id)!.created++;
+    emit({ t: now, type: 'case.created', caseId: c.id, process: proc.id, attrs, ...(cause ? { cause } : {}) });
+    enterStage(c, stagesByKey.get(`${proc.id}.${proc.stages[0].id}`)!);
+  }
+
   for (const proc of def.processes) {
     const interval = () =>
       proc.arrivals.type === 'poisson'
         ? sampleDist({ dist: 'exponential', mean: 60 / proc.arrivals.ratePerHour }, rng)
         : proc.arrivals.everyMinutes;
-    const entry = stagesByKey.get(`${proc.id}.${proc.stages[0].id}`)!;
 
     const arrive = () => {
-      const n = (caseSeq.get(proc.id) ?? 0) + 1;
-      caseSeq.set(proc.id, n);
-      const attrs: Record<string, number> = {};
-      for (const [k, d] of Object.entries(proc.attributes ?? {})) attrs[k] = Math.round(sampleDist(d, rng) * 100) / 100;
-      const c: CaseRT = { id: `${proc.id}#${n}`, proc, attrs, createdAt: now, stage: null, enteredAt: now, visit: 0, done: false };
-      created++;
-      procStats.get(proc.id)!.created++;
-      emit({ t: now, type: 'case.created', caseId: c.id, process: proc.id, attrs });
-      enterStage(c, entry);
+      createCase(proc);
       const next = biz.addBiz(now, interval());
       if (next <= horizon) schedule(next, arrive);
     };

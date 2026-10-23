@@ -45,6 +45,8 @@ La lista exige: todos los registros indican su operador · al menos **una observ
 4. **Desarrollo paso a paso**: se redacta en el paso 3.
 5. **Anexos y control de cambios**: enlaces a plantillas, formatos y capturas; el historial de versiones se llena solo al publicar.
 
+**Requisitos previos (opcional)**, al inicio de este paso: marca los procedimientos —de este u otros procesos— que deben estar hechos o disponibles antes de ejecutar este (por ejemplo, «Control de acceso del camión» antes de «Descarga en el muelle»). Se muestra la cadena `requisito → este → quien lo necesita`, y se avisa si algún requisito sigue en borrador. No se permiten ciclos: un procedimiento que ya depende de este no puede ser su requisito.
+
 ### Paso 3 · Redactar en formato «acción-resultado»
 
 Cada paso se escribe con campos separados: **[Actor]** + **[Acción]** + **[Herramienta o medio]** + **[Resultado esperado]**. El sistema compone la frase:
@@ -107,6 +109,7 @@ La vista **Documento** reúne todo con los 6 apartados:
 
 ## Cómo se conecta con el proceso
 
+- Los **requisitos previos** y **lo que se necesita después** aparecen en el documento (apartado 1) y en **Proceso → 🔗 Dependencias → Procedimientos encadenados**, donde se avisa si hay procedimientos publicados con requisitos aún en borrador. Al borrar un procedimiento se quitan los requisitos que lo apuntaban.
 - La **ficha del proceso** incluye la sección **Procedimientos asociados** (código, título, etapa, versión, estado, nº de pasos y la **cobertura**: cuántas etapas con trabajo tienen un procedimiento publicado).
 - En el **diagrama As-Is** (fase 3 del ciclo de documentación), cada etapa con procedimiento lleva la marca **📄 n procedimiento(s)**.
 - Los procedimientos viajan en el YAML de la empresa y **no afectan a la simulación**.

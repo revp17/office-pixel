@@ -1,4 +1,4 @@
-import { procedureMarkdown, type Procedure } from '@office-pixel/sim';
+import { dependentsOf, prerequisitesOf, procedureMarkdown, procedureStatus, type Procedure } from '@office-pixel/sim';
 import { unitPath } from '@office-pixel/sim';
 import { Card } from '../config/ui';
 import type { HubCtx } from './documentar';
@@ -128,6 +128,35 @@ export function ProcDoc({ ctx, pc }: { ctx: HubCtx; pc: Procedure }) {
           <p>
             <b>No incluye:</b> {pc.excludes}
           </p>
+        )}
+
+        {prerequisitesOf(d, pc).length > 0 && (
+          <>
+            <p>
+              <b>Requisitos previos</b> (procedimientos que deben estar hechos antes):
+            </p>
+            <ul>
+              {prerequisitesOf(d, pc).map((r) => (
+                <li key={r.pc.id}>
+                  {r.pc.code} — {r.pc.title} ({r.proc.name ?? r.proc.id}, {procedureStatus(r.pc) === 'publicado' ? `v${r.pc.version}` : 'borrador'})
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        {dependentsOf(d, pc).length > 0 && (
+          <>
+            <p>
+              <b>Lo necesitan después:</b>
+            </p>
+            <ul>
+              {dependentsOf(d, pc).map((r) => (
+                <li key={r.pc.id}>
+                  {r.pc.code} — {r.pc.title} ({r.proc.name ?? r.proc.id})
+                </li>
+              ))}
+            </ul>
+          </>
         )}
 
         <h2>2. Responsabilidades</h2>

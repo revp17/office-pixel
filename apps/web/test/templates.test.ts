@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { parseCompany, simulateCompany, validateCompany } from '@office-pixel/sim';
+import { dependencyEdges, parseCompany, simulateCompany, validateCompany } from '@office-pixel/sim';
 import { buildBuilding } from '../src/building';
 
 const load = (name: string) => parseCompany(readFileSync(new URL(`../../../examples/${name}.yaml`, import.meta.url), 'utf8'));
@@ -38,6 +38,15 @@ describe('plantillas de empresa (pequeña, mediana, grande)', () => {
         const bodega = [...b.rooms.values()].find((room) => room.facility === 'bodega')!;
         const oficina = [...b.rooms.values()].find((room) => room.facility === 'oficina');
         if (oficina && oficina.desks.length > 0 && bodega.desks.length > 0) expect(bodega.h).toBeGreaterThanOrEqual(oficina.h);
+      });
+
+      it('declara dependencias entre procesos y la simulación las respeta', () => {
+        const edges = dependencyEdges(r.def!);
+        expect(edges.some((e) => e.kind === 'dispara')).toBe(true);
+        expect(edges.some((e) => e.kind === 'requiere')).toBe(true);
+        const res = simulateCompany(r.def!, { seed: 11, horizonDays: 20 });
+        const spawned = res.events.filter((e) => e.type === 'case.created' && e.cause);
+        expect(spawned.length).toBeGreaterThan(0);
       });
 
       it('al simularla se completan casos de todos los procesos', () => {

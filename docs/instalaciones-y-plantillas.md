@@ -46,6 +46,8 @@ Las tres plantillas operativas traen estos procesos, que puedes ver correr en el
 - **Mantenimiento**: solicitud → clasificación → reparación (mecánica, eléctrica o de infraestructura según el tipo) → cierre. En la pequeña, con espera de repuesto.
 - **Seguridad**: control de acceso de visitantes (pequeña) o alerta de cámaras → verificación en sitio → informe, con falsas alarmas que se cierran sin informe.
 
+Las plantillas también traen **dependencias entre procesos**: en la ferretería un incidente de seguridad puede generar una orden de mantenimiento, y el despacho de pedidos *requiere* que la mercadería ya esté en bodega (ver [gestion-de-procesos.md](gestion-de-procesos.md#dependencias-entre-procesos)).
+
 Cada caso se ve como una caja que viaja entre salas: el camión descarga en el ingreso, la mercadería pasa a la bodega, el pedido sale por despacho y el aviso de mantenimiento llega al taller.
 
 ## Cómo adaptarlo a tu empresa

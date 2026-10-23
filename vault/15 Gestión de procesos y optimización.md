@@ -30,3 +30,7 @@ Los procesos son la base de la empresa. El sistema tiene un espacio (**📋 Proc
 
 ### Impacto
 Se simula cada variante acumulada (As-Is, paso 2, 3, 4 y 5) con las mismas semillas y se compara ciclo medio, espera, casos cerrados y plazos. Automatizar antes de arreglar el cuello de botella puede **empeorar** el ciclo: es el argumento para el orden.
+
+## Dependencias entre procesos
+
+Un proceso puede **disparar** casos en otro (se simula) o **requerir** su resultado (informativo). Se configura en Procesos → Dependencias y se ve en el mapa 🔗 Dependencias, en el diagrama As-Is y en la ficha. Detalle en `docs/gestion-de-procesos.md`.

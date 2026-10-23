@@ -18,6 +18,9 @@ import {
   reopenProcStep,
   stepSentence,
   uncoveredExceptions,
+  allProcedures,
+  dropDanglingDependencies,
+  unpublishedPrerequisites,
   type CompanyDef,
   type OrgProcessDef,
   type ProcFieldRecord,
@@ -27,6 +30,7 @@ import {
 } from '@office-pixel/sim';
 import { AddBtn, Card, Field, IconBtn, Num, Sel, Section, Text, TextArea } from '../config/ui';
 import { ProcDoc } from './procDoc';
+import { ProcedureChain } from './depmap';
 import type { HubCtx } from './documentar';
 import { Annotator, TaskFlow, WarningBox, fileToDataUrl } from './visuales';
 
@@ -193,6 +197,46 @@ function Paso1({ ctx, pc, PM, go }: { ctx: HubCtx; pc: Procedure; PM: PM; go: (n
   );
 }
 
+/** Procedimientos que deben estar hechos antes de este (de cualquier proceso). */
+function Requisitos({ ctx, pc, PM }: { ctx: HubCtx; pc: Procedure; PM: PM }) {
+  const all = allProcedures(ctx.d).filter((r) => r.pc.id !== pc.id);
+  // los que ya dependen de este (directa o indirectamente) no pueden ser su requisito: formarían un ciclo
+  const downstream = new Set<string>();
+  const walk = (id: string) => {
+    for (const r of allProcedures(ctx.d)) if (r.pc.prerequisites?.includes(id) && !downstream.has(r.pc.id)) (downstream.add(r.pc.id), walk(r.pc.id));
+  };
+  walk(pc.id);
+  const chosen = new Set(pc.prerequisites ?? []);
+  const toggle = (id: string) =>
+    PM((x) => {
+      const set = new Set(x.prerequisites ?? []);
+      set.has(id) ? set.delete(id) : set.add(id);
+      if (set.size) x.prerequisites = [...set];
+      else delete x.prerequisites;
+    });
+  const pending = unpublishedPrerequisites(ctx.d, pc);
+  return (
+    <Section title="Requisitos previos (opcional)" hint="Procedimientos de este u otros procesos que deben estar hechos o disponibles antes de ejecutar este.">
+      {all.length === 0 && <p class="empty">Aún no hay otros procedimientos.</p>}
+      <div class="list">
+        {all.map((r) => (
+          <label class="check" key={r.pc.id}>
+            <input type="checkbox" checked={chosen.has(r.pc.id)} disabled={downstream.has(r.pc.id)} onChange={() => toggle(r.pc.id)} />
+            <span>
+              <b>{r.pc.code}</b> — {r.pc.title} <small>({r.proc.name ?? r.proc.id} · {procedureStatus(r.pc) === 'publicado' ? `v${r.pc.version}` : 'borrador'})</small>
+              {downstream.has(r.pc.id) && <small> · ya depende de este</small>}
+            </span>
+          </label>
+        ))}
+      </div>
+      <ProcedureChain def={ctx.d} pc={pc} />
+      {pending.length > 0 && (
+        <p class="prereq-warn">⚠ Antes de publicar este procedimiento conviene publicar sus requisitos: {pending.map((r) => r.pc.code).join(', ')}.</p>
+      )}
+    </Section>
+  );
+}
+
 // ---------- 2 · Los 5 bloques ----------
 
 function Paso2({ ctx, pc, PM, go }: { ctx: HubCtx; pc: Procedure; PM: PM; go: (n: number) => void }) {
@@ -221,6 +265,8 @@ function Paso2({ ctx, pc, PM, go }: { ctx: HubCtx; pc: Procedure; PM: PM; go: (n
           </Field>
         </div>
       </Section>
+
+      <Requisitos ctx={ctx} pc={pc} PM={PM} />
 
       <Section title="2 · Responsabilidades" hint="Puestos específicos (por ejemplo, Analista de Compras o Gerente de Finanzas). Evita nombres propios.">
         <datalist id="puestos">
@@ -817,7 +863,10 @@ export function Procedimientos({ ctx }: { ctx: HubCtx }) {
                 title="Borrar procedimiento"
                 danger
                 onClick={() => {
-                  if (confirm(`¿Borrar el procedimiento ${p.code}?`)) ctx.P((x) => void (x.procedures = (x.procedures ?? []).filter((q) => q.id !== p.id)));
+                  if (confirm(`¿Borrar el procedimiento ${p.code}?`)) ctx.P((x, c) => {
+                      x.procedures = (x.procedures ?? []).filter((q) => q.id !== p.id);
+                      dropDanglingDependencies(c);
+                    });
                 }}
               >
                 🗑

@@ -133,6 +133,8 @@ processes:
   - id: pedido_cliente
     name: Pedido de cliente hasta la entrega
     arrivals: { type: poisson, ratePerHour: 6 }
+    dependsOn:
+      - { process: ingreso_producto, kind: requiere, atStage: ubicacion, note: "El picking necesita la mercadería ya ubicada en bodega" }
     stages:
       - id: registro
         label: Registrar el pedido
@@ -181,6 +183,8 @@ processes:
   - id: orden_mantenimiento
     name: Orden de mantenimiento
     arrivals: { type: poisson, ratePerHour: 0.6 }
+    dependsOn:
+      - { process: incidente_seguridad, kind: dispara, atStage: reporte, probability: 0.25, note: "Una alerta confirmada suele dejar cerraduras, cercas o cámaras por reparar" }
     attributes:
       tipo: { dist: lognormal, median: 5, sigma: 0.7 }
     stages:

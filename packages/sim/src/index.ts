@@ -13,5 +13,6 @@ export { companyToYaml } from './org/yaml';
 export * from './org/manage';
 export { fichaMarkdown } from './org/ficha';
 export * from './org/procedures';
+export * from './org/deps';
 export { OrgReplayer, type OrgCaseView, type OrgCaseStatus, type PersonView, type OrgCounters } from './org/replay';
 export { makeBizCalendar, parseHM, DAY } from './org/time';

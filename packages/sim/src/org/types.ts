@@ -311,6 +311,8 @@ export interface Procedure {
   title: string;
   /** etapa del proceso que detalla */
   stageId?: string;
+  /** ids de los procedimientos que deben estar hechos o disponibles antes de este (de cualquier proceso) */
+  prerequisites?: string[];
   /** si es digital hacen falta capturas de pantalla anotadas */
   digital: boolean;
   // paso 1
@@ -340,12 +342,33 @@ export interface Procedure {
   done: Partial<Record<ProcStepKey, { completedAt: string }>>;
 }
 
+/**
+ * Dependencia entre procesos (la declara el proceso que depende).
+ * - dispara: cuando el proceso de origen termina `atStage` (o completa un caso, si no se indica),
+ *   se crea un caso en este proceso con la `probability` indicada. Se simula.
+ * - requiere: este proceso necesita el resultado del otro, pero no se crea nada: es informativa.
+ */
+export type DependencyKind = 'dispara' | 'requiere';
+
+export interface ProcessDependency {
+  /** proceso del que depende */
+  process: string;
+  kind: DependencyKind;
+  /** etapa del proceso de origen; si falta, el momento en que se completa el caso */
+  atStage?: string;
+  /** solo "dispara": probabilidad de que cada caso del origen genere uno aquí (por defecto 1) */
+  probability?: number;
+  note?: string;
+}
+
 export interface OrgProcessDef {
   id: string;
   name?: string;
   arrivals: ArrivalsDef;
   attributes?: Record<string, DistSpec>;
   stages: OrgStageDef[];
+  /** procesos de los que depende (en el mapa y, si "dispara", también en la simulación) */
+  dependsOn?: ProcessDependency[];
   /** ficha y ciclo de documentación del proceso */
   doc?: ProcessDoc;
   /** optimización en 5 pasos */
@@ -373,7 +396,7 @@ export interface CompanyDef {
 export type PersonState = 'off' | 'idle' | 'working' | 'break' | 'meeting' | 'absent';
 
 export type OrgEvent =
-  | { t: number; type: 'case.created'; caseId: string; process: string; attrs: Record<string, number> }
+  | { t: number; type: 'case.created'; caseId: string; process: string; attrs: Record<string, number>; cause?: string }
   | { t: number; type: 'stage.entered'; caseId: string; process: string; stage: string }
   | { t: number; type: 'handoff.started'; caseId: string; fromUnit: string; toUnit: string; minutes: number }
   | { t: number; type: 'work.started'; caseId: string; stage: string; person: string }

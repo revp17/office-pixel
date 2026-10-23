@@ -201,6 +201,8 @@ processes:
   - id: despacho_pedido
     name: Preparación y despacho de pedidos
     arrivals: { type: poisson, ratePerHour: 12 }
+    dependsOn:
+      - { process: ingreso_producto, kind: requiere, atStage: registro_inventario, note: "El picking necesita el stock registrado en inventario" }
     stages:
       - id: recepcion_pedido
         label: Recibir el pedido
@@ -249,6 +251,8 @@ processes:
   - id: orden_mantenimiento
     name: Orden de mantenimiento
     arrivals: { type: poisson, ratePerHour: 1.2 }
+    dependsOn:
+      - { process: alerta_seguridad, kind: dispara, atStage: informe, probability: 0.2, note: "Una alerta confirmada suele dejar daños que reparar" }
     attributes:
       tipo: { dist: lognormal, median: 5, sigma: 0.7 }
     stages:

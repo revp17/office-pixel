@@ -376,7 +376,20 @@ const VARIANT_LABEL: Record<VariantKey, string> = {
 };
 
 function withProcess(def: CompanyDef, id: string, variant: OrgProcessDef): CompanyDef {
-  return { ...def, processes: def.processes.map((p) => (p.id === id ? { ...variant, id, name: p.name } : p)) };
+  const stages = new Set(variant.stages.map((s) => s.id));
+  return {
+    ...def,
+    processes: def.processes.map((p) => {
+      if (p.id === id) {
+        // los procedimientos de una etapa eliminada quedan sin etapa en la variante
+        const procedures = variant.procedures?.map((pc) => (pc.stageId && !stages.has(pc.stageId) ? { ...pc, stageId: undefined } : pc));
+        return { ...variant, id, name: p.name, ...(procedures ? { procedures } : {}) };
+      }
+      // si la variante eliminó la etapa que disparaba a otro proceso, ahora dispara al completarse el caso
+      if (!p.dependsOn?.some((d) => d.process === id && d.atStage && !stages.has(d.atStage))) return p;
+      return { ...p, dependsOn: p.dependsOn.map((d) => (d.process === id && d.atStage && !stages.has(d.atStage) ? { ...d, atStage: undefined } : d)) };
+    }),
+  };
 }
 
 /** La empresa con una variante del proceso en lugar del proceso actual (para verla en el plano). */

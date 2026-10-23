@@ -65,6 +65,8 @@ processes:
   - id: pedido_despacho
     name: Pedido y despacho
     arrivals: { type: poisson, ratePerHour: 3 }
+    dependsOn:
+      - { process: ingreso_mercaderia, kind: requiere, atStage: almacenar, note: "No se puede sacar lo que aún no está en bodega" }
     stages:
       - id: pedido
         label: Tomar el pedido
@@ -101,6 +103,8 @@ processes:
   - id: mantenimiento_local
     name: Mantenimiento del local y equipos
     arrivals: { type: poisson, ratePerHour: 0.4 }
+    dependsOn:
+      - { process: control_acceso, kind: dispara, atStage: reporte_incidente, probability: 0.3, note: "Un incidente puede dejar daños que reparar" }
     stages:
       - id: aviso
         label: Avisar la falla

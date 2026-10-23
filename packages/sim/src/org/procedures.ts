@@ -1,3 +1,4 @@
+import { dependentsOf, prerequisitesOf } from './deps';
 import type { CheckItem } from './manage';
 import { reviewableStages, unitPath } from './manage';
 import type {
@@ -323,6 +324,18 @@ export function procedureMarkdown(def: CompanyDef, proc: OrgProcessDef, pc: Proc
   out.push(`**Termina cuando:** ${text(pc.endsWhen)}`, '');
   if (filled(pc.includes)) out.push(`**Incluye:** ${pc.includes!.trim()}`, '');
   if (filled(pc.excludes)) out.push(`**No incluye:** ${pc.excludes!.trim()}`, '');
+  const before = prerequisitesOf(def, pc);
+  if (before.length) {
+    out.push('**Requisitos previos** (procedimientos que deben estar hechos antes):', '');
+    for (const r of before) out.push(`- ${r.pc.code} — ${r.pc.title} (${r.proc.name ?? r.proc.id}, ${procedureStatus(r.pc) === 'publicado' ? `v${r.pc.version}` : 'borrador'})`);
+    out.push('');
+  }
+  const after = dependentsOf(def, pc);
+  if (after.length) {
+    out.push('**Lo necesitan después:**', '');
+    for (const r of after) out.push(`- ${r.pc.code} — ${r.pc.title} (${r.proc.name ?? r.proc.id})`);
+    out.push('');
+  }
 
   out.push('## 2. Responsabilidades', '');
   if (pc.responsibilities.length === 0) out.push('_Sin responsabilidades definidas._');

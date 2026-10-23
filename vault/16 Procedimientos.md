@@ -27,3 +27,7 @@ Un procedimiento detalla **una etapa** de un proceso (visión micro: cómo, qui�
 
 ## Modelo de datos
 `OrgProcessDef.procedures: Procedure[]` con `stageId`, `fieldwork`, bloques de contenido, `steps` (con `alternatives`, `warning`, `image` y `marks` en fracciones 0–1), `attempts`, `signoffs`, `changes`, `version` y `done`. El simulador lo ignora; viaja en el YAML.
+
+## Requisitos entre procedimientos
+
+Un procedimiento puede exigir otros como requisito previo (paso 2). Ver [[15 Gestión de procesos y optimización]] para las dependencias entre procesos.
