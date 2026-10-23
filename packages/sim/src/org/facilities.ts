@@ -1,4 +1,4 @@
-import { FACILITIES, type CompanyDef, type Facility } from './types';
+import { FACILITIES, type CompanyDef, type Facility, type FacilityArt } from './types';
 
 /** Un tipo de instalación (incluido o propio) ya resuelto para mostrarlo y dibujarlo. */
 export interface FacilityView {
@@ -10,7 +10,12 @@ export interface FacilityView {
   /** tipo incluido cuyo dibujo se usa en el plano */
   look: Facility;
   builtin: boolean;
+  /** ilustración propia (solo tipos propios) */
+  art?: FacilityArt;
 }
+
+/** ¿Tiene una ilustración propia con algo que dibujar? */
+export const hasArt = (a: FacilityArt | undefined): a is FacilityArt => !!a && (!!a.image || (a.items?.length ?? 0) > 0);
 
 export const isBuiltinFacility = (id: string): id is Facility => Object.prototype.hasOwnProperty.call(FACILITIES, id);
 
@@ -33,6 +38,7 @@ export function facilityViews(def: Pick<CompanyDef, 'facilityTypes'>): FacilityV
     description: c.description?.trim() || `Instalación propia, dibujada como ${FACILITIES[c.look].label.toLowerCase()}.`,
     look: c.look,
     builtin: false,
+    ...(hasArt(c.art) ? { art: c.art } : {}),
   }));
   return [...builtin, ...custom];
 }

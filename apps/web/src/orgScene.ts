@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import {
   AUTO_ACTOR,
   OrgReplayer,
+  ART_H,
+  ART_W,
   DAY,
   type CompanyDef,
   type OrgCaseView,
@@ -477,7 +479,7 @@ export class OrgScene extends Phaser.Scene {
         .setDepth(3);
     }
     this.plant(g, r.x + 14, r.y + r.h - 16);
-    if (r.look !== 'oficina') this.facilityProps(g, r);
+    if (r.art || r.look !== 'oficina') this.facilityProps(g, r);
     const autoRoom = [...this.autoUnits].some((u) => this.b!.unitRoom(u)?.id === r.id);
     if (autoRoom) {
       g.fillStyle(0x0f131c, 0.95);
@@ -487,7 +489,7 @@ export class OrgScene extends Phaser.Scene {
       this.add.text(r.x + 36, r.y + r.h - 40, '⚙ Sistema', TXT(9, '#8cc4ff', '700')).setDepth(3);
     }
 
-    const icon = r.look !== 'oficina' ? `${r.icon} ` : '';
+    const icon = r.art || r.look !== 'oficina' ? `${r.icon} ` : '';
     const full = icon + (r.kind === 'subarea' && r.path.length > 2 ? r.path.slice(-2).join(' › ') : r.name);
     const maxChars = Math.max(4, Math.floor((r.w - 62) / 6.6));
     const title = full.length > maxChars ? `${full.slice(0, maxChars - 1)}…` : full;
@@ -511,7 +513,56 @@ export class OrgScene extends Phaser.Scene {
   }
 
   /** Equipamiento de las instalaciones que no son oficina: ocupa la franja libre bajo los escritorios. */
+  /** Ilustración propia del tipo de instalación: elementos dibujados por el usuario o una imagen subida. */
+  private drawArt(r: RoomL) {
+    const art = r.art!;
+    const x0 = r.x + 10;
+    const pw = r.inbox.x - 10 - x0;
+    const bandH = r.propsH - 10;
+    const top = r.y + r.h - 30 - bandH;
+    const k = Math.min(pw / ART_W, bandH / ART_H);
+    const ox = x0 + (pw - ART_W * k) / 2;
+    const oy = top + (bandH - ART_H * k) / 2;
+    const col = (c: string) => {
+      const h = c.slice(1);
+      return parseInt(h.length <= 4 ? h.split('').slice(0, 3).map((d) => d + d).join('') : h.slice(0, 6), 16);
+    };
+    if (art.image) {
+      const key = `art:${r.facility}:${art.image.length}`;
+      const place = () => {
+        const img = this.add.image(0, 0, key).setDepth(2.2).setOrigin(0.5);
+        const s = Math.min(pw / img.width, bandH / img.height);
+        img.setScale(s).setPosition(x0 + pw / 2, top + bandH / 2);
+      };
+      if (this.textures.exists(key)) place();
+      else {
+        this.textures.once(`addtexture-${key}`, place);
+        this.textures.addBase64(key, art.image);
+      }
+      return;
+    }
+    (art.items ?? []).forEach((it, i) => {
+      const depth = 2.2 + i * 0.001;
+      if (it.t === 'emoji') {
+        this.add.text(ox + it.x * k, oy + it.y * k, it.ch, { fontSize: `${Math.max(6, it.s * k)}px`, fontFamily: 'Segoe UI Emoji, Apple Color Emoji, sans-serif', resolution: 3 }).setDepth(depth);
+        return;
+      }
+      const gg = this.add.graphics().setDepth(depth);
+      gg.fillStyle(col(it.c), 1);
+      if (it.t === 'rect') {
+        if (it.r) gg.fillRoundedRect(ox + it.x * k, oy + it.y * k, it.w * k, it.h * k, Math.min(it.r * k, (it.w * k) / 2, (it.h * k) / 2));
+        else gg.fillRect(ox + it.x * k, oy + it.y * k, it.w * k, it.h * k);
+      } else if (it.t === 'ellipse') gg.fillEllipse(ox + (it.x + it.w / 2) * k, oy + (it.y + it.h / 2) * k, it.w * k, it.h * k);
+      else if (it.t === 'tri') gg.fillTriangle(ox + (it.x + it.w / 2) * k, oy + it.y * k, ox + (it.x + it.w) * k, oy + (it.y + it.h) * k, ox + it.x * k, oy + (it.y + it.h) * k);
+      else {
+        gg.lineStyle(Math.max(1, it.lw * k), col(it.c), 1);
+        gg.lineBetween(ox + it.x * k, oy + it.y * k, ox + it.x2 * k, oy + it.y2 * k);
+      }
+    });
+  }
+
   private facilityProps(g: Phaser.GameObjects.Graphics, r: RoomL) {
+    if (r.art) return this.drawArt(r);
     const x0 = r.x + 10;
     const x1 = r.inbox.x - 10;
     const top = r.y + r.h - 60;

@@ -50,6 +50,26 @@ export interface FacilityInfo {
   defaultName: string;
 }
 
+/** Espacio de dibujo de una ilustración propia: cada elemento usa coordenadas de 0 a ART_W y de 0 a ART_H. */
+export const ART_W = 240;
+export const ART_H = 80;
+
+/** Un elemento de una ilustración propia. */
+export type ArtItem =
+  | { t: 'rect'; x: number; y: number; w: number; h: number; c: string; r?: number }
+  | { t: 'ellipse'; x: number; y: number; w: number; h: number; c: string }
+  | { t: 'tri'; x: number; y: number; w: number; h: number; c: string }
+  | { t: 'line'; x: number; y: number; x2: number; y2: number; c: string; lw: number }
+  /** un icono o emoji; (x, y) es su esquina superior izquierda y s su tamaño */
+  | { t: 'emoji'; x: number; y: number; s: number; ch: string };
+
+/** Ilustración propia de un tipo de instalación: elementos dibujados a mano o una imagen subida. */
+export interface FacilityArt {
+  items?: ArtItem[];
+  /** imagen (data URL) en lugar de elementos */
+  image?: string;
+}
+
 /**
  * Tipo de instalación creado por el usuario. Se dibuja con el aspecto (`look`) de uno de los tipos
  * incluidos, pero con su propio nombre e icono.
@@ -59,8 +79,10 @@ export interface CustomFacility {
   label: string;
   icon: string;
   description?: string;
-  /** tipo incluido cuyo dibujo usa en el plano */
+  /** tipo incluido cuyo dibujo usa en el plano cuando no tiene ilustración propia */
   look: Facility;
+  /** ilustración propia, totalmente distinta de los 7 dibujos incluidos */
+  art?: FacilityArt;
 }
 
 /** Catálogo de instalaciones que una sala puede representar; solo cambian cómo se ve, no la simulación. */

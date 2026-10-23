@@ -1,5 +1,6 @@
 import { useState } from 'preact/hooks';
-import { FACILITIES, facilityViews, type CustomFacility, type Facility, type FacilityView } from '@office-pixel/sim';
+import { FACILITIES, facilityViews, hasArt, type ArtItem, type CustomFacility, type Facility, type FacilityView } from '@office-pixel/sim';
+import { ArtEditor, ArtSvg, artImageFromFile } from './arte';
 import { FacilityPreview } from './catalogo';
 import { addUnit, findUnit, flatUnits, uniqueId } from './model';
 import { AddBtn, Field, Sel, Text, TextArea, type TabProps } from './ui';
@@ -15,18 +16,35 @@ function CustomForm(props: { d: TabProps['d']; edit?: CustomFacility; up: TabPro
   const [icon, setIcon] = useState(edit?.icon ?? '🏭');
   const [description, setDescription] = useState(edit?.description ?? '');
   const [look, setLook] = useState<Facility>(edit?.look ?? 'oficina');
+  // cómo se dibuja: uno de los dibujos incluidos, una ilustración propia o una imagen subida
+  const [mode, setMode] = useState<'base' | 'dibujo' | 'imagen'>(edit?.art?.image ? 'imagen' : edit?.art?.items?.length ? 'dibujo' : 'base');
+  const [items, setItems] = useState<ArtItem[]>(edit?.art?.items ?? []);
+  const [image, setImage] = useState<string>(edit?.art?.image ?? '');
+  const art = mode === 'dibujo' && items.length ? { items } : mode === 'imagen' && image ? { image } : undefined;
+
+  const upload = async (file: File | undefined) => {
+    if (!file) return;
+    try {
+      setImage(await artImageFromFile(file));
+    } catch (err) {
+      note((err as Error).message);
+    }
+  };
 
   const save = () => {
     const name = label.trim();
     if (!name) return note('Ponle un nombre al tipo de instalación.');
     if (!icon.trim()) return note('Elige un icono.');
+    if (mode === 'dibujo' && !items.length) return note('El lienzo está vacío: dibuja algo o elige otro modo.');
+    if (mode === 'imagen' && !image) return note('Sube una imagen o elige otro modo.');
     if (facilityViews(d).some((f) => f.id !== edit?.id && f.label.toLowerCase() === name.toLowerCase())) return note(`Ya existe un tipo llamado «${name}».`);
     up((x) => {
       const list = (x.facilityTypes ??= []);
-      const data = { label: name, icon: icon.trim(), look, ...(description.trim() ? { description: description.trim() } : {}) };
+      const data = { label: name, icon: icon.trim(), look, ...(description.trim() ? { description: description.trim() } : {}), ...(art ? { art } : {}) };
       if (edit) {
         const c = list.find((q) => q.id === edit.id)!;
         delete c.description;
+        delete c.art;
         Object.assign(c, data);
       } else {
         const taken = new Set([...Object.keys(FACILITIES), ...list.map((q) => q.id)]);
@@ -39,7 +57,7 @@ function CustomForm(props: { d: TabProps['d']; edit?: CustomFacility; up: TabPro
 
   return (
     <article class="fac-card fac-form">
-      <FacilityPreview kind={look} label={label.trim() || 'Nuevo tipo'} icon={icon || '🏭'} />
+      {art ? <ArtSvg art={art} label={label.trim() || 'Nuevo tipo'} icon={icon || '🏭'} /> : <FacilityPreview kind={look} label={label.trim() || 'Nuevo tipo'} icon={icon || '🏭'} />}
       <h4>{edit ? `Editar «${edit.label}»` : 'Nuevo tipo de instalación'}</h4>
       <div class="row">
         <Field label="Nombre">
@@ -59,9 +77,31 @@ function CustomForm(props: { d: TabProps['d']; edit?: CustomFacility; up: TabPro
       <Field label="Descripción (opcional)">
         <TextArea rows={2} value={description} onChange={setDescription} />
       </Field>
-      <Field label="Se dibuja como" hint="El plano usa uno de los dibujos incluidos; tu tipo conserva su nombre e icono.">
-        <Sel value={look} options={LOOKS} onChange={(v) => setLook(v as Facility)} />
+      <Field label="¿Cómo se ve en el plano?" hint="Puedes dibujar tu propia ilustración, subir una imagen, o reutilizar uno de los dibujos incluidos.">
+        <div class="seg">
+          <button type="button" class={mode === 'dibujo' ? 'on' : ''} onClick={() => setMode('dibujo')}>
+            ✏ Dibujar mi ilustración
+          </button>
+          <button type="button" class={mode === 'imagen' ? 'on' : ''} onClick={() => setMode('imagen')}>
+            🖼 Subir imagen
+          </button>
+          <button type="button" class={mode === 'base' ? 'on' : ''} onClick={() => setMode('base')}>
+            Usar un dibujo incluido
+          </button>
+        </div>
       </Field>
+      {mode === 'dibujo' && <ArtEditor items={items} onChange={setItems} />}
+      {mode === 'imagen' && (
+        <div class="art-upload">
+          <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" onChange={(e) => upload((e.currentTarget as HTMLInputElement).files?.[0])} />
+          <p class="muted">Se reduce para que quepa en 480×160 px. Funciona mejor una imagen apaisada (más ancha que alta) y con fondo transparente (PNG).</p>
+        </div>
+      )}
+      {mode === 'base' && (
+        <Field label="Se dibuja como" hint="El plano usa uno de los dibujos incluidos; tu tipo conserva su nombre e icono.">
+          <Sel value={look} options={LOOKS} onChange={(v) => setLook(v as Facility)} />
+        </Field>
+      )}
       <div class="fac-actions">
         <button type="button" class="btn primary" onClick={save}>
           {edit ? 'Guardar cambios' : 'Crear tipo'}
@@ -134,7 +174,7 @@ export function CatalogoTab({ d, up, note }: TabProps) {
           const used = usedBy(v.id);
           return (
             <article class="fac-card" key={v.id}>
-              <FacilityPreview kind={v.look} label={v.label} icon={v.icon} />
+              {hasArt(v.art) ? <ArtSvg art={v.art} label={v.label} icon={v.icon} /> : <FacilityPreview kind={v.look} label={v.label} icon={v.icon} />}
               <h4>
                 {v.icon} {v.label} {!v.builtin && <span class="chip own">propio</span>}
               </h4>
@@ -158,7 +198,7 @@ export function CatalogoTab({ d, up, note }: TabProps) {
                 ) : (
                   <>
                     <dt>Se dibuja como</dt>
-                    <dd>{FACILITIES[v.look].label}</dd>
+                    <dd>{hasArt(v.art) ? (v.art.image ? 'Imagen propia' : `Ilustración propia (${v.art.items?.length ?? 0} elementos)`) : FACILITIES[v.look].label}</dd>
                   </>
                 )}
                 <dt>En tu empresa</dt>

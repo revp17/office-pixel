@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { companyToYaml, facilityViews, parseCompany, resolveFacility, simulateCompany, validateCompany, type CompanyDef } from '@office-pixel/sim';
+import { companyToYaml, facilityViews, hasArt, parseCompany, resolveFacility, simulateCompany, validateCompany, type CompanyDef } from '@office-pixel/sim';
 import { buildBuilding } from '../src/building';
 
 const base = (): CompanyDef => parseCompany(readFileSync(new URL('../../../examples/banco_pixel.yaml', import.meta.url), 'utf8')).def!;
@@ -62,5 +62,62 @@ describe('tipos de instalación propios', () => {
     expect(errs).toMatch(/falta el nombre/);
     expect(errs).toMatch(/falta el icono/);
     expect(errs).toMatch(/look/);
+  });
+});
+
+describe('ilustración propia de un tipo de instalación', () => {
+  const withArt = (): CompanyDef => {
+    const d = withLab();
+    d.facilityTypes![0].art = {
+      items: [
+        { t: 'rect', x: 10, y: 40, w: 80, h: 20, c: '#9aa6c0', r: 4 },
+        { t: 'ellipse', x: 100, y: 30, w: 30, h: 30, c: '#4cd98a' },
+        { t: 'tri', x: 140, y: 30, w: 30, h: 30, c: '#f5c451' },
+        { t: 'line', x: 10, y: 10, x2: 120, y2: 10, c: '#fff', lw: 3 },
+        { t: 'emoji', x: 180, y: 20, s: 30, ch: '🧪' },
+      ],
+    };
+    return d;
+  };
+
+  it('una sala con ilustración reserva más espacio y la lleva consigo', () => {
+    const plain = buildBuilding(withLab()).rooms.get('riesgos')!;
+    const art = buildBuilding(withArt()).rooms.get('riesgos')!;
+    expect(art.art?.items).toHaveLength(5);
+    expect(art.propsH).toBeGreaterThan(plain.propsH);
+    expect(art.h).toBeGreaterThan(plain.h);
+    expect(plain.art).toBeUndefined();
+    expect(buildBuilding(base()).rooms.get('riesgos')!.propsH).toBe(0); // una oficina no reserva franja
+  });
+
+  it('es válida y viaja en el YAML', () => {
+    expect(validateCompany(withArt()).errors).toEqual([]);
+    const back = parseCompany(companyToYaml(withArt()));
+    expect(back.errors).toEqual([]);
+    expect(back.def!.facilityTypes![0].art).toEqual(withArt().facilityTypes![0].art);
+    expect(hasArt(back.def!.facilityTypes![0].art)).toBe(true);
+    expect(hasArt({ items: [] })).toBe(false);
+    expect(hasArt(undefined)).toBe(false);
+  });
+
+  it('acepta una imagen y rechaza formas mal hechas', () => {
+    const d = withArt();
+    d.facilityTypes![0].art = { image: 'data:image/png;base64,iVBORw0KGgo=' };
+    expect(validateCompany(d).errors).toEqual([]);
+    expect(resolveFacility(d, 'laboratorio').art?.image).toContain('data:image/png');
+
+    d.facilityTypes![0].art = { image: 'http://ejemplo.com/x.png' };
+    expect(validateCompany(d).errors.join('\n')).toMatch(/art\.image/);
+
+    d.facilityTypes![0].art = { items: [{ t: 'rect', x: 0, y: 0, w: 10, h: 10, c: 'rojo' }, { t: 'line', x: 0, y: 0, x2: 5, y2: 5, c: '#fff', lw: 0 }, { t: 'star' as never, x: 0, y: 0 } as never, { t: 'emoji', x: 5, y: 5, s: 20, ch: '' }, { t: 'rect', x: 9999, y: 0, w: 1, h: 1, c: '#fff' }] };
+    const errs = validateCompany(d).errors.join('\n');
+    expect(errs).toMatch(/\.c: color/);
+    expect(errs).toMatch(/grosor/);
+    expect(errs).toMatch(/rect, ellipse, tri, line o emoji/);
+    expect(errs).toMatch(/falta el icono/);
+    expect(errs).toMatch(/fuera del área/);
+
+    d.facilityTypes![0].art = { items: Array.from({ length: 81 }, () => ({ t: 'rect' as const, x: 0, y: 0, w: 1, h: 1, c: '#fff' })) };
+    expect(validateCompany(d).errors.join('\n')).toMatch(/máximo 80/);
   });
 });

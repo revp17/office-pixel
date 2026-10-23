@@ -22,19 +22,32 @@ Si tu empresa necesita un tipo que no viene incluido (laboratorio, cocina, talle
 
 1. **Nombre** (obligatorio) e **icono** (escríbelo o elige uno).
 2. **Descripción** (opcional).
-3. **Se dibuja como**: uno de los 7 dibujos incluidos. El plano no puede dibujar escenas nuevas desde cero, así que tu tipo toma el aspecto del que elijas (por ejemplo, un laboratorio como «Mantenimiento», con banco de trabajo) pero conserva su propio nombre e icono. La vista previa se actualiza mientras lo configuras.
+3. **¿Cómo se ve en el plano?** Tres opciones:
+   - **✏ Dibujar mi ilustración** (totalmente propia): un lienzo con formas (rectángulo, elipse, triángulo, línea), 14 colores más un selector libre, y 30 iconos para añadir. Con **↖ Mover** eliges un elemento, lo arrastras y cambias su tamaño con el punto azul; también puedes cambiar su color, grosor o tamaño, **duplicarlo**, ponerlo **al frente o al fondo** y **borrarlo**. Un clic con una herramienta crea una forma de tamaño estándar. Hasta 80 elementos.
+   - **🖼 Subir imagen**: un PNG, JPG, WebP o SVG. Se reduce para caber en 480×160 px y conserva la transparencia. Funciona mejor apaisada (más ancha que alta).
+   - **Usar un dibujo incluido**: reutiliza uno de los 7 dibujos, con tu nombre e icono.
 4. **Crear tipo**. Aparece en el catálogo con la marca *propio*, ya se puede elegir en el selector «Tipo de instalación» de cada área, y se puede **aplicar**, **crear un área de ese tipo**, **editar** o **borrar**. Al borrar un tipo, las áreas que lo usaban pasan a ser oficinas.
 
 Los tipos propios se guardan con la empresa (en el YAML, bajo `facilityTypes`) y viajan con ella:
 
 ```yaml
 facilityTypes:
-  - { id: laboratorio, label: Laboratorio, icon: "🧪", description: Análisis de muestras, look: mantenimiento }
+  - id: laboratorio
+    label: Laboratorio
+    icon: "🧪"
+    look: mantenimiento          # dibujo de respaldo
+    art:
+      items:
+        - { t: rect, x: 10, y: 50, w: 200, h: 14, c: "#9aa6c0" }
+        - { t: tri, x: 30, y: 20, w: 30, h: 30, c: "#5aa9ff" }
+        - { t: emoji, x: 120, y: 18, s: 30, ch: "🧪" }
 units:
   - { id: calidad, name: Control de calidad, facility: laboratorio }
 ```
 
-Los tipos incluidos no se pueden borrar ni editar. Si necesitas un dibujo realmente distinto, hay que añadirlo al código.
+Los tipos incluidos no se pueden borrar ni editar.
+
+Una sala con ilustración propia es un poco más alta y ancha que las demás para que quepa el dibujo; este se dibuja en la franja bajo los escritorios, a la izquierda de la bandeja de entrada. Las ilustraciones se guardan con la empresa (los elementos en el YAML, bajo `art.items`; la imagen, como `art.image`).
 
 ## Catálogo de instalaciones
 

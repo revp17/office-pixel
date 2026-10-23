@@ -2,9 +2,35 @@ import { parse } from 'yaml';
 import { checkDist } from '../dist';
 import { compileExpr } from '../expr';
 import { parseHM } from './time';
-import { FACILITIES } from './types';
+import { ART_H, ART_W, FACILITIES } from './types';
 import { isBuiltinFacility } from './facilities';
 import type { CompanyDef, UnitDef } from './types';
+
+const HEX = /^#[0-9a-fA-F]{3,8}$/;
+const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
+
+/** Comprueba la forma de una ilustración propia (elementos o imagen). */
+function checkArt(art: unknown, at: string, errors: string[]) {
+  if (!isObj(art)) return void errors.push(`${at}: debe ser un objeto`);
+  if (art.image !== undefined && !(typeof art.image === 'string' && art.image.startsWith('data:image/') && art.image.length <= 600_000))
+    errors.push(`${at}.image: debe ser una imagen (data:image/…) de hasta 600 KB`);
+  if (art.items === undefined) return;
+  if (!Array.isArray(art.items)) return void errors.push(`${at}.items: debe ser una lista`);
+  if (art.items.length > 80) errors.push(`${at}.items: máximo 80 elementos`);
+  art.items.forEach((it, i) => {
+    const p = `${at}.items[${i}]`;
+    if (!isObj(it)) return void errors.push(`${p}: inválido`);
+    const coords = it.t === 'line' ? ['x', 'y', 'x2', 'y2'] : it.t === 'emoji' ? ['x', 'y', 's'] : ['x', 'y', 'w', 'h'];
+    if (!['rect', 'ellipse', 'tri', 'line', 'emoji'].includes(String(it.t))) return void errors.push(`${p}.t: rect, ellipse, tri, line o emoji`);
+    for (const k of coords) if (!num(it[k])) errors.push(`${p}.${k}: debe ser un número`);
+    if (it.t === 'emoji') {
+      if (typeof it.ch !== 'string' || !it.ch) errors.push(`${p}.ch: falta el icono`);
+    } else if (typeof it.c !== 'string' || !HEX.test(it.c)) errors.push(`${p}.c: color en formato #rrggbb`);
+    if (it.t === 'line' && !(num(it.lw) && (it.lw as number) > 0)) errors.push(`${p}.lw: grosor > 0`);
+    if (num(it.x) && num(it.y) && ((it.x as number) < -ART_W || (it.x as number) > 2 * ART_W || (it.y as number) < -ART_H || (it.y as number) > 2 * ART_H))
+      errors.push(`${p}: fuera del área de dibujo`);
+  });
+}
 
 export interface CompanyParseResult {
   def?: CompanyDef;
@@ -104,6 +130,7 @@ export function validateCompany(raw: unknown): CompanyParseResult {
         if (typeof c.label !== 'string' || !c.label.trim()) errors.push(`${at}.label: falta el nombre`);
         if (typeof c.icon !== 'string' || !c.icon.trim()) errors.push(`${at}.icon: falta el icono`);
         if (typeof c.look !== 'string' || !isBuiltinFacility(c.look)) errors.push(`${at}.look: debe ser uno de ${Object.keys(FACILITIES).join(', ')}`);
+        if (c.art !== undefined) checkArt(c.art, `${at}.art`, errors);
       });
   }
 
