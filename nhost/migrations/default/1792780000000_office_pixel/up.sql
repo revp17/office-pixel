@@ -13,7 +13,7 @@ CREATE TABLE public.companies (
   yaml_bytes integer GENERATED ALWAYS AS (octet_length(yaml)) STORED,
   -- sube sola en cada cambio; sirve para no pisar lo que guardó otra pestaña
   version integer NOT NULL DEFAULT 1,
-  -- marca la empresa creada al abrir la app por primera vez: evita duplicarla si se abren dos pestañas a la vez
+  -- reservado (la app ya no lo usa: una cuenta nueva empieza sin empresas)
   bootstrap boolean NOT NULL DEFAULT false,
   -- nota del cambio que se está guardando (se pasa al historial y se limpia)
   change_note text,

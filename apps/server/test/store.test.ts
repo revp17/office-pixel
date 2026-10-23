@@ -130,15 +130,3 @@ describe('base de datos: archivo en disco', () => {
     expect(s.list()[0].bytes).toBe(Buffer.byteLength(grande));
   });
 });
-
-describe('primera empresa (bootstrap)', () => {
-  it('crea una sola aunque se pida varias veces', () => {
-    const s = mem();
-    const a = s.bootstrap('A', 'company: A\n');
-    const b = s.bootstrap('B', 'company: B\n');
-    expect(a.created).toBe(true);
-    expect(b.created).toBe(false);
-    expect(b.company.id).toBe(a.company.id);
-    expect(s.list()).toHaveLength(1);
-  });
-});

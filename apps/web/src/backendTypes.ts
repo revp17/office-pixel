@@ -56,8 +56,6 @@ export interface Backend {
   lastError?: string;
   list(): Promise<CompanyInfo[]>;
   get(id: string): Promise<CompanyFull>;
-  /** Crea la primera empresa si no hay ninguna; si ya hay (otra pestaña se adelantó), devuelve esa. */
-  bootstrap(yaml: string): Promise<CompanyFull>;
   create(yaml: string, name?: string): Promise<CompanyFull>;
   save(id: string, yaml: string, version?: number, note?: string): Promise<SaveResult>;
   remove(id: string): Promise<void>;

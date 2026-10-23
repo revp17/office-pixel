@@ -43,7 +43,6 @@ export const sqliteBackend: Backend = {
   },
   list: () => request<CompanyInfo[]>('GET', '/companies'),
   get: (id) => request<CompanyFull>('GET', `/companies/${id}`),
-  bootstrap: (yaml) => request<CompanyFull>('POST', '/bootstrap', { yaml }),
   create: (yaml, name) => request<CompanyFull>('POST', '/companies', { yaml, ...(name ? { name } : {}) }),
   async save(id, yaml, version, note): Promise<SaveResult> {
     try {

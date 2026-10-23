@@ -125,16 +125,6 @@ export class Store {
   }
 
   /**
-   * Primera empresa de una base de datos vacía. Si dos pestañas abren la app a la vez, solo se crea una:
-   * la segunda recibe la que ya existe.
-   */
-  bootstrap(name: string, yaml: string): { company: CompanyRow; created: boolean } {
-    const first = this.db.prepare('SELECT id FROM companies ORDER BY created_at, id LIMIT 1').get() as Raw | undefined;
-    if (first) return { company: this.get(String(first.id))!, created: false };
-    return { company: this.create(name, yaml), created: true };
-  }
-
-  /**
    * Guarda la empresa. Si `expectedVersion` no coincide con la guardada, lanza ConflictError (no se pisa el cambio
    * de otra pestaña). Si el contenido no cambió, no hace nada. Antes de sobrescribir se conserva la versión anterior.
    */

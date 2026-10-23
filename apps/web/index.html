@@ -67,7 +67,22 @@
         </div>
         <div id="floors"></div>
         <div id="progress"><div id="progress-fill"></div><span id="progress-text"></span></div>
-        <div id="game"><aside id="story"></aside></div>
+        <div id="game">
+          <aside id="story"></aside>
+          <div id="empty-state" hidden>
+            <div class="empty-card">
+              <h2>🏢 Todavía no tienes ninguna empresa</h2>
+              <p>La aplicación está en cero: aquí solo existe tu cuenta. Elige cómo empezar.</p>
+              <button id="empty-blank" type="button" class="primary">＋ Empezar en blanco</button>
+              <label>O cargar una plantilla de ejemplo
+                <select id="empty-template"></select>
+              </label>
+              <label class="filebtn">⬆ Importar un archivo .yaml
+                <input id="empty-file" type="file" accept=".yaml,.yml,.txt" hidden />
+              </label>
+            </div>
+          </div>
+        </div>
         <section id="bottom">
           <div id="kpis"></div>
           <div id="units"></div>

@@ -77,13 +77,6 @@ export function createApiHandler(store: Store) {
       throw notAllowed();
     }
 
-    if (a === 'bootstrap' && !id) {
-      if (method !== 'POST') throw notAllowed();
-      const v = validated((await readJson(req)).yaml);
-      const r = store.bootstrap(v.name, v.yaml);
-      return send(res, r.created ? 201 : 200, r.company);
-    }
-
     if (a !== 'companies') throw new HttpError(404, 'No existe.');
 
     if (!id) {

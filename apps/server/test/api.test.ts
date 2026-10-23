@@ -132,20 +132,3 @@ describe('API de empresas', () => {
     expect(r.status).toBe(200);
   });
 });
-
-describe('API: primera empresa sin duplicados', () => {
-  it('dos pestañas que abren a la vez crean una sola empresa', async () => {
-    const { server, store } = start(0, ':memory:');
-    await new Promise<void>((r) => (server.listening ? r() : server.once('listening', () => r())));
-    const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-    const post = () => fetch(`${url}/api/bootstrap`, { method: 'POST', body: JSON.stringify({ yaml: banco }) }).then(async (r) => ({ status: r.status, json: await r.json() }));
-    const [a, b, c] = await Promise.all([post(), post(), post()]);
-    expect(store.list()).toHaveLength(1);
-    expect(new Set([a.json.id, b.json.id, c.json.id]).size).toBe(1);
-    expect([a.status, b.status, c.status].filter((s) => s === 201)).toHaveLength(1);
-    expect((await fetch(`${url}/api/bootstrap`)).status).toBe(405);
-    expect((await fetch(`${url}/api/bootstrap`, { method: 'POST', body: JSON.stringify({ yaml: 'company: roto' }) })).status).toBe(400);
-    server.close();
-    store.close();
-  });
-});

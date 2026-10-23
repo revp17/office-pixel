@@ -58,7 +58,7 @@ VITE_NHOST_REGION=eu-central-1
 npm run dev
 ```
 
-Aparece la pantalla de acceso. **Crear cuenta** y entra. En la barra superior el indicador dice «☁ Guardado en Nhost»; el menú **⋯** tiene **Cerrar sesión**. La primera vez, la empresa que tuvieras en el navegador se pasa a tu cuenta.
+Aparece la pantalla de acceso. **Crear cuenta** y entra. En la barra superior el indicador dice «☁ Guardado en Nhost»; el menú **⋯** tiene **Cerrar sesión**. Tu cuenta empieza **en cero**: sin empresas. Verás «Todavía no tienes ninguna empresa» y eliges cómo empezar (en blanco, plantilla o importar un archivo).
 
 ## 5. Publicar en Vercel
 

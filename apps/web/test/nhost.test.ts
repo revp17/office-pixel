@@ -220,12 +220,11 @@ describe('acceso con cuenta', () => {
 const json500 = () => new Response('{}', { status: 500 });
 
 describe('empresas en Nhost', () => {
-  it('crea la primera empresa una sola vez y la lee con su nombre', async () => {
+  it('crea una empresa con el nombre de su YAML y la lee de vuelta', async () => {
     const { be, state } = await signedIn();
-    const a = await be.bootstrap(yamlOf('Mi Banco'));
+    expect(await be.list()).toEqual([]); // una cuenta nueva no trae nada
+    const a = await be.create(yamlOf('Mi Banco'));
     expect(a).toMatchObject({ name: 'Mi Banco', version: 1 });
-    const b = await be.bootstrap(yamlOf('Otra'));
-    expect(b.id).toBe(a.id); // ya existía: no se duplica
     expect(state.companies).toHaveLength(1);
     expect((await be.get(a.id)).yaml).toContain('company: Mi Banco');
     expect(await be.ping()).toBe(true);
@@ -236,35 +235,10 @@ describe('empresas en Nhost', () => {
     const { be, state } = await signedIn();
     expect(await be.ping()).toBe(true);
     expect(state.log).not.toContain('companies_aggregate');
-    state.validTokens.clear();
-    state.accounts = {}; // y ya no se puede renovar: la sesión no sirve
     const rota = createNhostBackend(EP, (async () => new Response(JSON.stringify({ errors: [{ message: 'Permiso denegado', extensions: { code: 'access-denied' } }] }), { status: 200 })) as unknown as typeof fetch);
     await rota.account.signIn('ana@correo.com', 'claveSegura1').catch(() => undefined);
     expect(await rota.ping()).toBe(false);
     expect(rota.lastError).toBeTruthy();
-  });
-
-  it('dos pestañas que crean la inicial a la vez: la que pierde abre la que ganó', async () => {
-    const n = fakeNhost();
-    const { be } = await signedIn(n);
-    // la otra pestaña se adelanta justo después de que esta listó (lista vacía) y antes de insertar
-    const real = n.fetcher;
-    let first = true;
-    const racing = (async (url: string, init: RequestInit) => {
-      const res = await (real as typeof fetch)(url, init);
-      if (first && String(init.body).includes('companies(order_by')) {
-        first = false;
-        n.state.companies.push({ id: 'co-otra', name: 'De la otra pestaña', yaml: yamlOf('De la otra pestaña'), version: 1, created_at: 'x', updated_at: 'x', bootstrap: true });
-        return new Response(JSON.stringify({ data: { companies: [] } }), { status: 200 });
-      }
-      return res;
-    }) as unknown as typeof fetch;
-    const be2 = createNhostBackend(EP, racing);
-    await be2.account.signIn('ana@correo.com', 'claveSegura1');
-    const r = await be2.bootstrap(yamlOf('Esta pestaña'));
-    expect(r.id).toBe('co-otra');
-    expect(n.state.companies).toHaveLength(1);
-    void be;
   });
 
   it('guarda con control de versión: cambia, no pisa y avisa del conflicto', async () => {

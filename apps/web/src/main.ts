@@ -315,6 +315,7 @@ layoutBtns.forEach((b) => b.addEventListener('click', () => setLayout(b.dataset.
 let preview: { company: CompanyDef; label: string } | null = null;
 /** Simula la empresa. `next` la reemplaza y, salvo que `save` sea false (ya viene de la base de datos), la guarda. */
 function run(next?: CompanyDef, pv?: { company: CompanyDef; label: string }, save = true) {
+  if (!emptyState.hidden) setEmpty(false);
   if (next) {
     company = next;
     if (save) saveCompany(next);
@@ -449,10 +450,12 @@ persist.onStatus = () => {
   dbStatus.title = persist.detail || (persist.status === 'db' ? `Todo lo que aplicas se guarda en ${db.label}${db.account?.user ? ` (cuenta ${db.account.user.email})` : ''}.` : '');
 };
 persist.onList = () => {
-  companyPick.innerHTML = persist.list.map((c) => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
+  companyPick.innerHTML = persist.list.length
+    ? persist.list.map((c) => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('')
+    : '<option value="">(sin empresas)</option>';
   companyPick.value = persist.currentId ?? '';
-  companyPick.disabled = !persist.online;
-  companyMenu.disabled = !persist.online;
+  companyPick.disabled = !persist.online || !persist.list.length;
+  companyMenu.disabled = !persist.online || !persist.currentId;
 };
 persist.onConflict = async (cur) => {
   const overwrite = confirm(
@@ -531,8 +534,61 @@ companyActions.addEventListener('click', (e) => {
   if (a === 'backup') downloadBackup();
   if (a === 'delete') {
     if (!confirm(`¿Borrar la empresa «${company.company}» de la base de datos, con todo su historial? No se puede deshacer.\n\nTe recomiendo descargar antes una copia (⋯ → Descargar copia).`)) return;
-    void switchTo(async () => (await persist.removeCurrent()) ?? persist.create(emptyCompany()));
+    void (async () => {
+      closeConfig(configRoot);
+      closeHub(hubRoot);
+      scene.playing = false;
+      try {
+        const next = await persist.removeCurrent();
+        if (next) run(next, undefined, false);
+        else setEmpty(true); // era la última: la aplicación queda en cero
+      } catch (e) {
+        alert((e as Error).message);
+      }
+    })();
   }
+});
+
+// ---------- en cero: todavía no hay ninguna empresa ----------
+const emptyState = $<HTMLDivElement>('empty-state');
+const emptyTemplate = $<HTMLSelectElement>('empty-template');
+const emptyFile = $<HTMLInputElement>('empty-file');
+const CONTROLS = ['configure', 'processes', 'play', 'step', 'restart', 'simulate', 'fit'].map((id) => $<HTMLButtonElement>(id));
+
+function setEmpty(on: boolean) {
+  emptyState.hidden = !on;
+  for (const c of CONTROLS) c.disabled = on;
+  if (on) {
+    scene.playing = false;
+    story.clear();
+    for (const box of [kpis, unitsBox, peopleBox, chips]) box.innerHTML = '';
+    detail.innerHTML = '<p class="hint">Cuando crees tu primera empresa, aquí verás el detalle de cada persona.</p>';
+    persist.onList?.();
+  }
+}
+
+/** Crea la primera empresa (o una nueva) con este contenido y la abre. */
+async function startWith(def: CompanyDef) {
+  try {
+    run(await persist.create(def), undefined, false);
+  } catch (e) {
+    alert((e as Error).message);
+  }
+}
+emptyTemplate.innerHTML = '<option value="">Elegir plantilla…</option>' + TEMPLATES.map((t) => `<option value="${t.id}">${escHtml(t.label)}</option>`).join('');
+$('empty-blank').addEventListener('click', () => void startWith(emptyCompany()));
+emptyTemplate.addEventListener('change', () => {
+  const t = TEMPLATES.find((q) => q.id === emptyTemplate.value);
+  emptyTemplate.value = '';
+  if (t) void startWith(t.make());
+});
+emptyFile.addEventListener('change', async () => {
+  const file = emptyFile.files?.[0];
+  emptyFile.value = '';
+  if (!file) return;
+  const r = parseCompany(await file.text());
+  if (!r.def) return alert(`El archivo no es una empresa válida:\n- ${r.errors.slice(0, 5).join('\n- ')}`);
+  void startWith(r.def);
 });
 window.addEventListener('keydown', (e) => {
   // con un diálogo abierto (decorar sala, quitar área…) Esc es suyo: no cierra toda la configuración
@@ -588,8 +644,8 @@ async function startup() {
     if (!account.signedIn) await askLogin(account);
     out.textContent = `🚪 Cerrar sesión (${account.user?.email ?? ''})`;
   }
-  const { def: first, migrated } = await persist.boot(example);
-  run(first, undefined, false);
-  if (migrated) alert(`Tu empresa guardada en este navegador se pasó a ${db.label}. Desde ahora se guarda ahí.`);
+  const first = await persist.boot();
+  if (first) run(first, undefined, false);
+  else setEmpty(true);
 }
 void startup();

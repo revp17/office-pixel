@@ -35,9 +35,9 @@ Se guarda cada vez que **aplicas** un cambio (**Aplicar y simular** en la config
 
 **🧹 Limpiar todo** ahora crea una empresa **nueva en blanco**; las que ya tienes siguen guardadas.
 
-### Primera vez
+### Empezar en cero
 
-Si la base de datos está vacía, se crea en ella la empresa que tuvieras en el navegador (o el ejemplo Banco Pixel) y se avisa. El navegador conserva una copia local de la última empresa abierta, solo como respaldo.
+La aplicación **no crea nada por sí sola**. Si la base de datos no tiene empresas (la primera vez, o después de borrar la última), se muestra la pantalla **«Todavía no tienes ninguna empresa»** con tres formas de empezar: **Empezar en blanco**, **cargar una plantilla de ejemplo** o **importar un archivo .yaml**. Lo que hubiera en el navegador de antes no se pasa a la base de datos. El navegador conserva una copia local de la última empresa abierta, solo como respaldo, y la borra cuando no queda ninguna.
 
 ### Dos pestañas a la vez
 
@@ -68,7 +68,6 @@ Todo bajo `/api`, en JSON:
 | `POST /api/companies/:id/duplicate` | Copia con «(copia)» en el nombre |
 | `GET /api/companies/:id/revisions` | Versiones anteriores |
 | `POST /api/companies/:id/revisions/:rid/restore` | Restaura una |
-| `POST /api/bootstrap` | Crea la primera empresa solo si la base está vacía |
 | `GET/PUT /api/settings/:clave` | Preferencias |
 
 ## Límites

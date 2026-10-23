@@ -66,10 +66,10 @@ export function createNhostBackend(endpoints: NhostEndpoints, fetcher: typeof fe
     return full(d.companies_by_pk);
   };
 
-  const insert = async (yaml: string, name: string, bootstrap: boolean): Promise<CompanyFull> => {
+  const insert = async (yaml: string, name: string): Promise<CompanyFull> => {
     const d = await gql<{ insert_companies_one: Row }>(
       `mutation ($o: companies_insert_input!) { insert_companies_one(object: $o) { ${FIELDS} } }`,
-      { o: { name, yaml, ...(bootstrap ? { bootstrap: true } : {}) } },
+      { o: { name, yaml } },
     );
     return full(d.insert_companies_one);
   };
@@ -125,23 +125,8 @@ export function createNhostBackend(endpoints: NhostEndpoints, fetcher: typeof fe
     list,
     get: getRow,
 
-    async bootstrap(yaml) {
-      const rows = await list();
-      if (rows.length) return getRow(rows[0].id);
-      try {
-        return await insert(yaml, validated(yaml).name, true);
-      } catch (e) {
-        // otra pestaña creó la inicial a la vez: se abre esa
-        if (e instanceof ApiError && e.status === 409) {
-          const again = await list();
-          if (again.length) return getRow(again[0].id);
-        }
-        throw e;
-      }
-    },
-
     async create(yaml, name) {
-      return insert(yaml, name?.trim() || validated(yaml).name, false);
+      return insert(yaml, name?.trim() || validated(yaml).name);
     },
     save,
 
@@ -155,7 +140,6 @@ export function createNhostBackend(endpoints: NhostEndpoints, fetcher: typeof fe
       return insert(
         cur.yaml.replace(/^company:.*$/m, () => `company: ${JSON.stringify(name)}`),
         name,
-        false,
       );
     },
 
