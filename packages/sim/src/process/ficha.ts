@@ -1,7 +1,7 @@
 import { PHASES, STEPS, describeDuration, ensureDoc, meanOfDist, phasesDone, stepCompleted, unitPath, type VariantRow } from './manage';
 import { dependencyEdges, dependencyText } from './deps';
 import { procedureCoverage, procedureStatus } from './procedures';
-import type { CompanyDef, OrgProcessDef, OrgStageDef, ValidationStatus } from './types';
+import type { CompanyDef, OrgProcessDef, OrgStageDef, ValidationStatus } from '../model';
 
 const cell = (s: string | undefined) => (s ?? '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ').trim() || '—';
 const text = (s: string | undefined) => (s?.trim() ? s.trim() : '_Sin definir_');

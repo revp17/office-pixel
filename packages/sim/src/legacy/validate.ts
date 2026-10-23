@@ -1,6 +1,6 @@
 import { parse } from 'yaml';
-import { checkDist } from './dist';
-import { compileExpr } from './expr';
+import { checkDist } from '../kernel/dist';
+import { compileExpr } from '../kernel/expr';
 import type { ProcessDef } from './types';
 
 export interface ParseResult {

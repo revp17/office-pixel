@@ -1,4 +1,8 @@
-import type { DistSpec } from './types';
+/** Cómo varía un valor entre casos o tareas: fija, normal, con cola larga (lognormal) o exponencial. */
+export interface DistSpec {
+  dist: 'fixed' | 'normal' | 'lognormal' | 'exponential';
+  [param: string]: unknown;
+}
 import { standardNormal, type Rng } from './rng';
 
 const KEYS: Record<DistSpec['dist'], string[][]> = {

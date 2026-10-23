@@ -1,4 +1,4 @@
-import type { OrgEvent, PersonState } from './types';
+import type { OrgEvent, PersonState } from '../model';
 
 export type OrgCaseStatus = 'queued' | 'working' | 'paused' | 'transit' | 'done';
 

@@ -1,11 +1,11 @@
 import { parse } from 'yaml';
-import { checkDist } from '../dist';
-import { compileExpr } from '../expr';
-import { parseHM } from './time';
-import { ART_H, ART_W, FACILITIES } from './types';
+import { checkDist } from '../kernel/dist';
+import { compileExpr } from '../kernel/expr';
+import { parseHM } from '../kernel/time';
+import { ART_H, ART_W, FACILITIES } from '../model';
 import { isBuiltinFacility } from './facilities';
 import { isDecorKind } from './decor';
-import type { CompanyDef, UnitDef } from './types';
+import type { CompanyDef, UnitDef } from '../model';
 
 const HEX = /^#[0-9a-fA-F]{3,8}$/;
 const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v);

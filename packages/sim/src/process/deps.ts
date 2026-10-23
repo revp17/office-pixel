@@ -1,4 +1,4 @@
-import type { CompanyDef, DependencyKind, OrgProcessDef, Procedure } from './types';
+import type { CompanyDef, DependencyKind, OrgProcessDef, Procedure } from '../model';
 
 export interface DepEdge {
   /** proceso de origen (del que se depende) */

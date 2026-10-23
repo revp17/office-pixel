@@ -1,5 +1,5 @@
-import type { DistSpec } from '../types';
-import { simulateCompany } from './engine';
+import type { DistSpec } from '../kernel/dist';
+import { simulateCompany } from '../simulation/engine';
 import type {
   Baseline,
   CompanyDef,
@@ -10,8 +10,8 @@ import type {
   ProcessDoc,
   StepKey,
   UnitDef,
-} from './types';
-import { validateCompany } from './validate';
+} from '../model';
+import { validateCompany } from '../company/validate';
 
 // ---------- metadatos de las fases y los pasos ----------
 

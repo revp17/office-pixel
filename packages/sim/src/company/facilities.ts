@@ -1,4 +1,4 @@
-import { FACILITIES, type CompanyDef, type Facility, type FacilityArt } from './types';
+import { FACILITIES, type CompanyDef, type Facility, type FacilityArt } from '../model';
 
 /** Un tipo de instalación (incluido o propio) ya resuelto para mostrarlo y dibujarlo. */
 export interface FacilityView {

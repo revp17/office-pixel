@@ -1,9 +1,9 @@
-import { sampleDist } from '../dist';
-import { Heap } from '../engine';
-import { compileExpr, type CompiledExpr } from '../expr';
-import { mulberry32 } from '../rng';
-import { DAY, makeBizCalendar, parseHM } from './time';
-import { AUTO_ACTOR } from './types';
+import { sampleDist } from '../kernel/dist';
+import { Heap } from '../kernel/heap';
+import { compileExpr, type CompiledExpr } from '../kernel/expr';
+import { mulberry32 } from '../kernel/rng';
+import { DAY, makeBizCalendar, parseHM } from '../kernel/time';
+import { AUTO_ACTOR } from '../model';
 import type {
   CompanyDef,
   OrgEvent,
@@ -15,7 +15,7 @@ import type {
   PersonDef,
   PersonState,
   UnitDef,
-} from './types';
+} from '../model';
 
 interface Win {
   s: number;

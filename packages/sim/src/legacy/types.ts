@@ -1,7 +1,5 @@
-export interface DistSpec {
-  dist: 'fixed' | 'normal' | 'lognormal' | 'exponential';
-  [param: string]: unknown;
-}
+import type { DistSpec } from '../kernel/dist';
+import type { ArrivalsDef, ExceptionDef, NextRule } from '../model';
 
 export interface ResourceDef {
   id: string;
@@ -11,19 +9,7 @@ export interface ResourceDef {
   shift?: string;
 }
 
-export interface ExceptionDef {
-  id: string;
-  probability: number;
-  action: 'goto';
-  target: string;
-  penaltyMinutes?: number;
-}
 
-export interface NextRule {
-  when?: string;
-  otherwise?: boolean;
-  to: string;
-}
 
 export interface StageDef {
   id: string;
@@ -37,9 +23,6 @@ export interface StageDef {
   terminal?: boolean;
 }
 
-export type ArrivalsDef =
-  | { type: 'poisson'; ratePerHour: number; calendar?: string }
-  | { type: 'constant'; everyMinutes: number; calendar?: string };
 
 export interface ProcessDef {
   process: string;

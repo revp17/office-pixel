@@ -9,7 +9,7 @@ import type {
   ProcStepKey,
   Procedure,
   WarningKind,
-} from './types';
+} from '../model';
 
 /** Los 5 pasos para levantar un procedimiento, en orden. */
 export const PROC_STEPS: Array<{ key: ProcStepKey; n: number; title: string; summary: string }> = [
