@@ -105,3 +105,12 @@ Las empresas de la base local (SQLite) no se mueven solas. Para llevarlas:
 - **Tamaño por guardado:** Nhost y Vercel pueden tener su propio límite de tamaño de petición; no lo he verificado. Si una empresa con muchas capturas no se guarda, reduce las imágenes.
 - **Sin servidor propio:** todo lo hace el navegador contra Nhost; no hay tareas programadas ni copias automáticas más allá del historial de 40 versiones por empresa. Para copias de seguridad, usa **⋯ → Descargar copia (.yaml)** o las copias de tu plan de Nhost.
 - **Dos formas de guardar a la vez no se mezclan:** una empresa en SQLite local y otra en Nhost son independientes.
+
+## Instalarla como aplicación (PWA)
+
+La web es una PWA: en Chrome o Edge aparece el icono «Instalar» en la barra de direcciones; en el móvil, «Añadir a pantalla de inicio» (Android: menú ⋮; iPhone: Compartir). Se abre en su propia ventana, y la aplicación (pantallas y código) queda guardada para abrir sin conexión.
+
+- **Los datos no se guardan sin conexión:** las empresas siguen yendo a Nhost, y sin red verás el aviso de «solo navegador» como siempre.
+- **Actualizaciones automáticas:** al publicar una versión nueva, la app instalada se actualiza sola la próxima vez que se abre (puede pedir un recargo).
+- Los iconos se generan con `node apps/web/scripts/make-icons.mjs` (salen en `apps/web/public`).
+- La PWA solo funciona en la versión publicada (HTTPS) o con `npm run build` + `npm run preview`; en `npm run dev` está desactivada.
