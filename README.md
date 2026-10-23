@@ -5,12 +5,14 @@ Simulador visual de procesos para Forward Deployed Engineers: define un proceso 
 ## Estructura
 
 - `packages/sim` — motor de simulación de eventos discretos (TypeScript, sin dependencias de render): RNG con semilla, distribuciones, evaluador seguro de reglas, validación del YAML, motor DES, métricas y `Replayer`.
+- `nhost/` — esquema de Postgres (tablas, versiones, permisos por usuario) y script de preparación para Nhost.
 - `apps/server` — API y base de datos SQLite (Node.js 22.13+, sin dependencias nativas).
 - `apps/web` — Studio (editor YAML) + mapa Phaser que reproduce el log de eventos, con controles de velocidad, línea de tiempo y métricas.
 - `examples/aprobacion_credito.yaml` — proceso de ejemplo.
 - `vault/` — vault de Obsidian con el diseño (empieza por `00 Inicio.md`).
 
 > **Guía de uso:** [docs/guia-de-uso.md](docs/guia-de-uso.md) — cómo se dibujan áreas y empleados, y cómo se configura todo paso a paso.
+> **Publicar (Nhost + Vercel):** [docs/publicar.md](docs/publicar.md) — guardar en Nhost con cuentas de usuario y publicar la app en Vercel.
 > **Base de datos:** [docs/base-de-datos.md](docs/base-de-datos.md) — las empresas se guardan en SQLite (`data/office-pixel.db`), con varias empresas, versiones anteriores y copia de seguridad.
 > **Procedimientos:** [docs/procedimientos.md](docs/procedimientos.md) — cómo levantar el cómo, quién y cuándo de cada etapa (5 pasos, acción-resultado, capturas anotadas, prueba del novato y firma del ejecutor).
 > **Decorar salas:** [docs/decorar-salas.md](docs/decorar-salas.md) — biblioteca de objetos (puertas, mesas, sillas, plantas…) para acomodar en cada sala.

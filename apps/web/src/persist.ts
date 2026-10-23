@@ -57,7 +57,7 @@ export class Persistence {
   async boot(example: () => CompanyDef): Promise<{ def: CompanyDef; migrated: boolean }> {
     this.set('checking');
     if (!(await db.ping())) {
-      this.set('local', 'Sin servidor de base de datos: se guarda solo en este navegador.');
+      this.set('local', db.kind === 'nhost' ? 'No se pudo conectar con Nhost: se guarda solo en este navegador.' : 'Sin servidor de base de datos: se guarda solo en este navegador.');
       return { def: readCache() ?? example(), migrated: false };
     }
     try {

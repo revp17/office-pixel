@@ -15,6 +15,8 @@ import { TEMPLATES } from './templates';
 import { StoryPanel } from './story';
 import { emptyCompany } from './config/model';
 import { Persistence } from './persist';
+import { db } from './db';
+import { askLogin } from './login';
 import { closeConfig, openConfig, type TabId } from './config/ConfigApp';
 import { closeHub, openHub } from './process/Hub';
 import { OrgScene, fmtTime, type OrgHud } from './orgScene';
@@ -432,7 +434,7 @@ const when = (iso: string) => new Date(iso).toLocaleString('es', { dateStyle: 'm
 
 const STATUS_TEXT: Record<string, string> = {
   checking: 'Conectando…',
-  db: '💾 Guardado en la base de datos',
+  db: db.kind === 'nhost' ? '☁ Guardado en Nhost' : '💾 Guardado en la base de datos',
   saving: '⏳ Guardando…',
   local: '⚠ Solo en este navegador',
   error: '⚠ No se pudo guardar',
@@ -440,7 +442,7 @@ const STATUS_TEXT: Record<string, string> = {
 persist.onStatus = () => {
   dbStatus.className = `dbstatus ${persist.status}`;
   dbStatus.textContent = STATUS_TEXT[persist.status];
-  dbStatus.title = persist.detail || (persist.status === 'db' ? 'Todo lo que aplicas se guarda en la base de datos del servidor.' : '');
+  dbStatus.title = persist.detail || (persist.status === 'db' ? `Todo lo que aplicas se guarda en ${db.label}${db.account?.user ? ` (cuenta ${db.account.user.email})` : ''}.` : '');
 };
 persist.onList = () => {
   companyPick.innerHTML = persist.list.map((c) => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
@@ -558,8 +560,32 @@ applyMode(mode, false);
 
 if (import.meta.env.DEV) (window as unknown as { __op: unknown }).__op = { scene, persist };
 
-// Se abre la base de datos y se muestra la empresa guardada (o, la primera vez, lo que hubiera en el navegador).
-void persist.boot(example).then(({ def: first, migrated }) => {
+// Con Nhost primero se entra con la cuenta; luego se abre la base de datos y se muestra la empresa guardada
+// (o, la primera vez, lo que hubiera en el navegador).
+async function startup() {
+  const account = db.account;
+  if (account) {
+    const out = $<HTMLButtonElement>('sign-out');
+    out.hidden = false;
+    out.addEventListener('click', async () => {
+      if (!confirm('¿Cerrar la sesión? Tus empresas siguen guardadas en tu cuenta.')) return;
+      await account.signOut();
+      try {
+        localStorage.removeItem('office-pixel.company.v1'); // no dejar una copia en un equipo compartido
+      } catch {
+        /* sin almacenamiento */
+      }
+      location.reload();
+    });
+    // si la sesión se cierra o caduca por otro lado, se vuelve a pedir el acceso
+    account.onChange = () => {
+      if (!account.signedIn) location.reload();
+    };
+    if (!account.signedIn) await askLogin(account);
+    out.textContent = `🚪 Cerrar sesión (${account.user?.email ?? ''})`;
+  }
+  const { def: first, migrated } = await persist.boot(example);
   run(first, undefined, false);
-  if (migrated) alert('Tu empresa guardada en este navegador se pasó a la base de datos. Desde ahora se guarda ahí.');
-});
+  if (migrated) alert(`Tu empresa guardada en este navegador se pasó a ${db.label}. Desde ahora se guarda ahí.`);
+}
+void startup();

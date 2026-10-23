@@ -1,0 +1,19 @@
+table:
+  name: company_revisions
+  schema: public
+# Solo lectura: las versiones las crea el trigger al guardar.
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - id
+        - company_id
+        - version
+        - name
+        - yaml
+        - yaml_bytes
+        - saved_at
+        - note
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id

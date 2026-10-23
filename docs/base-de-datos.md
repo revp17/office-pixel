@@ -1,5 +1,7 @@
 # Base de datos
 
+> Esta guía es de la base **local** (SQLite). Para guardar en la nube con cuentas de usuario y publicar la app, mira [publicar.md](publicar.md) (Nhost + Vercel).
+
 Las empresas se guardan en una base de datos **SQLite** (un solo archivo), no en el navegador. Así no se pierden al limpiar el navegador, puedes tener **varias empresas** y cada cambio deja una **versión anterior** a la que volver.
 
 ## Requisitos

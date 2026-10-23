@@ -12,6 +12,7 @@
     "@office-pixel/sim": "*"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.11",
     "@types/node": "^26.6.5",
     "tsx": "^4.19.0",
     "vitest": "^3.0.0"

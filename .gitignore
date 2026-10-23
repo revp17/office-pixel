@@ -12,3 +12,8 @@ data/
 *.db
 *.db-shm
 *.db-wal
+
+# variables de entorno locales (llaves y proyectos)
+.env.local
+.env*.local
+.vercel
