@@ -439,6 +439,10 @@ const STATUS_TEXT: Record<string, string> = {
   local: '⚠ Solo en este navegador',
   error: '⚠ No se pudo guardar',
 };
+dbStatus.addEventListener('click', () => {
+  // con un aviso naranja, un clic muestra el motivo completo
+  if ((persist.status === 'local' || persist.status === 'error') && persist.detail) alert(persist.detail);
+});
 persist.onStatus = () => {
   dbStatus.className = `dbstatus ${persist.status}`;
   dbStatus.textContent = STATUS_TEXT[persist.status];

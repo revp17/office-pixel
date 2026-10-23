@@ -104,12 +104,20 @@ export function createNhostBackend(endpoints: NhostEndpoints, fetcher: typeof fe
     label: 'Nhost',
     account: auth,
 
+    lastError: undefined as string | undefined,
+
     async ping() {
-      if (!auth.signedIn) return false;
+      if (!auth.signedIn) {
+        this.lastError = 'No hay sesión iniciada.';
+        return false;
+      }
       try {
-        await gql<unknown>('query { companies_aggregate { aggregate { count } } }');
+        // una consulta mínima que los permisos del usuario sí permiten (los conteos «aggregate» no están habilitados)
+        await gql<unknown>('query { companies(limit: 1) { id } }');
+        this.lastError = undefined;
         return true;
-      } catch {
+      } catch (e) {
+        this.lastError = (e as Error).message;
         return false;
       }
     },

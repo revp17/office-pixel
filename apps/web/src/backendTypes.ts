@@ -52,6 +52,8 @@ export interface Backend {
   account?: AccountApi;
   /** ¿se puede guardar ahora? (hay servidor y, si hace falta, sesión) */
   ping(): Promise<boolean>;
+  /** por qué falló la última comprobación (para mostrarlo al usuario) */
+  lastError?: string;
   list(): Promise<CompanyInfo[]>;
   get(id: string): Promise<CompanyFull>;
   /** Crea la primera empresa si no hay ninguna; si ya hay (otra pestaña se adelantó), devuelve esa. */

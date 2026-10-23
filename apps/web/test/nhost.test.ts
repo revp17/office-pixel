@@ -94,7 +94,9 @@ function fakeNhost() {
       state.revisions = state.revisions.filter((r) => r.company_id !== v.id);
       return ok({ delete_companies_by_pk: { id: v.id } });
     }
-    if (q.includes('companies_aggregate')) return ok({ companies_aggregate: { aggregate: { count: state.companies.length } } });
+    // como en Hasura: los conteos (aggregate) solo existen si el permiso lo habilita, y el nuestro no
+    if (q.includes('companies_aggregate')) return json(200, { errors: [{ message: "field 'companies_aggregate' not found in type: 'query_root'", extensions: { code: 'validation-failed' } }] });
+    if (q.includes('companies(limit')) return ok({ companies: state.companies.slice(0, 1).map(row) });
     if (q.includes('companies(order_by')) return ok({ companies: [...state.companies].reverse().map(row) });
     if (q.includes('companies_by_pk(id')) {
       const c = state.companies.find((x) => x.id === v.id);
@@ -227,6 +229,19 @@ describe('empresas en Nhost', () => {
     expect(state.companies).toHaveLength(1);
     expect((await be.get(a.id)).yaml).toContain('company: Mi Banco');
     expect(await be.ping()).toBe(true);
+    expect(be.lastError).toBeUndefined();
+  });
+
+  it('la comprobación de conexión no usa consultas que los permisos no habilitan, y explica por qué falla', async () => {
+    const { be, state } = await signedIn();
+    expect(await be.ping()).toBe(true);
+    expect(state.log).not.toContain('companies_aggregate');
+    state.validTokens.clear();
+    state.accounts = {}; // y ya no se puede renovar: la sesión no sirve
+    const rota = createNhostBackend(EP, (async () => new Response(JSON.stringify({ errors: [{ message: 'Permiso denegado', extensions: { code: 'access-denied' } }] }), { status: 200 })) as unknown as typeof fetch);
+    await rota.account.signIn('ana@correo.com', 'claveSegura1').catch(() => undefined);
+    expect(await rota.ping()).toBe(false);
+    expect(rota.lastError).toBeTruthy();
   });
 
   it('dos pestañas que crean la inicial a la vez: la que pierde abre la que ganó', async () => {
