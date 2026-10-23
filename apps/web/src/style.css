@@ -425,3 +425,6 @@ svg.fac-preview { width: 100%; height: auto; display: block; border-radius: 8px;
 .modal .impact-box p { margin: 4px 0; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
 .btn.danger { background: #c0392b; border-color: #c0392b; color: #fff; }
+
+.cfg-nav button.sub { margin-left: 16px; padding: 7px 12px; font-size: 12.5px; }
+@media (max-width: 800px) { .cfg-nav button.sub { margin-left: 0; } }

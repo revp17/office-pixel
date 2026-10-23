@@ -5,10 +5,10 @@ import { emptyCompany } from './model';
 import { CatalogoTab } from './catalogo';
 import { EmpresaTab, AreasTab, PersonasTab } from './tabs';
 import { ProcesosTab } from './procesos';
-import { HorariosTab, YamlTab } from './extras';
+import { YamlTab } from './extras';
 import type { Up } from './ui';
 
-export type TabId = 'empresa' | 'areas' | 'catalogo' | 'personas' | 'procesos' | 'horarios' | 'yaml';
+export type TabId = 'empresa' | 'areas' | 'catalogo' | 'personas' | 'procesos' | 'yaml';
 
 interface Props {
   initial: CompanyDef;
@@ -40,13 +40,12 @@ function ConfigApp({ initial, initialTab, templates, onApply, onClose }: Props) 
     if (confirm(`Esto reemplaza lo que hay ahora en el formulario por ${what}. ¿Continuar?`)) setDraft(make());
   };
 
-  const tabs: Array<{ id: TabId; label: string; count?: number }> = [
+  const tabs: Array<{ id: TabId; label: string; count?: number; sub?: boolean }> = [
     { id: 'empresa', label: 'Empresa' },
-    { id: 'areas', label: 'Áreas y subáreas', count: draft.units.length },
-    { id: 'catalogo', label: 'Catálogo de instalaciones' },
+    { id: 'catalogo', label: 'Instalaciones', sub: true },
+    { id: 'areas', label: 'Áreas y subáreas', count: draft.units.length, sub: true },
     { id: 'personas', label: 'Personas', count: draft.people.length },
     { id: 'procesos', label: 'Procesos', count: draft.processes.length },
-    { id: 'horarios', label: 'Horarios y reuniones' },
     { id: 'yaml', label: 'YAML (avanzado)' },
   ];
   const props = { d: draft, up, note };
@@ -87,7 +86,7 @@ function ConfigApp({ initial, initialTab, templates, onApply, onClose }: Props) 
       <div class="cfg-body">
         <nav class="cfg-nav">
           {tabs.map((t) => (
-            <button key={t.id} type="button" class={tab === t.id ? 'on' : ''} onClick={() => setTab(t.id)}>
+            <button key={t.id} type="button" class={`${tab === t.id ? 'on' : ''}${t.sub ? ' sub' : ''}`} onClick={() => setTab(t.id)}>
               {t.label}
               {t.count !== undefined && <span class="count">{t.count}</span>}
             </button>
@@ -99,7 +98,6 @@ function ConfigApp({ initial, initialTab, templates, onApply, onClose }: Props) 
           {tab === 'catalogo' && <CatalogoTab {...props} />}
           {tab === 'personas' && <PersonasTab {...props} />}
           {tab === 'procesos' && <ProcesosTab {...props} />}
-          {tab === 'horarios' && <HorariosTab {...props} />}
           {tab === 'yaml' && <YamlTab d={draft} setDraft={setDraft} />}
         </main>
       </div>

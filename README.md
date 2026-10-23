@@ -43,10 +43,10 @@ El botón **⚙ Configurar empresa** abre un panel de formularios, sin tocar YAM
 | Pestaña | Qué se configura |
 |---|---|
 | Empresa | nombre, jornada, días laborables, pausas, ausentismo, tiempos de traslado |
-| Áreas y subáreas | la planta, sus áreas y subáreas, y los responsables y colaboradores de cada una |
+| &nbsp;&nbsp;↳ Instalaciones | catálogo de tipos de instalación (bodega, ingreso, despacho, seguridad…): ver, aplicar o crear áreas de ese tipo |
+| &nbsp;&nbsp;↳ Áreas y subáreas | la planta, sus áreas y subáreas, y los responsables y colaboradores de cada una |
 | Personas | una fila por persona: equipo, rol, jefe, velocidad, errores, ausentismo, horario, habilidades |
 | Procesos | llegadas, datos de cada caso, etapas (equipo, rol, duración, plazo), camino siguiente o por condiciones, excepciones |
-| Horarios y reuniones | turnos, reuniones recurrentes y ausencias planificadas |
 | YAML (avanzado) | el mismo contenido como texto: copiar, descargar, abrir archivo, pegar |
 
 Los problemas se validan en vivo (el botón **Aplicar y simular** se bloquea hasta resolverlos). «Cargar ejemplo» y «Empezar en blanco» reemplazan el borrador. La empresa aplicada se guarda en el navegador (`localStorage`); si no hay nada guardado se carga Banco Pixel. Los identificadores internos se generan solos a partir de los nombres.

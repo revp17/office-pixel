@@ -178,7 +178,7 @@ Una fila por persona (la misma que creaste en el paso 2, con todos sus detalles)
 | **Veloc.** | `1` = normal; `1,2` = 20 % más rápido; `0,8` = 20 % más lento |
 | **Errores** | % de tareas que hay que rehacer. Si falla, el caso vuelve a la misma etapa |
 | **Ausent.** | Ausentismo propio. Vacío = usa el general de la pestaña Empresa |
-| **Horario** | «Horario general» o uno de los turnos que crees en la pestaña Horarios |
+| **Horario** | «Horario general» o uno de los turnos definidos en el YAML (`schedules`) |
 | **Habilidades** | Opcional, separadas por coma |
 
 > **Lo importante:** una persona puede tomar una etapa si está en el área o subárea que pide la etapa **y** tiene el rol que pide. Ser responsable o colaborador **no cambia** quién puede hacer qué: solo cómo se ve y cómo se agrupa a las personas.
@@ -249,13 +249,13 @@ Se evalúan en orden al terminar la etapa; si ninguna se dispara, el caso sigue 
 
 Hay otros tres «imprevistos» que no se configuran aquí: el **error humano** de cada persona, el **ausentismo** y los **plazos (SLA)**.
 
-### Paso 5 — Pestaña «Horarios y reuniones»
+### Paso 5 — Turnos, reuniones y ausencias (en el YAML)
 
-Tres bloques, todos opcionales:
+El menú de configuración es: **Empresa** (con **Instalaciones** y **Áreas y subáreas**), **Personas**, **Procesos** y **YAML (avanzado)**. Los turnos, las reuniones y las ausencias planificadas ya no tienen pestaña propia: se editan en **YAML (avanzado)** (claves `schedules`, `meetings` y `scenario.absences`) y se siguen respetando al simular. Tres bloques, todos opcionales:
 
-1. **Horarios especiales (turnos):** pulsa **+ Añadir horario**, ponle un nombre (por ejemplo `turno_tarde`), su entrada, salida y pausas. Después, asígnalo a las personas en la pestaña Personas (columna Horario).
-2. **Reuniones recurrentes:** nombre, área o subárea, hora de inicio, duración y días. Bloquea a **todas las personas de esa unidad y de sus subáreas** mientras dura (van a la sala común). Si dejas los días vacíos, se repite todos los días laborables.
-3. **Ausencias planificadas:** elige una persona y escribe los días en que falta, separados por coma. El **día 0 es el primer lunes** de la simulación, el 1 es el martes, etc.
+1. **Horarios especiales (turnos):** bajo `schedules`, un nombre (por ejemplo `turno_tarde`) con su entrada, salida y pausas. Después, asígnalo a las personas en la pestaña Personas (columna Horario).
+2. **Reuniones recurrentes** (`meetings`): nombre, área o subárea, hora de inicio, duración y días. Bloquea a **todas las personas de esa unidad y de sus subáreas** mientras dura (van a la sala común). Si dejas los días vacíos, se repite todos los días laborables.
+3. **Ausencias planificadas** (`scenario.absences`): una persona y los días en que falta. El **día 0 es el primer lunes** de la simulación, el 1 es el martes, etc.
 
 ### Paso 6 — Aplicar y simular
 
