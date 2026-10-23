@@ -6,6 +6,7 @@ import { Documentar, type HubCtx } from './documentar';
 import { FichaView } from './fichaView';
 import { Optimizar } from './optimizar';
 import { Procedimientos } from './procedimientos';
+import { useDraftSaver } from '../draft';
 
 type Mode = 'documentar' | 'optimizar' | 'procedimientos' | 'dependencias' | 'ficha';
 
@@ -13,6 +14,8 @@ export interface HubProps {
   initial: CompanyDef;
   /** días y semillas con que se mide el proceso */
   days: number;
+  /** el borrador cambió (se guarda para no perderlo) */
+  onDraft?: (d: CompanyDef) => void;
   onSave: (d: CompanyDef) => void;
   /** simula una variante en el plano; recibe el borrador (para no perderlo), la variante y su nombre */
   onPreview: (draft: CompanyDef, variant: CompanyDef, label: string) => void;
@@ -29,6 +32,7 @@ function stepsDone(p: OrgProcessDef) {
 function Hub(props: HubProps) {
   const [draft, setDraft] = useState<CompanyDef>(props.initial);
   const [dirty, setDirty] = useState(false);
+  useDraftSaver(draft, props.onDraft);
   const [sel, setSel] = useState(props.initial.processes[0]?.id ?? '');
   const [mode, setMode] = useState<Mode>('documentar');
   const [phase, setPhase] = useState<PhaseKey>('alcance');

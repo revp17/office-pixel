@@ -31,6 +31,16 @@ export class ConflictError extends Error {
   }
 }
 
+/** Borrador sin aplicar de un formulario (Configurar empresa, Procesos) de una empresa. */
+export interface DraftRow {
+  companyId: string;
+  kind: string;
+  /** versión de la empresa sobre la que se hizo el borrador */
+  baseVersion: number;
+  body: string;
+  savedAt: string;
+}
+
 /** Cuántas versiones anteriores se conservan por empresa. */
 export const MAX_REVISIONS = 40;
 
@@ -53,6 +63,14 @@ CREATE TABLE IF NOT EXISTS revisions (
   note TEXT
 );
 CREATE INDEX IF NOT EXISTS revisions_company ON revisions(company_id, id);
+CREATE TABLE IF NOT EXISTS drafts (
+  company_id TEXT NOT NULL REFERENCES companies(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  base_version INTEGER NOT NULL,
+  body TEXT NOT NULL,
+  saved_at TEXT NOT NULL,
+  PRIMARY KEY (company_id, kind)
+);
 CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
@@ -167,6 +185,24 @@ export class Store {
   revision(companyId: string, revisionId: number): RevisionRow | undefined {
     const r = this.db.prepare('SELECT * FROM revisions WHERE company_id = ? AND id = ?').get(companyId, revisionId) as Raw | undefined;
     return r ? revision(r) : undefined;
+  }
+
+  // ---------- borradores ----------
+
+  getDraft(companyId: string, kind: string): DraftRow | undefined {
+    const r = this.db.prepare('SELECT * FROM drafts WHERE company_id = ? AND kind = ?').get(companyId, kind) as Raw | undefined;
+    return r ? { companyId: String(r.company_id), kind: String(r.kind), baseVersion: Number(r.base_version), body: String(r.body), savedAt: String(r.saved_at) } : undefined;
+  }
+
+  setDraft(companyId: string, kind: string, baseVersion: number, body: string): DraftRow {
+    this.db
+      .prepare('INSERT INTO drafts (company_id, kind, base_version, body, saved_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(company_id, kind) DO UPDATE SET base_version = excluded.base_version, body = excluded.body, saved_at = excluded.saved_at')
+      .run(companyId, kind, baseVersion, body, now());
+    return this.getDraft(companyId, kind)!;
+  }
+
+  deleteDraft(companyId: string, kind: string) {
+    this.db.prepare('DELETE FROM drafts WHERE company_id = ? AND kind = ?').run(companyId, kind);
   }
 
   // ---------- preferencias ----------

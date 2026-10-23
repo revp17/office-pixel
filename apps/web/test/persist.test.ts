@@ -10,6 +10,7 @@ function fakeBackend(online = true) {
   const rows: CompanyFull[] = [];
   const settings: Record<string, string> = {};
   const calls: string[] = [];
+  const drafts = new Map<string, { baseVersion: number; body: string; savedAt: string }>();
   let n = 0;
   const info = (c: CompanyFull): CompanyInfo => ({ id: c.id, name: c.name, version: c.version, createdAt: c.createdAt, updatedAt: c.updatedAt, bytes: c.yaml.length });
   const nameOf = (yaml: string) => /^company: "?(.*?)"?$/m.exec(yaml)?.[1] ?? 'x';
@@ -63,6 +64,15 @@ function fakeBackend(online = true) {
     async restore(id) {
       return structuredClone(rows.find((r) => r.id === id)!);
     },
+    async getDraft(id, kind) {
+      return drafts.get(`${id}/${kind}`);
+    },
+    async saveDraft(id, kind, baseVersion, body) {
+      drafts.set(`${id}/${kind}`, { baseVersion, body, savedAt: '2026-10-23T12:00:00Z' });
+    },
+    async deleteDraft(id, kind) {
+      drafts.delete(`${id}/${kind}`);
+    },
     async setting(key) {
       return settings[key];
     },
@@ -70,7 +80,7 @@ function fakeBackend(online = true) {
       settings[key] = value;
     },
   };
-  return { backend, rows, settings, calls };
+  return { backend, rows, settings, calls, drafts };
 }
 
 const co = (name: string): CompanyDef => ({ ...emptyCompany(), company: name });
@@ -274,5 +284,71 @@ describe('modo y disposición son de la cuenta', () => {
     p.saveViewPref('mode', 'week');
     expect(await p.viewPref('mode')).toBeUndefined();
     expect(Object.keys(f.settings)).toEqual([]);
+  });
+});
+
+describe('borradores de los formularios', () => {
+  const withEdit = (name: string): CompanyDef => ({ ...co('A'), company: name });
+
+  it('se guardan en la base de datos, se recuperan y se descartan', async () => {
+    const f = fakeBackend();
+    const p = new Persistence(f.backend, cache);
+    await p.boot();
+    await p.create(co('A'));
+    expect(await p.draft('config')).toBeUndefined();
+    p.saveDraft('config', withEdit('Editada'));
+    p.saveDraft('hub', withEdit('Otra'));
+    await p.settled();
+    const d = await p.draft('config');
+    expect(d?.def.company).toBe('Editada');
+    expect(d?.stale).toBe(false);
+    expect((await p.draft('hub'))?.def.company).toBe('Otra'); // cada formulario tiene el suyo
+    // una sesión nueva (otro equipo) también lo ve
+    const q = new Persistence(f.backend, memoryCache());
+    await q.boot();
+    expect((await q.draft('config'))?.def.company).toBe('Editada');
+    p.discardDraft('config');
+    await p.settled();
+    expect(await p.draft('config')).toBeUndefined();
+    expect(await p.draft('hub')).toBeDefined();
+  });
+
+  it('los guardados llegan en orden: el borrado de «Aplicar» gana a un borrador pendiente', async () => {
+    const f = fakeBackend();
+    const p = new Persistence(f.backend, cache);
+    await p.boot();
+    await p.create(co('A'));
+    p.saveDraft('config', withEdit('Pendiente'));
+    p.discardDraft('config');
+    await p.settled();
+    expect(await p.draft('config')).toBeUndefined();
+  });
+
+  it('avisa si la empresa se guardó otra vez después del borrador', async () => {
+    const f = fakeBackend();
+    const p = new Persistence(f.backend, cache);
+    await p.boot();
+    await p.create(co('A'));
+    p.saveDraft('config', withEdit('Borrador'));
+    p.save(withEdit('Cambio posterior'));
+    await p.settled();
+    expect((await p.draft('config'))?.stale).toBe(true);
+  });
+
+  it('un borrador dañado se ignora y sin base de datos no se guarda nada', async () => {
+    const f = fakeBackend();
+    const p = new Persistence(f.backend, cache);
+    await p.boot();
+    await p.create(co('A'));
+    f.drafts.set(`${p.currentId}/config`, { baseVersion: 1, body: 'no es json', savedAt: 't' });
+    f.drafts.set(`${p.currentId}/hub`, { baseVersion: 1, body: '{"x":1}', savedAt: 't' });
+    expect(await p.draft('config')).toBeUndefined();
+    expect(await p.draft('hub')).toBeUndefined();
+    const off = fakeBackend(false);
+    const o = new Persistence(off.backend, memoryCache());
+    await o.boot();
+    o.saveDraft('config', co('A'));
+    await o.settled();
+    expect(off.drafts.size).toBe(0);
   });
 });

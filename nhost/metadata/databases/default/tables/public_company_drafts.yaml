@@ -1,0 +1,42 @@
+table:
+  name: company_drafts
+  schema: public
+insert_permissions:
+  - role: user
+    permission:
+      check: {}
+      set:
+        user_id: x-hasura-user-id
+      columns:
+        - company_id
+        - kind
+        - base_version
+        - body
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - company_id
+        - kind
+        - base_version
+        - body
+        - updated_at
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - base_version
+        - body
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id
+      check: null
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        user_id:
+          _eq: X-Hasura-User-Id

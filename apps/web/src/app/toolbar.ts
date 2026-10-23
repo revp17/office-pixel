@@ -10,8 +10,8 @@ import { MODE_DEFAULTS, state } from './state';
 /** Los botones de la barra superior y los atajos de teclado. */
 export function bindToolbar() {
   $('simulate').addEventListener('click', () => run());
-  $('configure').addEventListener('click', () => showConfig());
-  $('processes').addEventListener('click', showHub);
+  $('configure').addEventListener('click', () => void showConfig());
+  $('processes').addEventListener('click', () => void showHub());
   $('preview-exit').addEventListener('click', () => run());
 
   // «Limpiar todo»: con base de datos crea una empresa nueva en blanco; sin ella, borra lo guardado en el navegador

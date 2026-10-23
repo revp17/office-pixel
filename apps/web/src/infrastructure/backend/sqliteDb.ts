@@ -56,6 +56,21 @@ export const sqliteBackend: Backend = {
   duplicate: (id) => request<CompanyFull>('POST', `/companies/${id}/duplicate`),
   revisions: (id) => request<RevisionInfo[]>('GET', `/companies/${id}/revisions`),
   restore: (id, revisionId) => request<CompanyFull>('POST', `/companies/${id}/revisions/${revisionId}/restore`),
+  async getDraft(id, kind) {
+    try {
+      const d = await request<{ baseVersion: number; savedAt: string; body: string }>('GET', `/companies/${id}/drafts/${kind}`);
+      return { baseVersion: d.baseVersion, savedAt: d.savedAt, body: d.body };
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) return undefined;
+      throw e;
+    }
+  },
+  async saveDraft(id, kind, baseVersion, body) {
+    await request<unknown>('PUT', `/companies/${id}/drafts/${kind}`, { baseVersion, body });
+  },
+  async deleteDraft(id, kind) {
+    await request<void>('DELETE', `/companies/${id}/drafts/${kind}`);
+  },
   async setting(key) {
     try {
       return (await request<{ value: string }>('GET', `/settings/${key}`)).value;

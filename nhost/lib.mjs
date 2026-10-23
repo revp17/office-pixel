@@ -9,10 +9,19 @@ export const TABLES_DIR = join(here, 'metadata', 'databases', 'default', 'tables
 
 const KINDS = ['insert', 'select', 'update', 'delete'];
 
-/** SQL de la migración más reciente (nhost/migrations/default/<fecha>_office_pixel/up.sql). */
-export function readMigrationSql(dir = MIGRATION_DIR) {
-  const last = readdirSync(dir).sort().at(-1);
-  return readFileSync(join(dir, last, 'up.sql'), 'utf8');
+/**
+ * Las migraciones en orden (nhost/migrations/default/<fecha>_<nombre>/up.sql). La primera línea de cada una,
+ * «-- marker: tabla», dice qué tabla crea: si ya existe, esa migración se omite.
+ */
+export function readMigrations(dir = MIGRATION_DIR) {
+  return readdirSync(dir)
+    .sort()
+    .map((name) => {
+      const sql = readFileSync(join(dir, name, 'up.sql'), 'utf8');
+      const marker = /^-- marker: (\w+)/.exec(sql)?.[1];
+      if (!marker) throw new Error(`La migración ${name} no declara «-- marker: tabla» en su primera línea.`);
+      return { name, marker, sql };
+    });
 }
 
 /** Tablas y permisos tal como los declaran los YAML de nhost/metadata (la fuente única). */

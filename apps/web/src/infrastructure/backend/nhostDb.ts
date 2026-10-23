@@ -160,6 +160,26 @@ export function createNhostBackend(endpoints: NhostEndpoints, fetcher: typeof fe
       return r.company;
     },
 
+    async getDraft(id, kind) {
+      const d = await gql<{ company_drafts_by_pk: { base_version: number; body: string; updated_at: string } | null }>(
+        'query ($id: uuid!, $k: String!) { company_drafts_by_pk(company_id: $id, kind: $k) { base_version body updated_at } }',
+        { id, k: kind },
+      );
+      const r = d.company_drafts_by_pk;
+      return r ? { baseVersion: r.base_version, savedAt: r.updated_at, body: r.body } : undefined;
+    },
+
+    async saveDraft(id, kind, baseVersion, body) {
+      await gql<unknown>(
+        'mutation ($o: company_drafts_insert_input!) { insert_company_drafts_one(object: $o, on_conflict: { constraint: company_drafts_pkey, update_columns: [base_version, body] }) { kind } }',
+        { o: { company_id: id, kind, base_version: baseVersion, body } },
+      );
+    },
+
+    async deleteDraft(id, kind) {
+      await gql<unknown>('mutation ($id: uuid!, $k: String!) { delete_company_drafts_by_pk(company_id: $id, kind: $k) { kind } }', { id, k: kind });
+    },
+
     async setting(key) {
       const d = await gql<{ settings: Array<{ value: string }> }>('query ($k: String!) { settings(where: { key: { _eq: $k } }) { value } }', { k: key });
       return d.settings[0]?.value;

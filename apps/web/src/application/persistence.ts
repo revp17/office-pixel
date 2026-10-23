@@ -1,5 +1,5 @@
-import { companyToYaml, parseCompany, type CompanyDef } from '@office-pixel/sim';
-import { ApiError, type Backend, type CompanyFull, type CompanyInfo, type LocalCache } from './ports';
+import { companyToYaml, normalizeCompany, parseCompany, type CompanyDef } from '@office-pixel/sim';
+import { ApiError, type Backend, type CompanyFull, type CompanyInfo, type DraftKind, type LocalCache } from './ports';
 
 export type DbStatus = 'checking' | 'db' | 'saving' | 'local' | 'error';
 
@@ -42,6 +42,7 @@ export class Persistence {
   currentId?: string;
   private version?: number;
   private chain: Promise<void> = Promise.resolve();
+  private draftChain: Promise<void> = Promise.resolve();
 
   onStatus?: () => void;
   onList?: () => void;
@@ -150,6 +151,38 @@ export class Persistence {
       .catch((e: unknown) => this.set('error', e instanceof ApiError || e instanceof Error ? e.message : 'No se pudo guardar.'));
   }
 
+  /**
+   * Borrador sin aplicar de un formulario de la empresa abierta (en la base de datos, no en el navegador).
+   * `stale` indica que la empresa se guardó de nuevo después de hacerlo.
+   */
+  async draft(kind: DraftKind): Promise<{ def: CompanyDef; savedAt: string; stale: boolean } | undefined> {
+    if (!this.currentId || !this.online) return undefined;
+    try {
+      const d = await this.backend.getDraft(this.currentId, kind);
+      if (!d) return undefined;
+      const def = normalizeCompany(JSON.parse(d.body) as CompanyDef);
+      if (!def || !Array.isArray(def.units) || !Array.isArray(def.people) || !Array.isArray(def.processes)) return undefined;
+      return { def, savedAt: d.savedAt, stale: d.baseVersion !== this.version };
+    } catch {
+      return undefined;
+    }
+  }
+
+  /** Guarda lo que hay en el formulario (en cola: se escriben en orden y un fallo no afecta a la empresa). */
+  saveDraft(kind: DraftKind, def: CompanyDef) {
+    const id = this.currentId;
+    if (!id || !this.online) return;
+    const body = JSON.stringify(def);
+    const base = this.version ?? 0;
+    this.draftChain = this.draftChain.then(() => this.backend.saveDraft(id, kind, base, body)).catch(() => undefined);
+  }
+
+  discardDraft(kind: DraftKind) {
+    const id = this.currentId;
+    if (!id || !this.online) return;
+    this.draftChain = this.draftChain.then(() => this.backend.deleteDraft(id, kind)).catch(() => undefined);
+  }
+
   /** Días, semilla y velocidad de la última simulación de esta empresa en este modo (guardados en la base de datos). */
   async simPrefs(mode: string): Promise<SimPrefs | undefined> {
     if (!this.currentId || this.status === 'local') return undefined;
@@ -183,7 +216,7 @@ export class Persistence {
 
   /** Espera a que terminen los guardados pendientes. */
   settled() {
-    return this.chain;
+    return Promise.all([this.chain, this.draftChain]).then(() => undefined);
   }
 
   async open(id: string): Promise<CompanyDef> {

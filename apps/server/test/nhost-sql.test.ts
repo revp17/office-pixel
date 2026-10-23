@@ -8,6 +8,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
  * (Los permisos por usuario los aplica Hasura con nhost/metadata; aquí se simulan las consultas que hará la app.)
  */
 const up = readFileSync(new URL('../../../nhost/migrations/default/1792780000000_office_pixel/up.sql', import.meta.url), 'utf8');
+const upDrafts = readFileSync(new URL('../../../nhost/migrations/default/1792790000000_company_drafts/up.sql', import.meta.url), 'utf8');
+const downDrafts = readFileSync(new URL('../../../nhost/migrations/default/1792790000000_company_drafts/down.sql', import.meta.url), 'utf8');
 const down = readFileSync(new URL('../../../nhost/migrations/default/1792780000000_office_pixel/down.sql', import.meta.url), 'utf8');
 
 const U1 = '11111111-1111-1111-1111-111111111111';
@@ -20,6 +22,7 @@ beforeAll(async () => {
   await pg.exec('CREATE SCHEMA auth; CREATE TABLE auth.users (id uuid PRIMARY KEY);');
   await pg.exec(`INSERT INTO auth.users (id) VALUES ('${U1}'), ('${U2}');`);
   await pg.exec(up);
+  await pg.exec(upDrafts);
 });
 afterAll(async () => {
   await pg.close();
@@ -113,10 +116,31 @@ describe('esquema de Nhost', () => {
     await expect(pg.query(`INSERT INTO public.companies (user_id, name, yaml) VALUES ($1, 'Enorme', repeat('x', 26214401))`, [U1])).rejects.toThrow();
   });
 
+  it('borradores: uno por empresa y tipo, se reemplazan, no cambian de dueño y mueren con la empresa', async () => {
+    const c = await one<{ id: string }>(`INSERT INTO public.companies (user_id, name, yaml) VALUES ($1, 'Con borrador', 'x') RETURNING id`, [U1]);
+    const ins = `INSERT INTO public.company_drafts (company_id, user_id, kind, base_version, body) VALUES ($1, $2, $3, 1, $4)
+      ON CONFLICT (company_id, kind) DO UPDATE SET body = EXCLUDED.body, base_version = EXCLUDED.base_version`;
+    await pg.query(ins, [c.id, U1, 'config', '{"a":1}']);
+    await pg.query(ins, [c.id, U1, 'config', '{"a":2}']);
+    await pg.query(ins, [c.id, U1, 'hub', '{"h":1}']);
+    expect((await all<{ kind: string; body: string }>('SELECT kind, body FROM public.company_drafts WHERE company_id = $1 ORDER BY kind', [c.id]))).toEqual([
+      { kind: 'config', body: '{"a":2}' },
+      { kind: 'hub', body: '{"h":1}' },
+    ]);
+    await expect(pg.query(ins, [c.id, U1, 'otro', 'x'])).rejects.toThrow(); // solo config y hub
+    const moved = await one<{ user_id: string; kind: string }>(`UPDATE public.company_drafts SET user_id = $2, kind = 'hub', body = 'y' WHERE company_id = $1 AND kind = 'config' RETURNING user_id, kind`, [c.id, U1.replace(/1/g, '3')].slice(0, 1).concat([U2]));
+    expect(moved).toEqual({ user_id: U1, kind: 'config' });
+    await pg.query('DELETE FROM public.companies WHERE id = $1', [c.id]);
+    expect((await all('SELECT 1 FROM public.company_drafts WHERE company_id = $1', [c.id])).length).toBe(0);
+  });
+
   it('la migración se puede deshacer y volver a aplicar', async () => {
+    await pg.exec(downDrafts);
     await pg.exec(down);
     expect((await all(`SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'companies'`)).length).toBe(0);
     await pg.exec(up);
+    await pg.exec(upDrafts);
+    await pg.exec(upDrafts); // repetirla no falla
     expect((await all(`SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'companies'`)).length).toBe(1);
   });
 });

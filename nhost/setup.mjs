@@ -9,7 +9,7 @@
  * Es una clave de administración: se pasa por variable de entorno y no se guarda en ningún archivo.
  * Se puede ejecutar más de una vez: lo que ya existe se respeta.
  */
-import { buildMetadataRequests, hasuraUrl, readMigrationSql } from './lib.mjs';
+import { buildMetadataRequests, hasuraUrl, readMigrations } from './lib.mjs';
 
 const { NHOST_SUBDOMAIN: sub, NHOST_REGION: region, NHOST_ADMIN_SECRET: secret } = process.env;
 if (!sub || !region || !secret) {
@@ -36,21 +36,24 @@ const run_sql = (sql) => post('/v2/query', { type: 'run_sql', args: { source: 'd
 
 console.log(`Proyecto: ${base}`);
 
-// 1) tablas
-const exists = await run_sql("SELECT to_regclass('public.companies') IS NOT NULL AS existe");
-if (!exists.ok) {
-  console.error(`No se pudo conectar (${exists.status}). Revisa el subdominio, la región y el admin secret.\n`, JSON.stringify(exists.json));
-  process.exit(1);
-}
-if (exists.json.result?.[1]?.[0] === 't' || exists.json.result?.[1]?.[0] === true) {
-  console.log('• Las tablas ya existen: no se vuelven a crear.');
-} else {
-  const r = await run_sql(readMigrationSql());
-  if (!r.ok) {
-    console.error('• Error al crear las tablas:', JSON.stringify(r.json));
+// 1) tablas (cada migración se omite si su tabla ya existe)
+for (const m of readMigrations()) {
+  const exists = await run_sql(`SELECT to_regclass('public.${m.marker}') IS NOT NULL AS existe`);
+  if (!exists.ok) {
+    console.error(`No se pudo conectar (${exists.status}). Revisa el subdominio, la región y el admin secret.
+`, JSON.stringify(exists.json));
     process.exit(1);
   }
-  console.log('• Tablas creadas: companies, company_revisions, settings (con sus triggers).');
+  if (exists.json.result?.[1]?.[0] === 't' || exists.json.result?.[1]?.[0] === true) {
+    console.log(`• ${m.name}: la tabla ${m.marker} ya existe, no se vuelve a crear.`);
+    continue;
+  }
+  const r = await run_sql(m.sql);
+  if (!r.ok) {
+    console.error(`• Error en la migración ${m.name}:`, JSON.stringify(r.json));
+    process.exit(1);
+  }
+  console.log(`• ${m.name}: tabla ${m.marker} creada.`);
 }
 
 // 2) seguimiento en GraphQL y permisos

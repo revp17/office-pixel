@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error módulo .mjs sin tipos
-import { buildMetadataRequests, hasuraUrl, readMigrationSql, readTables } from '../../../nhost/lib.mjs';
+import { buildMetadataRequests, hasuraUrl, readMigrations, readTables } from '../../../nhost/lib.mjs';
 
 type Req = { type: string; args: { table: { name: string }; role?: string; permission?: Record<string, unknown> } };
 
@@ -8,13 +8,13 @@ describe('preparación de Nhost (nhost/setup.mjs)', () => {
   const tables = readTables() as Array<{ table: { name: string; schema: string } }>;
   const reqs = buildMetadataRequests() as Req[];
 
-  it('lee las tres tablas de los metadatos', () => {
-    expect(tables.map((t) => t.table.name).sort()).toEqual(['companies', 'company_revisions', 'settings']);
+  it('lee las cuatro tablas de los metadatos', () => {
+    expect(tables.map((t) => t.table.name).sort()).toEqual(['companies', 'company_drafts', 'company_revisions', 'settings']);
     expect(tables.every((t) => t.table.schema === 'public')).toBe(true);
   });
 
   it('sigue cada tabla y luego quita y crea los permisos (se puede repetir)', () => {
-    expect(reqs.filter((r) => r.type === 'pg_track_table')).toHaveLength(3);
+    expect(reqs.filter((r) => r.type === 'pg_track_table')).toHaveLength(4);
     const order = reqs.map((r) => r.type.replace(/^pg_(drop|create)_(\w+)_permission$/, '$1'));
     const lastDrop = order.lastIndexOf('drop');
     const firstCreate = order.indexOf('create');
@@ -24,7 +24,7 @@ describe('preparación de Nhost (nhost/setup.mjs)', () => {
 
   it('todo permiso es del rol «user» y limita a las filas del propio usuario', () => {
     const perms = reqs.filter((r) => r.type.startsWith('pg_create_'));
-    expect(perms.length).toBeGreaterThanOrEqual(9);
+    expect(perms.length).toBeGreaterThanOrEqual(13);
     for (const p of perms) {
       expect(p.args.role).toBe('user');
       const permission = p.args.permission as { filter?: unknown; check?: unknown; set?: Record<string, string> };
@@ -45,7 +45,9 @@ describe('preparación de Nhost (nhost/setup.mjs)', () => {
   });
 
   it('el SQL y la dirección de Hasura son los esperados', () => {
-    expect(readMigrationSql()).toContain('CREATE TABLE public.companies');
+    const migs = readMigrations() as Array<{ name: string; marker: string; sql: string }>;
+    expect(migs.map((m) => m.marker)).toEqual(['companies', 'company_drafts']);
+    expect(migs[0].sql).toContain('CREATE TABLE public.companies');
     expect(hasuraUrl('abc', 'eu-central-1')).toBe('https://abc.hasura.eu-central-1.nhost.run');
   });
 });

@@ -1,3 +1,4 @@
+-- marker: companies
 -- Office-Pixel en Nhost: empresas por usuario, historial de versiones y preferencias.
 -- Se aplica sola si conectas el repositorio a Nhost, o pégala en Base de datos → SQL del panel.
 

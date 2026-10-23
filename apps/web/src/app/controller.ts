@@ -1,5 +1,6 @@
 import { DAY, simulateCompany, type CompanyDef } from '@office-pixel/sim';
-import { escapeHtml } from '../shared/format';
+import type { DraftKind } from '../application/ports';
+import { escapeHtml, fmtDateTime } from '../shared/format';
 import { closeConfig, openConfig, type TabId } from '../ui/config/ConfigApp';
 import { closeHub, openHub } from '../ui/process/Hub';
 import { TEMPLATES } from './templates';
@@ -108,31 +109,51 @@ export function setEmpty(on: boolean) {
 
 export const isEmpty = () => !emptyState.hidden;
 
-export function showConfig(tab?: TabId) {
+/**
+ * Si quedó un borrador sin aplicar de este formulario, pregunta si se recupera. Lo que se descarta se borra.
+ * Devuelve la empresa del borrador, o undefined si se parte de la empresa guardada.
+ */
+async function offerDraft(kind: DraftKind, what: string): Promise<CompanyDef | undefined> {
+  const d = await persist.draft(kind);
+  if (!d) return undefined;
+  const stale = d.stale ? '\n\nOjo: la empresa se guardó otra vez después de este borrador; si lo recuperas y lo aplicas, esos cambios se pisan.' : '';
+  if (confirm(`Tienes cambios sin aplicar en ${what}, de ${fmtDateTime(d.savedAt)}.${stale}\n\nAceptar = recuperarlos. Cancelar = descartarlos.`)) return d.def;
+  persist.discardDraft(kind);
+  return undefined;
+}
+
+export async function showConfig(tab?: TabId) {
   scene.playing = false;
+  const draft = await offerDraft('config', 'Configurar empresa');
   openConfig(dom.configRoot, {
-    initial: structuredClone(state.company),
+    initial: structuredClone(draft ?? state.company),
     initialTab: tab,
     templates: TEMPLATES,
+    onDraft: (d) => persist.saveDraft('config', d),
     onApply: (d) => {
-      closeConfig(dom.configRoot);
+      closeConfig(dom.configRoot); // al cerrarse guarda lo pendiente; el borrado va detrás, en la misma cola
       run(d);
+      persist.discardDraft('config');
     },
     onClose: () => closeConfig(dom.configRoot),
   });
 }
 
 // ---------- gestión de procesos (documentar, optimizar, ficha) ----------
-export function showHub() {
+export async function showHub() {
   const wasPlaying = scene.playing;
   scene.playing = false;
+  // lo que se pasa a la empresa guardada ya no es borrador
   const keep = (d: CompanyDef) => {
     state.company = d;
     saveCompany(d);
+    persist.discardDraft('hub');
   };
+  const draft = await offerDraft('hub', 'Procesos');
   openHub(dom.hubRoot, {
-    initial: structuredClone(state.company),
+    initial: structuredClone(draft ?? state.company),
     days: simDays(),
+    onDraft: (d) => persist.saveDraft('hub', d),
     // la ficha y la optimización no cambian lo que se simula: no hace falta volver a simular
     onSave: (d) => {
       closeHub(dom.hubRoot);
@@ -147,10 +168,12 @@ export function showHub() {
     onEditProcess: (draft) => {
       closeHub(dom.hubRoot);
       keep(draft);
-      showConfig('procesos');
+      void showConfig('procesos');
     },
+    // el Hub ya preguntó «¿cerrar y descartar los cambios?»: si se llega aquí, se descartan también del borrador
     onClose: () => {
       closeHub(dom.hubRoot);
+      persist.discardDraft('hub');
       scene.playing = wasPlaying;
     },
   });

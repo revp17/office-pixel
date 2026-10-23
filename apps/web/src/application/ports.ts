@@ -20,6 +20,16 @@ export interface RevisionInfo {
   bytes: number;
 }
 
+/** Formularios que guardan un borrador sin aplicar: «config» (Configurar empresa) y «hub» (Procesos). */
+export type DraftKind = 'config' | 'hub';
+export interface DraftInfo {
+  /** versión de la empresa sobre la que se hizo el borrador */
+  baseVersion: number;
+  savedAt: string;
+  /** la empresa tal como estaba en el formulario (JSON) */
+  body: string;
+}
+
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -69,6 +79,9 @@ export interface Backend {
   duplicate(id: string): Promise<CompanyFull>;
   revisions(id: string): Promise<RevisionInfo[]>;
   restore(id: string, revisionId: number): Promise<CompanyFull>;
+  getDraft(companyId: string, kind: DraftKind): Promise<DraftInfo | undefined>;
+  saveDraft(companyId: string, kind: DraftKind, baseVersion: number, body: string): Promise<void>;
+  deleteDraft(companyId: string, kind: DraftKind): Promise<void>;
   setting(key: string): Promise<string | undefined>;
   setSetting(key: string, value: string): Promise<unknown>;
 }

@@ -6,6 +6,7 @@ import { CatalogoTab } from './catalogoTab';
 import { EmpresaTab, AreasTab, PersonasTab } from './tabs';
 import { ProcesosTab } from './procesos';
 import { YamlTab } from './extras';
+import { useDraftSaver } from '../draft';
 import type { Up } from './ui';
 
 export type TabId = 'empresa' | 'areas' | 'catalogo' | 'personas' | 'procesos' | 'yaml';
@@ -14,12 +15,15 @@ interface Props {
   initial: CompanyDef;
   initialTab?: TabId;
   templates: Array<{ id: string; label: string; make: () => CompanyDef }>;
+  /** el borrador cambió (se guarda para no perderlo) */
+  onDraft?: (d: CompanyDef) => void;
   onApply: (d: CompanyDef) => void;
   onClose: () => void;
 }
 
-function ConfigApp({ initial, initialTab, templates, onApply, onClose }: Props) {
+function ConfigApp({ initial, initialTab, templates, onDraft, onApply, onClose }: Props) {
   const [draft, setDraft] = useState<CompanyDef>(initial);
+  useDraftSaver(draft, onDraft);
   const [tab, setTab] = useState<TabId>(initialTab ?? 'empresa');
   const [toast, setToast] = useState('');
   const [showErrors, setShowErrors] = useState(false);
@@ -77,7 +81,7 @@ function ConfigApp({ initial, initialTab, templates, onApply, onClose }: Props) 
           <button type="button" class="btn" onClick={() => replace(emptyCompany, 'una empresa en blanco')}>
             Empezar en blanco
           </button>
-          <button type="button" class="btn" onClick={onClose} title="Cerrar sin aplicar">
+          <button type="button" class="btn" onClick={onClose} title="Cerrar sin aplicar: lo escrito queda como borrador y te lo ofrezco al volver">
             ✕
           </button>
         </div>

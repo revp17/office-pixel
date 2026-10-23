@@ -51,6 +51,8 @@ function validated(yaml: unknown): { yaml: string; name: string } {
 }
 
 const ID = /^[A-Za-z0-9_-]{1,64}$/;
+/** Formularios que guardan borrador: «config» (Configurar empresa) y «hub» (Procesos). */
+export const DRAFT_KINDS = ['config', 'hub'];
 const SETTING = /^[A-Za-z0-9_.-]{1,64}$/;
 
 const notAllowed = () => new HttpError(405, 'Método no permitido.');
@@ -113,6 +115,26 @@ export function createApiHandler(store: Store) {
       const name = `${cur.name} (copia)`;
       const yaml = cur.yaml.replace(/^company:.*$/m, () => `company: ${JSON.stringify(name)}`);
       return send(res, 201, store.create(name, yaml));
+    }
+
+    if (b === 'drafts') {
+      if (!rid || !DRAFT_KINDS.includes(rid)) throw new HttpError(400, 'Tipo de borrador no válido.');
+      if (method === 'GET') {
+        const d = store.getDraft(id, rid);
+        return d ? send(res, 200, d) : send(res, 404, { error: 'No hay borrador.' });
+      }
+      if (method === 'PUT') {
+        const body = await readJson(req);
+        if (typeof body.body !== 'string' || !body.body) throw new HttpError(400, 'Falta el contenido del borrador.');
+        const base = Number(body.baseVersion);
+        if (!Number.isInteger(base)) throw new HttpError(400, 'baseVersion debe ser un entero.');
+        return send(res, 200, store.setDraft(id, rid, base, body.body));
+      }
+      if (method === 'DELETE') {
+        store.deleteDraft(id, rid);
+        return send(res, 204);
+      }
+      throw notAllowed();
     }
 
     if (b === 'revisions') {

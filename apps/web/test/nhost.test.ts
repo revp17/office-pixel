@@ -26,6 +26,7 @@ function fakeNhost() {
     companies: [] as Co[],
     revisions: [] as Array<{ id: number; company_id: string; version: number; name: string; yaml: string; saved_at: string; note: string | null }>,
     settings: {} as Record<string, string>,
+    drafts: {} as Record<string, { base_version: number; body: string; updated_at: string }>,
     accounts: { 'ana@correo.com': 'claveSegura1' } as Record<string, string>,
     validTokens: new Set<string>(),
     issued: 0,
@@ -123,6 +124,18 @@ function fakeNhost() {
     if (q.includes('company_revisions_by_pk')) {
       const r = state.revisions.find((x) => x.id === v.rid);
       return ok({ company_revisions_by_pk: r ? { yaml: r.yaml, version: r.version } : null });
+    }
+    if (q.includes('company_drafts_by_pk') && q.startsWith('query')) {
+      return ok({ company_drafts_by_pk: state.drafts[`${v.id}/${v.k}`] ?? null });
+    }
+    if (q.includes('insert_company_drafts_one')) {
+      const o = v.o;
+      state.drafts[`${o.company_id}/${o.kind}`] = { base_version: o.base_version, body: o.body, updated_at: '2026-10-23T12:00:00Z' };
+      return ok({ insert_company_drafts_one: { kind: o.kind } });
+    }
+    if (q.includes('delete_company_drafts_by_pk')) {
+      delete state.drafts[`${v.id}/${v.k}`];
+      return ok({ delete_company_drafts_by_pk: { kind: v.k } });
     }
     if (q.includes('insert_settings_one')) {
       state.settings[v.o.key] = v.o.value;
@@ -292,6 +305,19 @@ describe('empresas en Nhost', () => {
     expect(back).toMatchObject({ name: 'Original', version: 3 });
     expect((await be.revisions(a.id))[0].note).toBe('Restaurada la versión 1');
     await expect(be.restore(a.id, 9999)).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('guarda, lee y borra borradores por empresa y tipo (upsert)', async () => {
+    const { be } = await signedIn();
+    const a = await be.create(banco);
+    expect(await be.getDraft(a.id, 'config')).toBeUndefined();
+    await be.saveDraft(a.id, 'config', 1, '{"v":1}');
+    await be.saveDraft(a.id, 'config', 2, '{"v":2}');
+    await be.saveDraft(a.id, 'hub', 2, '{"h":1}');
+    expect(await be.getDraft(a.id, 'config')).toEqual({ baseVersion: 2, savedAt: '2026-10-23T12:00:00Z', body: '{"v":2}' });
+    await be.deleteDraft(a.id, 'config');
+    expect(await be.getDraft(a.id, 'config')).toBeUndefined();
+    expect((await be.getDraft(a.id, 'hub'))?.body).toBe('{"h":1}');
   });
 
   it('guarda preferencias por clave', async () => {
