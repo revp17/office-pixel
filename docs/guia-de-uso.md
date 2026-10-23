@@ -324,3 +324,15 @@ La pestaña **YAML (avanzado)** muestra exactamente lo mismo que los formularios
 - Costos por persona o por etapa.
 - Deshacer en los formularios.
 - Editar la estructura arrastrando y soltando.
+
+---
+
+## Empezar de cero para probar tu propia empresa
+
+En la barra superior, **🧹 Limpiar todo**:
+
+1. Pide confirmación (borra **todo** lo guardado en este navegador: empresa, áreas, personas, procesos, procedimientos con sus capturas, fases de documentación, optimización y preferencias de vista).
+2. Ofrece **descargar antes una copia .yaml** de la empresa actual.
+3. Deja una empresa en blanco con lo mínimo que el simulador exige (1 área con 1 subárea, 2 personas y 1 proceso de 2 etapas: «Mi empresa»). Renómbralo o bórralo desde **⚙ Configurar empresa**.
+
+Alternativas: **Configurar empresa → Empezar en blanco** (solo reemplaza el formulario hasta que pulses *Aplicar y simular*) o **YAML (avanzado) → importar** un archivo tuyo. Para volver a un ejemplo, **Cargar plantilla…**.

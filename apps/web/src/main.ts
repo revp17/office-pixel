@@ -12,6 +12,7 @@ import {
 } from '@office-pixel/sim';
 import defaultYaml from '../../../examples/banco_pixel.yaml?raw';
 import { TEMPLATES } from './templates';
+import { emptyCompany } from './config/model';
 import { closeConfig, openConfig, type TabId } from './config/ConfigApp';
 import { closeHub, openHub } from './process/Hub';
 import { OrgScene, fmtTime, type OrgHud } from './orgScene';
@@ -360,6 +361,33 @@ function showHub() {
   });
 }
 $('processes').addEventListener('click', showHub);
+
+// ---------- limpiar todo (para probar con una empresa propia) ----------
+function downloadBackup() {
+  const blob = new Blob([companyToYaml(company)], { type: 'text/yaml' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `${company.company.replace(/[^\w-]+/g, '_') || 'empresa'}_copia.yaml`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+$('reset-all').addEventListener('click', () => {
+  const warn =
+    'Esto borra TODO lo guardado en este navegador: empresa, áreas, personas, procesos, procedimientos (con sus capturas) y preferencias. Queda una empresa en blanco para que cargues la tuya.\n\n¿Continuar?';
+  if (!confirm(warn)) return;
+  if (confirm('¿Quieres descargar antes una copia (.yaml) de la empresa actual?\n\nAceptar = descargar la copia. Cancelar = no descargar.')) downloadBackup();
+  try {
+    for (const k of Object.keys(localStorage)) if (k.startsWith('office-pixel.')) localStorage.removeItem(k);
+  } catch {
+    /* sin almacenamiento: solo se limpia lo que hay en pantalla */
+  }
+  closeConfig(configRoot);
+  closeHub(hubRoot);
+  scene.playing = false;
+  seedInput.value = '1';
+  daysInput.value = '5';
+  run(emptyCompany());
+});
 $('preview-exit').addEventListener('click', () => run());
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && configRoot.classList.contains('open')) closeConfig(configRoot);
