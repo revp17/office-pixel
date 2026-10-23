@@ -5,6 +5,21 @@ export interface Pt {
   y: number;
 }
 
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/**
+ * - vertical: las plantas se apilan de arriba abajo; cada una es una franja con las salas en fila,
+ *   el pasillo debajo y una escalera a la izquierda.
+ * - horizontal: las plantas se ponen en fila de izquierda a derecha; cada una es una columna con
+ *   las salas apiladas, el pasillo a su izquierda y una pasarela arriba que las conecta.
+ */
+export type Orientation = 'vertical' | 'horizontal';
+
 /** Destino de un desplazamiento: punto + planta + zona ("<unidad>", "common:<planta>" o "corr"). */
 export interface Dest extends Pt {
   floor: number;
@@ -20,6 +35,8 @@ export interface DeskL {
   seat: Pt;
 }
 
+export type DoorSide = 'bottom' | 'left';
+
 export interface RoomL {
   id: string; // id de la unidad
   name: string;
@@ -31,6 +48,7 @@ export interface RoomL {
   desks: DeskL[];
   inbox: { x: number; y: number; cols: number; rows: number };
   door: Pt;
+  doorSide: DoorSide;
 }
 
 export interface CommonL {
@@ -39,6 +57,7 @@ export interface CommonL {
   w: number;
   h: number;
   door: Pt;
+  doorSide: DoorSide;
 }
 
 export interface FloorL {
@@ -49,20 +68,26 @@ export interface FloorL {
   y: number;
   w: number;
   h: number;
-  roomsH: number;
-  corridorY: number;
+  /** tira del pasillo (para dibujarla) */
+  corridor: Rect;
+  /** línea central del pasillo: y si es vertical (pasillo horizontal), x si es horizontal */
+  corridorC: number;
   rooms: RoomL[];
   common: CommonL;
   people: string[];
 }
 
 export interface BuildingL {
+  orientation: Orientation;
   floors: FloorL[];
   rooms: Map<string, RoomL>;
   personDesk: Map<string, { room: RoomL; desk: DeskL }>;
   personFloor: Map<string, number>;
   commonSeat: Map<string, Pt>;
-  stairsX: number;
+  /** escalera (vertical) o pasarela (horizontal), para dibujarla */
+  link: Rect;
+  /** x de la escalera (vertical) o y de la pasarela (horizontal) */
+  linkC: number;
   entrance: Dest;
   width: number;
   height: number;
@@ -78,8 +103,13 @@ const HEADER = 30;
 const ROOM_GAP = 14;
 const COMMON_W = 132;
 const CORR_H = 44;
+const CORR_W = 44;
 const FLOOR_GAP = 34;
 const TOP = 60;
+const COMMON_H_H = HEADER + 2 * DESK_H + 24; // alto de la sala común en horizontal
+const H_LEFT = 90;
+const H_TOP = 100;
+const H_BRIDGE_Y = 46;
 export const INBOX_STEP = 18;
 
 function* dfs(list: UnitDef[]): Generator<UnitDef> {
@@ -90,7 +120,8 @@ function* dfs(list: UnitDef[]): Generator<UnitDef> {
 }
 
 /** Plantas = áreas; salas = unidades con gente; escritorios = personas. */
-export function buildBuilding(def: CompanyDef): BuildingL {
+export function buildBuilding(def: CompanyDef, orientation: Orientation = 'vertical'): BuildingL {
+  const horizontal = orientation === 'horizontal';
   const rooms = new Map<string, RoomL>();
   const personDesk = new Map<string, { room: RoomL; desk: DeskL }>();
   const personFloor = new Map<string, number>();
@@ -104,59 +135,54 @@ export function buildBuilding(def: CompanyDef): BuildingL {
     byUnit.set(p.unit, l);
   }
 
-  let cursorY = TOP;
+  let cursorY = TOP; // vertical: y de la planta
+  let cursorX = H_LEFT; // horizontal: x de la planta
   for (const area of def.units) {
     const units = [...dfs([area])].filter((u) => byUnit.has(u.id));
     if (!units.length) continue;
     const index = floors.length;
 
-    // dimensiones de cada sala
     const dims = units.map((u) => {
       const n = byUnit.get(u.id)!.length;
       const cols = Math.min(n, 4);
       const rows = Math.ceil(n / cols);
       return { u, n, cols, rows, w: 14 + cols * DESK_W + INBOX_W, h: HEADER + Math.max(rows, 2) * DESK_H + 24 };
     });
-    const roomsH = Math.max(...dims.map((d) => d.h));
+
     const floor: FloorL = {
       index,
       areaId: area.id,
       name: area.name ?? area.id,
-      x: FLOOR_X,
-      y: cursorY,
+      x: 0,
+      y: 0,
       w: 0,
-      h: roomsH + CORR_H,
-      roomsH,
-      corridorY: cursorY + roomsH + CORR_H / 2,
+      h: 0,
+      corridor: { x: 0, y: 0, w: 0, h: 0 },
+      corridorC: 0,
       rooms: [],
-      common: { x: 0, y: cursorY, w: COMMON_W, h: roomsH, door: { x: 0, y: 0 } },
+      common: { x: 0, y: 0, w: COMMON_W, h: 0, door: { x: 0, y: 0 }, doorSide: 'bottom' },
       people: [],
     };
 
-    let x = FLOOR_X + 10;
-    for (const d of dims) {
+    const makeRoom = (d: (typeof dims)[number], x: number, y: number, w: number, h: number): RoomL => {
       const room: RoomL = {
         id: d.u.id,
         name: d.u.name ?? d.u.id,
         floor: index,
         x,
-        y: cursorY,
-        w: d.w,
-        h: roomsH,
+        y,
+        w,
+        h,
         desks: [],
-        inbox: {
-          x: x + d.w - INBOX_W + 6,
-          y: cursorY + HEADER + 6,
-          cols: 3,
-          rows: Math.floor((roomsH - HEADER - 12) / INBOX_STEP),
-        },
-        door: { x: x + d.w / 2, y: cursorY + roomsH },
+        inbox: { x: x + w - INBOX_W + 6, y: y + HEADER + 6, cols: 3, rows: Math.floor((h - HEADER - 12) / INBOX_STEP) },
+        door: horizontal ? { x, y: y + h / 2 } : { x: x + w / 2, y: y + h },
+        doorSide: horizontal ? 'left' : 'bottom',
       };
       byUnit.get(d.u.id)!.forEach((pid, i) => {
         const col = i % d.cols;
         const row = Math.floor(i / d.cols);
         const dx = x + 12 + col * DESK_W + DESK_W / 2;
-        const dy = cursorY + HEADER + 10 + row * DESK_H + 14;
+        const dy = y + HEADER + 10 + row * DESK_H + 14;
         const desk: DeskL = { personId: pid, x: dx, y: dy, seat: { x: dx, y: dy + 38 } };
         room.desks.push(desk);
         personDesk.set(pid, { room, desk });
@@ -165,32 +191,78 @@ export function buildBuilding(def: CompanyDef): BuildingL {
       });
       rooms.set(room.id, room);
       floor.rooms.push(room);
-      x += d.w + ROOM_GAP;
+      return room;
+    };
+
+    if (!horizontal) {
+      const roomsH = Math.max(...dims.map((d) => d.h));
+      floor.x = FLOOR_X;
+      floor.y = cursorY;
+      floor.h = roomsH + CORR_H;
+      floor.corridorC = cursorY + roomsH + CORR_H / 2;
+      let x = FLOOR_X + 10;
+      for (const d of dims) {
+        makeRoom(d, x, cursorY, d.w, roomsH);
+        x += d.w + ROOM_GAP;
+      }
+      floor.common = { x, y: cursorY, w: COMMON_W, h: roomsH, door: { x: x + COMMON_W / 2, y: cursorY + roomsH }, doorSide: 'bottom' };
+      floor.w = x + COMMON_W + 10 - FLOOR_X;
+      // la tira del pasillo arranca en la escalera para unirse a ella
+      floor.corridor = { x: 55 + 18, y: floor.corridorC - 16, w: floor.x + floor.w - 55 - 18, h: 32 };
+      cursorY += floor.h + FLOOR_GAP;
+    } else {
+      const roomW = Math.max(COMMON_W, ...dims.map((d) => d.w));
+      const x0 = cursorX;
+      const roomX = x0 + CORR_W + 10;
+      let y = H_TOP;
+      for (const d of dims) {
+        makeRoom(d, roomX, y, roomW, d.h);
+        y += d.h + ROOM_GAP;
+      }
+      floor.common = { x: roomX, y, w: roomW, h: COMMON_H_H, door: { x: roomX, y: y + COMMON_H_H / 2 }, doorSide: 'left' };
+      y += COMMON_H_H;
+      floor.x = x0;
+      floor.y = H_TOP;
+      floor.w = CORR_W + 10 + roomW + 10;
+      floor.h = y - H_TOP + 10;
+      floor.corridorC = x0 + CORR_W / 2;
+      floor.corridor = { x: x0, y: H_BRIDGE_Y + 14, w: CORR_W, h: floor.y + floor.h - (H_BRIDGE_Y + 14) };
+      cursorX += floor.w + FLOOR_GAP;
     }
 
-    floor.common.x = x;
-    floor.common.door = { x: x + COMMON_W / 2, y: cursorY + roomsH };
-    floor.w = x + COMMON_W + 10 - FLOOR_X;
-
+    // asientos de la sala común
+    const c = floor.common;
     const cols = 4;
-    const cap = cols * Math.max(1, Math.floor((roomsH - HEADER - 40) / 34));
+    const cap = cols * Math.max(1, Math.floor((c.h - HEADER - 40) / 34));
     floor.people.forEach((pid, i) => {
       const s = i % cap;
-      commonSeat.set(pid, {
-        x: floor.common.x + 24 + (s % cols) * 28,
-        y: cursorY + HEADER + 34 + Math.floor(s / cols) * 34,
-      });
+      commonSeat.set(pid, { x: c.x + 24 + (s % cols) * 28, y: c.y + HEADER + 34 + Math.floor(s / cols) * 34 });
     });
 
     floors.push(floor);
-    cursorY += floor.h + FLOOR_GAP;
   }
 
-  const stairsX = 55;
   const last = floors[floors.length - 1];
-  const entrance: Dest = { x: stairsX, y: last.corridorY + 40, floor: last.index, zone: 'corr' };
-  const width = Math.max(...floors.map((f) => f.x + f.w)) + 40;
-  const height = last.y + last.h + 90;
+  let link: Rect;
+  let linkC: number;
+  let entrance: Dest;
+  let width: number;
+  let height: number;
+  if (!horizontal) {
+    const first = floors[0];
+    const bottom = last.y + last.h;
+    linkC = 55;
+    link = { x: linkC - 18, y: first.y - 4, w: 36, h: bottom - first.y + 58 };
+    entrance = { x: linkC, y: last.corridorC + 40, floor: last.index, zone: 'corr' };
+    width = Math.max(...floors.map((f) => f.x + f.w)) + 40;
+    height = last.y + last.h + 90;
+  } else {
+    linkC = H_BRIDGE_Y;
+    link = { x: H_LEFT - 44, y: H_BRIDGE_Y - 14, w: last.corridorC + 22 - (H_LEFT - 44), h: 28 };
+    entrance = { x: H_LEFT - 60, y: H_BRIDGE_Y, floor: 0, zone: 'corr' };
+    width = cursorX - FLOOR_GAP + 40;
+    height = Math.max(...floors.map((f) => f.y + f.h)) + 60;
+  }
 
   const unitRoom = (unitId: string): RoomL | undefined => {
     const direct = rooms.get(unitId);
@@ -207,7 +279,7 @@ export function buildBuilding(def: CompanyDef): BuildingL {
     for (const sub of dfs([u])) if (rooms.has(sub.id)) return rooms.get(sub.id);
   };
 
-  return { floors, rooms, personDesk, personFloor, commonSeat, stairsX, entrance, width, height, unitRoom };
+  return { orientation, floors, rooms, personDesk, personFloor, commonSeat, link, linkC, entrance, width, height, unitRoom };
 }
 
 // ---------- rutas ----------
@@ -220,9 +292,12 @@ export function locate(b: BuildingL, p: Pt): { floor: number; zone: string } {
     if (p.x >= c.x && p.x <= c.x + c.w && p.y >= c.y && p.y <= c.y + c.h) return { floor: f.index, zone: `common:${f.index}` };
     return { floor: f.index, zone: 'corr' };
   }
+  // fuera de las plantas (escalera, pasarela, entrada): la planta más cercana por su pasillo
+  const horizontal = b.orientation === 'horizontal';
   let best = 0;
   b.floors.forEach((f, i) => {
-    if (Math.abs(p.y - f.corridorY) < Math.abs(p.y - b.floors[best].corridorY)) best = i;
+    const d = Math.abs((horizontal ? p.x : p.y) - f.corridorC);
+    if (d < Math.abs((horizontal ? p.x : p.y) - b.floors[best].corridorC)) best = i;
   });
   return { floor: best, zone: 'corr' };
 }
@@ -232,25 +307,43 @@ function doorOf(b: BuildingL, zone: string): Pt {
   return b.rooms.get(zone)!.door;
 }
 
-/** Camino (puntos intermedios + destino) desde `from` hasta `to` por puertas, pasillo y escalera. */
+/** Camino (puntos intermedios + destino) desde `from` hasta `to` por puertas, pasillo y escalera/pasarela. */
 export function route(b: BuildingL, from: Pt, to: Dest): Pt[] {
   const cur = locate(b, from);
   if (cur.zone === to.zone && cur.zone !== 'corr') return [{ x: to.x, y: to.y }];
   const pts: Pt[] = [];
-  const yC = (f: number) => b.floors[f].corridorY;
-  if (cur.zone !== 'corr') {
-    const d = doorOf(b, cur.zone);
-    pts.push({ x: d.x, y: d.y - 6 }, { x: d.x, y: yC(cur.floor) });
-  } else if (Math.abs(from.y - yC(cur.floor)) > 2) pts.push({ x: from.x, y: yC(cur.floor) });
+  const C = (f: number) => b.floors[f].corridorC;
 
-  let f = cur.floor;
-  if (to.floor !== f) {
-    pts.push({ x: b.stairsX, y: yC(f) }, { x: b.stairsX, y: yC(to.floor) });
-    f = to.floor;
-  }
-  if (to.zone !== 'corr') {
-    const d = doorOf(b, to.zone);
-    pts.push({ x: d.x, y: yC(f) }, { x: d.x, y: d.y - 6 });
+  if (b.orientation === 'vertical') {
+    // el pasillo es una línea horizontal en y = C(planta); la escalera es una línea vertical en x = linkC
+    if (cur.zone !== 'corr') {
+      const d = doorOf(b, cur.zone);
+      pts.push({ x: d.x, y: d.y - 6 }, { x: d.x, y: C(cur.floor) });
+    } else if (Math.abs(from.y - C(cur.floor)) > 2) pts.push({ x: from.x, y: C(cur.floor) });
+    let f = cur.floor;
+    if (to.floor !== f) {
+      pts.push({ x: b.linkC, y: C(f) }, { x: b.linkC, y: C(to.floor) });
+      f = to.floor;
+    }
+    if (to.zone !== 'corr') {
+      const d = doorOf(b, to.zone);
+      pts.push({ x: d.x, y: C(f) }, { x: d.x, y: d.y - 6 });
+    } else pts.push({ x: b.linkC, y: C(f) });
+  } else {
+    // el pasillo es una línea vertical en x = C(planta); la pasarela es una línea horizontal en y = linkC
+    if (cur.zone !== 'corr') {
+      const d = doorOf(b, cur.zone);
+      pts.push({ x: d.x + 6, y: d.y }, { x: C(cur.floor), y: d.y });
+    } else if (Math.abs(from.x - C(cur.floor)) > 2) pts.push({ x: C(cur.floor), y: from.y });
+    let f = cur.floor;
+    if (to.floor !== f) {
+      pts.push({ x: C(f), y: b.linkC }, { x: C(to.floor), y: b.linkC });
+      f = to.floor;
+    }
+    if (to.zone !== 'corr') {
+      const d = doorOf(b, to.zone);
+      pts.push({ x: C(f), y: d.y }, { x: d.x + 6, y: d.y });
+    } else pts.push({ x: C(f), y: b.linkC });
   }
   pts.push({ x: to.x, y: to.y });
   return pts;

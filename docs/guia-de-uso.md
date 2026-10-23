@@ -26,16 +26,31 @@ No dibujas nada a mano. **El edificio se genera solo** a partir de lo que config
 
 - Hay **una planta por área**, apiladas de arriba (la primera área) hacia abajo.
 - **Un área sin ninguna persona no se dibuja.** Para que aparezca, tiene que haber al menos una persona en ella o en alguno de sus equipos.
-- A la izquierda hay una **escalera** que conecta todas las plantas. Abajo del todo está la **ENTRADA**: por ahí llegan las personas y los casos nuevos.
+- Una **escalera** (o, en disposición horizontal, una **pasarela**) conecta todas las plantas. Junto a ella está la **ENTRADA**: por ahí llegan las personas y los casos nuevos.
 - Cada planta tiene un color distinto. Ese color se usa en las cabeceras de sus salas y en la ropa de sus avatares, para reconocer de qué área es cada persona.
 - Si pulsas los botones **P1, P2…** sobre el edificio, la cámara se acerca a esa planta. **Todo** o **Vista general** vuelve a encuadrar todo.
+
+#### Disposición: vertical u horizontal
+
+En la barra superior, el selector **▤ Vertical / ▥ Horizontal** cambia cómo se colocan las plantas. Puedes alternar en cualquier momento: la simulación sigue en el mismo instante y la persona seleccionada se mantiene. La opción elegida se recuerda al recargar.
+
+| | **Vertical** (por defecto) | **Horizontal** |
+|---|---|---|
+| Plantas | Apiladas de arriba abajo | En fila, de izquierda a derecha |
+| Cada planta | Una franja: salas en fila y el pasillo debajo | Una columna: salas apiladas y el pasillo a su izquierda |
+| Conexión entre plantas | **Escalera** vertical a la izquierda | **Pasarela** horizontal en la parte de arriba |
+| Entrada | Abajo del todo, junto a la escalera | A la izquierda de la pasarela |
+| Puertas de las salas | En el borde inferior | En el borde izquierdo |
+| Va mejor en | Ventanas altas o estrechas | Pantallas anchas (aprovecha mejor el espacio) |
+
+El contenido de cada sala (escritorios, bandeja, avatares) se ve igual en las dos. Los botones **P1, P2…** acercan la cámara a esa planta en cualquiera de ellas.
 
 ### 1.2 Salas
 
 - Se dibuja **una sala por cada equipo que tenga personas sentadas**, de izquierda a derecha en el orden del organigrama.
 - Si un área tiene personas directamente (por ejemplo, su responsable) y además equipos, el área tiene su propia sala y los equipos tienen las suyas.
 - Al final de cada planta hay una **Sala común** (con sofá y mesa). Allí van las personas durante pausas y reuniones.
-- Debajo de las salas corre el **pasillo**. Cada sala tiene una **puerta** hacia el pasillo.
+- Junto a las salas corre el **pasillo** (debajo en vertical, a la izquierda en horizontal). Cada sala tiene una **puerta** hacia el pasillo.
 - La cabecera de cada sala muestra:
   - el nombre del equipo,
   - `presentes/total · cN`: cuántas personas están en su sitio sobre el total del equipo, y cuántos casos hay en cola (`c` = cola).
@@ -59,7 +74,7 @@ No dibujas nada a mano. **El edificio se genera solo** a partir de lo que config
 | **Ausente** | Su avatar aparece semitransparente en su silla, con la etiqueta «ausente» |
 | **Fuera de jornada** | No está en el edificio: sale por la entrada al terminar su turno y vuelve al empezar |
 
-Para ir de un sitio a otro, los avatares **salen por la puerta, recorren el pasillo y suben o bajan por la escalera** si hace falta. Mientras caminan, el punto de estado desaparece.
+Para ir de un sitio a otro, los avatares **salen por la puerta, recorren el pasillo y suben o bajan por la escalera** (o cruzan la pasarela, en horizontal) si hace falta. Mientras caminan, el punto de estado desaparece.
 
 Haz **clic en un avatar** (o en una fila de la lista «Personas») para ver su ficha: estado actual, caso que trabaja, utilización, tareas hechas y una barra con su día (de 6 a 22 h).
 

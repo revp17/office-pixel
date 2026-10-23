@@ -238,6 +238,36 @@ function renderFloorChips() {
 
 scene.onModel = renderFloorChips;
 
+// ---------- disposición de las plantas (vertical / horizontal) ----------
+const LAYOUT_KEY = 'office-pixel.layout.v1';
+type Orient = 'vertical' | 'horizontal';
+const layoutBtns = Array.from(document.querySelectorAll<HTMLButtonElement>('#layout button'));
+function paintLayout(o: Orient) {
+  layoutBtns.forEach((b) => b.classList.toggle('on', b.dataset.o === o));
+}
+function savedLayout(): Orient {
+  try {
+    return localStorage.getItem(LAYOUT_KEY) === 'horizontal' ? 'horizontal' : 'vertical';
+  } catch {
+    return 'vertical';
+  }
+}
+function setLayout(o: Orient) {
+  scene.setOrientation(o);
+  paintLayout(o);
+  try {
+    localStorage.setItem(LAYOUT_KEY, o);
+  } catch {
+    /* sin almacenamiento: no se recuerda */
+  }
+}
+layoutBtns.forEach((b) => b.addEventListener('click', () => setLayout(b.dataset.o as Orient)));
+{
+  const o = savedLayout();
+  scene.setOrientation(o); // antes de que la escena esté lista: solo fija la disposición inicial
+  paintLayout(o);
+}
+
 // ---------- simulación ----------
 function run(next?: CompanyDef) {
   if (next) {

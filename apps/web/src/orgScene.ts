@@ -18,6 +18,8 @@ import {
   type BuildingL,
   type CommonL,
   type Dest,
+  type DoorSide,
+  type Orientation,
   type Pt,
   type RoomL,
 } from './building';
@@ -162,6 +164,8 @@ export class OrgScene extends Phaser.Scene {
   private ready = false;
   private pending?: { def: CompanyDef; result: OrgSimResult };
   private def?: CompanyDef;
+  private result?: OrgSimResult;
+  private orientation: Orientation = 'vertical';
   private b?: BuildingL;
   private rp?: OrgReplayer;
   private horizon = 0;
@@ -240,7 +244,8 @@ export class OrgScene extends Phaser.Scene {
     this.selected = undefined;
 
     this.def = def;
-    this.b = buildBuilding(def);
+    this.result = result;
+    this.b = buildBuilding(def, this.orientation);
     this.rp = new OrgReplayer(result.events, def.people.map((p) => p.id));
     this.horizon = result.options.horizonDays * DAY;
     this.simT = 0;
@@ -264,6 +269,20 @@ export class OrgScene extends Phaser.Scene {
     return this.b?.floors.map((f) => f.name) ?? [];
   }
 
+  /** Cambia entre plantas apiladas (vertical) o en fila (horizontal) sin perder el momento ni la selección. */
+  setOrientation(o: Orientation) {
+    if (o === this.orientation) return;
+    this.orientation = o;
+    if (!this.def || !this.result) return;
+    const { simT, playing, selected } = this;
+    this.setModel(this.def, this.result);
+    this.simT = simT;
+    this.lastT = simT;
+    this.playing = playing;
+    this.forceSnap = true;
+    this.selected = selected;
+  }
+
   fit() {
     if (!this.b) return;
     const cam = this.cameras.main;
@@ -278,8 +297,9 @@ export class OrgScene extends Phaser.Scene {
     if (index < 0) return this.fit();
     const f = this.b.floors[index];
     const cam = this.cameras.main;
-    const z = Math.min(cam.width / (f.w + 190), cam.height / (f.h + 90), 2.4);
-    cam.pan(f.x + f.w / 2 - 40, f.y + f.h / 2, 500, 'Sine.easeInOut', true);
+    const horizontal = this.b.orientation === 'horizontal';
+    const z = Math.min(cam.width / (f.w + (horizontal ? 130 : 190)), cam.height / (f.h + (horizontal ? 190 : 90)), 2.4);
+    cam.pan(f.x + f.w / 2 - (horizontal ? 0 : 40), f.y + f.h / 2 - (horizontal ? 30 : 0), 500, 'Sine.easeInOut', true);
     cam.zoomTo(z, 500);
   }
 
@@ -299,20 +319,19 @@ export class OrgScene extends Phaser.Scene {
 
   private drawBuilding() {
     const b = this.b!;
+    const horizontal = b.orientation === 'horizontal';
     const g = this.add.graphics().setDepth(1);
-    const first = b.floors[0];
-    const last = b.floors[b.floors.length - 1];
-    const top = first.y;
-    const bottom = last.y + last.h;
 
-    // escalera
+    // escalera (vertical) o pasarela (horizontal) que une las plantas
+    const L = b.link;
     g.fillStyle(0x07090d, 1);
-    g.fillRoundedRect(b.stairsX - 22, top - 8, 44, bottom - top + 66, 10);
+    g.fillRoundedRect(L.x - 4, L.y - 4, L.w + 8, L.h + 8, 10);
     g.fillStyle(0x222a3b, 1);
-    g.fillRoundedRect(b.stairsX - 18, top - 4, 36, bottom - top + 58, 7);
+    g.fillRoundedRect(L.x, L.y, L.w, L.h, 7);
     g.lineStyle(1, 0xffffff, 0.07);
-    for (let y = top; y < bottom + 50; y += 9) g.lineBetween(b.stairsX - 18, y, b.stairsX + 18, y);
-    this.add.text(b.stairsX, bottom + 42, 'ENTRADA', TXT(9, '#8f9bb8', '700')).setOrigin(0.5).setDepth(2);
+    if (horizontal) for (let x = L.x; x < L.x + L.w; x += 9) g.lineBetween(x, L.y, x, L.y + L.h);
+    else for (let y = L.y; y < L.y + L.h; y += 9) g.lineBetween(L.x, y, L.x + L.w, y);
+    this.add.text(b.entrance.x, b.entrance.y + 24, 'ENTRADA', TXT(9, '#8f9bb8', '700')).setOrigin(0.5).setDepth(2);
 
     b.floors.forEach((f, fi) => {
       const color = AREA_COLORS[fi % AREA_COLORS.length];
@@ -324,18 +343,26 @@ export class OrgScene extends Phaser.Scene {
       g.fillStyle(0x151a25, 1);
       g.fillRoundedRect(f.x - 2, f.y - 2, f.w + 4, f.h + 4, 11);
       g.fillStyle(0x1d2432, 1);
-      g.fillRect(b.stairsX + 18, f.corridorY - 16, f.x + f.w - b.stairsX - 18, 32);
+      g.fillRect(f.corridor.x, f.corridor.y, f.corridor.w, f.corridor.h);
       g.lineStyle(2, 0xffffff, 0.08);
-      for (let x = f.x; x < f.x + f.w; x += 22) g.lineBetween(x, f.corridorY, x + 11, f.corridorY);
+      if (horizontal) for (let y = f.corridor.y; y < f.corridor.y + f.corridor.h; y += 22) g.lineBetween(f.corridorC, y, f.corridorC, y + 11);
+      else for (let x = f.x; x < f.x + f.w; x += 22) g.lineBetween(x, f.corridorC, x + 11, f.corridorC);
 
+      const lx = horizontal ? f.rooms[0].x : f.x + 2;
       this.add
-        .text(f.x + 2, f.y - 26, `PLANTA ${fi + 1}`, TXT(10, '#' + color.toString(16).padStart(6, '0'), '700'))
+        .text(lx, f.y - 26, `PLANTA ${fi + 1}`, TXT(10, '#' + color.toString(16).padStart(6, '0'), '700'))
         .setDepth(3);
-      this.add.text(f.x + 62, f.y - 26, f.name, TXT(10, '#9aa6c2', '600')).setDepth(3);
+      this.add.text(lx + 60, f.y - 26, f.name, TXT(10, '#9aa6c2', '600')).setDepth(3);
 
       for (const r of f.rooms) this.buildRoom(g, r, color);
       this.buildCommon(g, f.common, color);
     });
+  }
+
+  private door(g: Phaser.GameObjects.Graphics, p: Pt, side: DoorSide) {
+    g.fillStyle(0xb98856, 1);
+    if (side === 'bottom') g.fillRoundedRect(p.x - 16, p.y - 4, 32, 8, 3);
+    else g.fillRoundedRect(p.x - 4, p.y - 16, 8, 32, 3);
   }
 
   private plant(g: Phaser.GameObjects.Graphics, x: number, y: number) {
@@ -397,7 +424,7 @@ export class OrgScene extends Phaser.Scene {
     g.strokeRoundedRect(r.x + 1, r.y + 1, r.w - 2, r.h - 2, 7);
     // puerta
     g.fillStyle(0xb98856, 1);
-    g.fillRoundedRect(r.door.x - 16, r.y + r.h - 4, 32, 8, 3);
+    this.door(g, r.door, r.doorSide);
 
     // bandeja de entrada
     const tw = r.inbox.cols * INBOX_STEP + 6;
@@ -440,7 +467,7 @@ export class OrgScene extends Phaser.Scene {
     g.fillStyle(0xffffff, 0.14);
     g.fillRoundedRect(c.x + 2, c.y + 2, c.w - 4, 5, { tl: 5, tr: 5, bl: 0, br: 0 });
     g.fillStyle(0xb98856, 1);
-    g.fillRoundedRect(c.door.x - 16, c.y + c.h - 4, 32, 8, 3);
+    this.door(g, c.door, c.doorSide);
     // sofá y mesa
     g.fillStyle(mix(0x3a3550, color, 0.35), 1);
     g.fillRoundedRect(c.x + 10, c.y + c.h - 30, c.w - 20, 16, 7);

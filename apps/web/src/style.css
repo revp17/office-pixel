@@ -190,3 +190,9 @@ table.grid td .num input { padding-right: 24px; }
   .procs { grid-template-columns: 1fr; }
   .subrow { grid-template-columns: 1fr auto; }
 }
+
+/* selector Vertical / Horizontal */
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; border-radius: 0; background: #0b0e14; color: var(--muted); padding: 6px 12px; }
+.seg button:hover { background: #151b27; border-color: transparent; }
+.seg button.on { background: var(--accent); color: #07121f; }

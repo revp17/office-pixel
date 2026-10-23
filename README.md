@@ -50,6 +50,7 @@ Los problemas se validan en vivo (el botón **Aplicar y simular** se bloquea has
 
 ## Uso de la interfaz
 
+- **▤ Vertical / ▥ Horizontal** (barra superior) cambia la disposición de las plantas: apiladas de arriba abajo, o en fila de izquierda a derecha. Se recuerda al recargar.
 - Los días y la semilla de la simulación están en la barra superior (**↻ Simular** repite con otros valores).
 - Velocidad de 10 min/s a 12 h/s, línea de tiempo arrastrable, zoom con la rueda (hacia el cursor) y arrastre para mover. Los chips **P1…P5** acercan la cámara a una planta; **Vista general** encuadra todo. Con zoom muy alejado se ven solo contadores por sala.
 - Aspecto: formas suavizadas (sin `pixelArt`), render a la resolución real de la pantalla (`devicePixelRatio`), texto nítido y avatares/cajas que crecen al alejar la cámara para seguir siendo legibles.

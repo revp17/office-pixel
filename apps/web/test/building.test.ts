@@ -29,6 +29,10 @@ describe('edificio', () => {
     }
   });
 
+  it('por defecto es vertical', () => {
+    expect(b.orientation).toBe('vertical');
+  });
+
   it('las salas de una planta no se solapan', () => {
     for (const f of b.floors) {
       const all = [...f.rooms.map((r) => ({ x: r.x, w: r.w })), { x: f.common.x, w: f.common.w }];
@@ -57,7 +61,7 @@ describe('rutas', () => {
     const z = deskDest(b, 'g1'); // planta 4
     const path = route(b, a, z);
     expect(path[path.length - 1]).toEqual({ x: z.x, y: z.y });
-    expect(path.some((p) => p.x === b.stairsX)).toBe(true);
+    expect(path.some((p) => p.x === b.linkC)).toBe(true);
     for (const p of path) expect(Number.isFinite(p.x) && Number.isFinite(p.y)).toBe(true);
   });
 
@@ -73,5 +77,75 @@ describe('rutas', () => {
 
   it('la entrada cae en el pasillo de la planta baja', () => {
     expect(locate(b, b.entrance)).toEqual({ floor: 4, zone: 'corr' });
+  });
+});
+
+describe('orientación horizontal', () => {
+  const h = buildBuilding(def, 'horizontal');
+  const bounds = (bl: typeof h, pts: Array<{ x: number; y: number }>) => {
+    for (const p of pts) {
+      expect(Number.isFinite(p.x) && Number.isFinite(p.y)).toBe(true);
+      expect(p.x).toBeGreaterThanOrEqual(0);
+      expect(p.x).toBeLessThanOrEqual(bl.width);
+      expect(p.y).toBeGreaterThanOrEqual(0);
+      expect(p.y).toBeLessThanOrEqual(bl.height);
+    }
+  };
+
+  it('mismas plantas, salas y personas, pero en fila y más ancho que alto', () => {
+    expect(h.floors.map((f) => f.areaId)).toEqual(b.floors.map((f) => f.areaId));
+    expect([...h.rooms.keys()]).toEqual([...b.rooms.keys()]);
+    expect(h.personDesk.size).toBe(def.people.length);
+    expect(h.width).toBeGreaterThan(h.height);
+    expect(b.height).toBeGreaterThan(b.width);
+  });
+
+  it('las plantas no se solapan en x y las salas se apilan sin solaparse', () => {
+    for (let i = 1; i < h.floors.length; i++) expect(h.floors[i].x).toBeGreaterThanOrEqual(h.floors[i - 1].x + h.floors[i - 1].w);
+    for (const f of h.floors) {
+      const stack = [...f.rooms, f.common];
+      for (let i = 1; i < stack.length; i++) expect(stack[i].y).toBeGreaterThanOrEqual(stack[i - 1].y + stack[i - 1].h);
+      for (const r of f.rooms) expect(r.doorSide).toBe('left');
+    }
+  });
+
+  it('cada escritorio cae dentro de su sala', () => {
+    for (const [pid, { room, desk }] of h.personDesk) {
+      expect(locate(h, desk.seat).zone).toBe(room.id);
+      expect(def.people.find((p) => p.id === pid)!.unit).toBe(room.id);
+    }
+  });
+
+  it('entre plantas cruza la pasarela y termina en el destino', () => {
+    const a = deskDest(h, 'e1');
+    const z = deskDest(h, 'g1');
+    const path = route(h, a, z);
+    expect(path[path.length - 1]).toEqual({ x: z.x, y: z.y });
+    expect(path.some((p) => p.y === h.linkC)).toBe(true);
+    bounds(h, path);
+  });
+
+  it('desde la entrada, a la sala común y de vuelta a la entrada', () => {
+    expect(locate(h, h.entrance)).toEqual({ floor: 0, zone: 'corr' });
+    const d = deskDest(h, 'a1');
+    const c = commonDest(h, 'a1');
+    for (const [from, to] of [
+      [h.entrance, d],
+      [d, c],
+      [c, h.entrance],
+    ] as const) {
+      const p = route(h, from, to);
+      expect(p[p.length - 1]).toEqual({ x: to.x, y: to.y });
+      bounds(h, p);
+    }
+    expect(locate(h, c).zone).toBe(`common:${c.floor}`);
+  });
+
+  it('las rutas de la versión vertical también quedan dentro del edificio', () => {
+    const p = route(b, deskDest(b, 'g1'), b.entrance);
+    for (const q of p) {
+      expect(q.x).toBeGreaterThanOrEqual(0);
+      expect(q.y).toBeLessThanOrEqual(b.height);
+    }
   });
 });
