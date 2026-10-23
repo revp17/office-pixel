@@ -54,7 +54,7 @@ describe('ficha en HTML', () => {
 
   it('la ficha completa se convierte sin perder las secciones', () => {
     const html = mdToHtml(fichaMarkdown(def, credito));
-    expect((html.match(/<h2>/g) ?? []).length).toBe(6);
+    expect((html.match(/<h2>/g) ?? []).length).toBe(7); // 6 + procedimientos asociados (el ejemplo trae uno)
     expect(html).toContain('<table>');
   });
 });

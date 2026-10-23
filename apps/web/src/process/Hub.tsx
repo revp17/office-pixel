@@ -4,8 +4,9 @@ import { PHASES, currentStep, phasesDone, stepCompleted, type CompanyDef, type O
 import { Documentar, type HubCtx } from './documentar';
 import { FichaView } from './fichaView';
 import { Optimizar } from './optimizar';
+import { Procedimientos } from './procedimientos';
 
-type Mode = 'documentar' | 'optimizar' | 'ficha';
+type Mode = 'documentar' | 'optimizar' | 'procedimientos' | 'ficha';
 
 export interface HubProps {
   initial: CompanyDef;
@@ -99,6 +100,7 @@ function Hub(props: HubProps) {
               <span class="prog">
                 <span title="Fases de documentación">Doc {phasesDone(p)}/5</span>
                 <span title="Pasos de optimización">Opt {stepsDone(p)}/5</span>
+                <span title="Procedimientos asociados">Proc {(p.procedures ?? []).length}</span>
                 {p.doc?.version && <span class="ver">v{p.doc.version}</span>}
               </span>
             </button>
@@ -118,6 +120,9 @@ function Hub(props: HubProps) {
                   <button type="button" class={mode === 'optimizar' ? 'on' : ''} onClick={() => setMode('optimizar')}>
                     2 · Optimizar (5 pasos)
                   </button>
+                  <button type="button" class={mode === 'procedimientos' ? 'on' : ''} onClick={() => setMode('procedimientos')}>
+                    3 · Procedimientos
+                  </button>
                   <button type="button" class={mode === 'ficha' ? 'on' : ''} onClick={() => setMode('ficha')}>
                     Ficha de proceso
                   </button>
@@ -127,13 +132,16 @@ function Hub(props: HubProps) {
                     ? `Fase ${PHASES.find((p) => p.key === phase)!.n} de 5`
                     : mode === 'optimizar'
                       ? 'Proceso de 5 pasos · orden estricto'
-                      : 'Documento final'}
+                      : mode === 'procedimientos'
+                        ? 'El cómo, quién y cuándo de cada etapa'
+                        : 'Documento final'}
                 </span>
               </div>
               {mode === 'documentar' && <Documentar ctx={ctx} phase={phase} setPhase={setPhase} />}
               {mode === 'optimizar' && (
                 <Optimizar ctx={ctx} step={step} setStep={setStep} onPreview={(c, label) => props.onPreview(draft, c, label)} />
               )}
+              {mode === 'procedimientos' && <Procedimientos key={proc.id} ctx={ctx} />}
               {mode === 'ficha' && <FichaView ctx={ctx} />}
             </>
           )}

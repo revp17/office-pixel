@@ -306,7 +306,7 @@ describe('ficha de proceso', () => {
     expect(rows).toHaveLength(p.stages.length);
     expect(md).toContain('Riesgos › Análisis');
     expect(md).toContain('si amount > 50000 → Evaluación senior');
-    expect(md).not.toContain('## 7.');
+    expect(md).not.toContain('## 7. Optimización');
   });
 
   it('incluye la optimización y el impacto cuando hay pasos hechos', () => {

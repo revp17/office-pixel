@@ -33,6 +33,7 @@ tags: [gestión, roadmap]
 - [ ] Panel de unidad con cola histórica y comparación entre corridas
 - [x] Responsables y colaboradores por área y subárea (`kind`), con su aspecto propio, y formularios para gestionarlos
 - [x] Gestión de procesos: ciclo de documentación en 5 fases, optimización de 5 pasos en orden estricto con impacto medido, ficha de proceso exportable ([[15 Gestión de procesos y optimización]])
+- [x] Procedimientos asociados a los procesos: levantamiento en 5 pasos, redacción acción-resultado con revisión automática, capturas anotadas, diagrama a nivel de tarea, prueba del novato y firma del ejecutor ([[16 Procedimientos]])
 - [ ] Varias plantas (sedes)
 - [ ] Mensajes de validación con nombres en vez de ids; deshacer/rehacer en los formularios
 - [ ] Editor visual del organigrama (arrastrar) y del flujo del proceso (diagrama)

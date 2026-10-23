@@ -95,8 +95,11 @@ function edgePath(a: Node, b: Node, e: Edge, outCount: number): { d: string; lx:
   return { d: `M${x1},${a.y} V${top} H${x2} V${b.y}`, lx: (x1 + x2) / 2, ly: top };
 }
 
-export function FlowDiagram(props: { def: CompanyDef; proc: OrgProcessDef; marks?: Record<string, FlowMark>; ghosts?: OrgStageDef[] }) {
+export function FlowDiagram(props: { def: CompanyDef; proc: OrgProcessDef; marks?: Record<string, FlowMark>; ghosts?: OrgStageDef[]; showProcedures?: boolean }) {
   const { def, proc, marks = {} } = props;
+  // procedimientos asociados a cada etapa (📄 n)
+  const procCount: Record<string, number> = {};
+  if (props.showProcedures) for (const pc of proc.procedures ?? []) if (pc.stageId) procCount[pc.stageId] = (procCount[pc.stageId] ?? 0) + 1;
   // las etapas eliminadas se dibujan atenuadas para ver qué se quitó
   const withGhosts: OrgProcessDef = props.ghosts?.length
     ? { ...proc, stages: [...proc.stages, ...props.ghosts.filter((g) => !proc.stages.some((s) => s.id === g.id))] }
@@ -156,6 +159,11 @@ export function FlowDiagram(props: { def: CompanyDef; proc: OrgProcessDef; marks
               <text x={12} y={55} class="t3">
                 {trim(meta, 32)}
               </text>
+              {procCount[s.id] > 0 && (
+                <text x={W - 10} y={H - 9} class="tag proc" text-anchor="end">
+                  📄 {procCount[s.id]} {procCount[s.id] === 1 ? 'procedimiento' : 'procedimientos'}
+                </text>
+              )}
               {mark === 'removed' && (
                 <text x={W - 10} y={19} class="tag" text-anchor="end">
                   ELIMINADA

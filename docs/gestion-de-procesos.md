@@ -8,6 +8,7 @@ Se abre con el botón **📋 Procesos**, en la barra superior. A la izquierda es
 |---|---|
 | **1 · Documentar (5 fases)** | Levantar y validar el proceso tal como funciona hoy (As-Is) |
 | **2 · Optimizar (5 pasos)** | Mejorarlo con la metodología de 5 pasos, midiendo el efecto de cada uno |
+| **3 · Procedimientos** | El cómo, quién y cuándo de cada etapa ([guía](procedimientos.md)) |
 | **Ficha de proceso** | El documento final: ver, descargar, imprimir |
 
 > Los cambios se guardan con **Guardar y cerrar**. La ficha y la optimización viajan con la empresa (también en el YAML), pero **no cambian lo que se simula**: el proceso real sigue siendo el de «Configurar empresa → Procesos».
@@ -100,6 +101,12 @@ En la pestaña **Ficha de proceso** se genera el documento final, siempre actual
 7. **Optimización** (solo si hay pasos hechos): estado de cada paso, requerimientos cuestionados, lo eliminado, acelerado y automatizado, y las notas.
 
 Botones: **Descargar .md** (Markdown), **Imprimir / guardar en PDF**, **Copiar Markdown** e **Incluir comparación de la optimización** (calcula el impacto y lo añade a la ficha). Hasta que se aprueba en la fase 5, la ficha es un **borrador**.
+
+---
+
+## Procedimientos
+
+Cada etapa del proceso puede tener sus **procedimientos** (el cómo, quién y cuándo): ver [procedimientos.md](procedimientos.md). Se trabajan en la pestaña **3 · Procedimientos** y aparecen en la ficha del proceso y en el diagrama As-Is.
 
 ---
 

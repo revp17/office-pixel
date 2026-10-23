@@ -154,6 +154,70 @@ processes:
         label: Rechazada
         terminal: true
 
+    procedures:
+      - id: pc_kyc_1
+        code: PRO-SC-001
+        title: Cómo validar la identidad del solicitante (KYC)
+        stageId: kyc
+        digital: false
+        fieldwork:
+          - id: f1
+            operator: Pablo Reyes
+            method: en_vivo
+            date: "2026-10-20"
+            notes: Abre la solicitud en el visor de documentos y compara el número de documento con el padrón.
+            exceptions:
+              - { id: e1, text: El cliente no envía el documento }
+              - { id: e2, text: El sistema de padrón no responde }
+            tricks:
+              - Si el nombre tiene tilde, buscarlo también sin ella
+        objective: Validar la identidad del solicitante antes de evaluar el riesgo de la solicitud.
+        startsWhen: Llega la solicitud capturada por Ventas
+        endsWhen: La identidad queda validada o la solicitud se devuelve a captura
+        responsibilities:
+          - { role: operador_kyc, description: Ejecuta la validación de identidad }
+        glossary:
+          - { term: KYC, definition: Conoce a tu cliente; validación de la identidad del solicitante }
+          - { term: Padrón, definition: Registro oficial contra el que se compara el documento }
+        annexes:
+          - { id: a1, title: Formato de devolución de documentos, kind: formato }
+        steps:
+          - id: s1
+            actor: operador_kyc
+            action: Abrir la solicitud en el visor de documentos
+            tool: Visor de documentos
+            result: Solicitud visible con todos sus anexos
+            alternatives:
+              - { id: al1, condition: el cliente no envía el documento, action: Devolver la solicitud a captura con el formato de devolución, exceptionId: e1 }
+          - id: s2
+            actor: operador_kyc
+            action: Comparar el número de documento con el padrón
+            tool: Consulta al padrón
+            result: Coincidencia confirmada o discrepancia anotada
+            warning: { kind: critico, text: No continuar si el documento no coincide exactamente }
+            alternatives:
+              - { id: al2, condition: el padrón no responde, action: Reintentar a los 5 minutos y avisar al supervisor si persiste, exceptionId: e2 }
+          - id: s3
+            actor: operador_kyc
+            action: Registrar el resultado de la validación
+            tool: Visor de documentos
+            result: Solicitud marcada como validada y enviada a evaluación
+            alternatives: []
+        noWarnings: false
+        attempts:
+          - { id: t1, tester: Elena Ríos, date: "2026-10-22", completed: true, questions: 0 }
+        signoffs:
+          - { id: g1, name: Pablo Reyes, role: Operador KYC, status: conforme, date: "2026-10-23" }
+        changes:
+          - { version: "1.0", date: "2026-10-24", description: Versión inicial. }
+        version: "1.0"
+        approvedAt: "2026-10-24"
+        done:
+          "1": { completedAt: "2026-10-20" }
+          "2": { completedAt: "2026-10-21" }
+          "3": { completedAt: "2026-10-22" }
+          "4": { completedAt: "2026-10-22" }
+          "5": { completedAt: "2026-10-23" }
   - id: reclamo_cliente
     name: Reclamo de cliente
     arrivals: { type: poisson, ratePerHour: 10 }

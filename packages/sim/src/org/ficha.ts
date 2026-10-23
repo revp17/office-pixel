@@ -1,4 +1,5 @@
 import { PHASES, STEPS, describeDuration, ensureDoc, meanOfDist, phasesDone, stepCompleted, unitPath, type VariantRow } from './manage';
+import { procedureCoverage, procedureStatus } from './procedures';
 import type { CompanyDef, OrgProcessDef, OrgStageDef, ValidationStatus } from './types';
 
 const cell = (s: string | undefined) => (s ?? '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ').trim() || '—';
@@ -146,6 +147,20 @@ export function fichaMarkdown(def: CompanyDef, proc: OrgProcessDef, impact?: Var
         out.push(r.error ? `| ${r.label} | ${r.stages} | — | — | — | — | ${cell(r.error)} |` : `| ${r.label} | ${r.stages} | ${Math.round(r.completed)} | ${mins(r.cycleAvg)} | ${mins(r.cycleP90)} | ${mins(r.waitPerCase)} | ${Math.round(r.slaBreaches)} |`);
       out.push('');
     }
+  }
+
+  const procs = proc.procedures ?? [];
+  if (procs.length) {
+    const n = opt && (Object.keys(opt.steps).length > 0 || Object.keys(opt.reqReview).length > 0) ? 8 : 7;
+    out.push(`## ${n}. Procedimientos asociados`, '');
+    out.push('Cada procedimiento detalla el cómo, quién y cuándo de una etapa del proceso.', '');
+    out.push('| Código | Título | Etapa | Versión | Estado | Pasos |', '|---|---|---|---|---|---|');
+    for (const p of procs) {
+      const st = proc.stages.find((s) => s.id === p.stageId);
+      out.push(`| ${p.code} | ${cell(p.title)} | ${cell(st?.label ?? p.stageId)} | ${p.version ?? '—'} | ${procedureStatus(p) === 'publicado' ? 'Publicado' : 'Borrador'} | ${p.steps.length} |`);
+    }
+    const cov = procedureCoverage(proc);
+    out.push('', `**Cobertura:** ${cov.filter((c) => c.published > 0).length} de ${cov.length} etapas con trabajo tienen un procedimiento publicado.`, '');
   }
 
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd() + '\n';

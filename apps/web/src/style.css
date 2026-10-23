@@ -334,3 +334,39 @@ table.impact td.bad { color: #ff9a8d; }
   .ficha-doc { position: absolute; left: 0; top: 0; width: 100%; max-width: none; padding: 0; border-radius: 0; }
   #hub-root.open { position: static; background: none; }
 }
+
+/* ================= Procedimientos ================= */
+svg.flow .tag.proc { fill: #8cc4ff; font-size: 9.5px; letter-spacing: 0; font-weight: 700; }
+svg.flow.taskflow .stepnum { fill: #5aa9ff; }
+svg.flow.taskflow .stepnum-t { font: 800 11px 'Segoe UI', sans-serif; fill: #07121f; }
+svg.flow .t1.small { font-size: 11.5px; font-weight: 600; }
+.infobox { border: 1px solid var(--line); border-radius: 10px; background: var(--panel); padding: 10px 14px; }
+.infobox summary { cursor: pointer; font-weight: 700; color: var(--accent); }
+.infobox table { margin: 10px 0 6px; width: 100%; }
+.infobox th { color: var(--muted); font-weight: 600; text-align: left; padding: 4px 12px 4px 0; font-size: 11px; text-transform: uppercase; }
+.infobox td { padding: 4px 12px 4px 0; border-bottom: 1px solid #1d2432; }
+.guide { background: rgba(90, 169, 255, 0.07); border-color: rgba(90, 169, 255, 0.3); font-size: 12.5px; line-height: 1.5; }
+.guide ul { margin: 6px 0 0; padding-left: 20px; }
+.guide code { background: #0b0e14; padding: 1px 6px; border-radius: 4px; color: #8cc4ff; }
+.uncovered { border-color: rgba(255, 181, 71, 0.5); background: rgba(255, 181, 71, 0.07); }
+.uncovered .exc-text { flex: 1 1 260px; font-style: italic; color: #ffd98a; }
+.lint { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; font-size: 12px; }
+.lint li.error { color: #ff9a8d; }
+.lint li.warn { color: #ffcf85; }
+.lint li.info { color: var(--muted); }
+.sentence { font-weight: 600; font-size: 13px; color: var(--text); line-height: 1.35; }
+.proc-head { align-items: flex-end; }
+.hint.bad { color: #ff9a8d; }
+.proccard .inline { gap: 14px; }
+.warnbox { display: flex; flex-direction: column; gap: 2px; margin: 6px 0; padding: 8px 12px; border: 2px solid; border-radius: 8px; font-size: 12.5px; }
+.annotator { display: flex; flex-direction: column; gap: 8px; }
+.annot-tools { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.annot { position: relative; max-width: 720px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: #000; }
+.annot img { display: block; width: 100%; height: auto; user-select: none; }
+.annot svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.annot svg.edit { cursor: crosshair; touch-action: none; }
+.annot.ro svg { pointer-events: none; }
+@media print {
+  .proc-doc, .proc-doc * { visibility: visible; }
+  .proc-doc { position: absolute; left: 0; top: 0; width: 100%; max-width: none; padding: 0; border-radius: 0; }
+}

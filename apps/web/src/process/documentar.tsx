@@ -262,7 +262,7 @@ function AsIs({ ctx }: { ctx: HubCtx }) {
           </button>
         }
       >
-        <FlowDiagram def={d} proc={proc} />
+        <FlowDiagram def={d} proc={proc} showProcedures />
       </Section>
 
       <Section

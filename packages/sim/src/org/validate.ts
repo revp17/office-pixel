@@ -195,6 +195,23 @@ export function validateCompany(raw: unknown): CompanyParseResult {
           if (!isObj(doc.phases)) errors.push(`${P}.doc.phases: debe ser un objeto`);
         }
       }
+      if (pr.procedures !== undefined) {
+        if (!Array.isArray(pr.procedures)) errors.push(`${P}.procedures: debe ser una lista`);
+        else {
+          const codes = new Set<string>();
+          const stageIdsHere = new Set(Array.isArray(pr.stages) ? pr.stages.map((s) => (isObj(s) ? String(s.id) : '')) : []);
+          pr.procedures.forEach((pc, i) => {
+            const at = `${P}.procedures[${i}]`;
+            if (!isObj(pc) || typeof pc.id !== 'string' || typeof pc.code !== 'string' || typeof pc.title !== 'string') return void errors.push(`${at}: faltan id, code y title`);
+            if (codes.has(pc.code)) errors.push(`${at}: el código "${pc.code}" está repetido`);
+            codes.add(pc.code);
+            if (pc.stageId !== undefined && !stageIdsHere.has(String(pc.stageId))) errors.push(`${at}.stageId: la etapa "${String(pc.stageId)}" no existe`);
+            for (const k of ['fieldwork', 'responsibilities', 'glossary', 'annexes', 'steps', 'attempts', 'signoffs', 'changes'])
+              if (!Array.isArray(pc[k])) errors.push(`${at}.${k}: debe ser una lista`);
+            if (!isObj(pc.done)) errors.push(`${at}.done: debe ser un objeto`);
+          });
+        }
+      }
       if (pr.optimization !== undefined) {
         const o = pr.optimization;
         if (!isObj(o) || !isObj(o.reqReview) || !Array.isArray(o.eliminated) || !isObj(o.speed) || !isObj(o.auto) || !isObj(o.steps))
