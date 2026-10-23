@@ -1,4 +1,4 @@
-import type { CompanyDef, Facility, PersonKind, UnitDef } from '@office-pixel/sim';
+import { resolveFacility, type CompanyDef, type Facility, type PersonKind, type UnitDef } from '@office-pixel/sim';
 
 export interface Pt {
   x: number;
@@ -47,7 +47,12 @@ export interface RoomL {
   kind: 'area' | 'subarea';
   /** nombres desde el área hasta esta unidad (para subáreas anidadas) */
   path: string[];
-  facility: Facility;
+  /** id del tipo de instalación (incluido o propio) */
+  facility: string;
+  /** dibujo que se usa en el plano */
+  look: Facility;
+  /** icono del tipo, para el título de la sala */
+  icon: string;
   area: number;
   x: number;
   y: number;
@@ -162,7 +167,7 @@ export function buildBuilding(def: CompanyDef, orientation: Orientation = 'verti
 
     const dims = members.map((u) => {
       const n = byUnit.get(u.id)?.length ?? 0;
-      const special = (u.facility ?? 'oficina') !== 'oficina';
+      const special = resolveFacility(def, u.facility).look !== 'oficina';
       // las instalaciones llevan una franja con su equipamiento (estantes, muelle, garita…) y son más anchas
       const cols = Math.min(Math.max(n, special ? 2 : 1), 4);
       const rows = Math.max(Math.ceil(n / cols), 1);
@@ -203,6 +208,8 @@ export function buildBuilding(def: CompanyDef, orientation: Orientation = 'verti
         kind: d.u.id === root.id ? 'area' : 'subarea',
         path: pathNames(d.u.id),
         facility: d.u.facility ?? 'oficina',
+        look: resolveFacility(def, d.u.facility).look,
+        icon: resolveFacility(def, d.u.facility).icon,
         area: index,
         x,
         y,

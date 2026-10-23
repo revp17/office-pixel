@@ -50,6 +50,19 @@ export interface FacilityInfo {
   defaultName: string;
 }
 
+/**
+ * Tipo de instalación creado por el usuario. Se dibuja con el aspecto (`look`) de uno de los tipos
+ * incluidos, pero con su propio nombre e icono.
+ */
+export interface CustomFacility {
+  id: string;
+  label: string;
+  icon: string;
+  description?: string;
+  /** tipo incluido cuyo dibujo usa en el plano */
+  look: Facility;
+}
+
 /** Catálogo de instalaciones que una sala puede representar; solo cambian cómo se ve, no la simulación. */
 export const FACILITIES: Record<Facility, FacilityInfo> = {
   oficina: {
@@ -128,7 +141,7 @@ export interface UnitDef {
   id: string;
   name?: string;
   /** qué instalación es (por defecto, oficina); define su aspecto en el plano */
-  facility?: Facility;
+  facility?: string;
   /** @deprecated formato antiguo: al leer un YAML se convierte en `kind: responsable` de esa persona */
   head?: string;
   children?: UnitDef[];
@@ -467,6 +480,8 @@ export interface CompanyDef {
   travel?: { sameTeam?: number; sameArea?: number; crossArea?: number };
   schedules?: Record<string, ScheduleDef>;
   meetings?: MeetingDef[];
+  /** tipos de instalación propios de esta empresa, además de los incluidos */
+  facilityTypes?: CustomFacility[];
   units: UnitDef[];
   people: PersonDef[];
   processes: OrgProcessDef[];

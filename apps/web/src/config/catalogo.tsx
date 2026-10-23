@@ -1,13 +1,9 @@
-import { useState } from 'preact/hooks';
 import { FACILITIES, type Facility } from '@office-pixel/sim';
-import { addUnit, findUnit, flatUnits } from './model';
-import { AddBtn, Sel, type TabProps } from './ui';
 
-const ORDER = Object.keys(FACILITIES) as Facility[];
 const BOX = ['#c98f4c', '#9c7a4d', '#d6a35f', '#5d8fc9', '#7aa86a'];
 
 /** Miniatura de cómo se dibuja la sala en el plano. */
-export function FacilityPreview({ kind }: { kind: Facility }) {
+export function FacilityPreview({ kind, label, icon }: { kind: Facility; label?: string; icon?: string }) {
   const crate = (x: number, y: number, w: number, h: number, i: number) => (
     <rect key={`${x}-${y}`} x={x} y={y} width={w} height={h} fill={BOX[i % BOX.length]} stroke="#00000055" />
   );
@@ -44,11 +40,11 @@ export function FacilityPreview({ kind }: { kind: Facility }) {
   );
 
   return (
-    <svg class="fac-preview" viewBox="0 0 190 84" role="img" aria-label={`Vista previa: ${FACILITIES[kind].label}`}>
+    <svg class="fac-preview" viewBox="0 0 190 84" role="img" aria-label={`Vista previa: ${label ?? FACILITIES[kind].label}`}>
       <rect width={190} height={84} rx={8} fill="#1f2635" />
       <rect width={190} height={13} rx={8} fill="#5aa9ff" opacity={0.85} />
       <text x={8} y={10} fontSize={8.5} fontWeight={700} fill="#0c0f16">
-        {FACILITIES[kind].icon} {FACILITIES[kind].label}
+        {icon ?? FACILITIES[kind].icon} {label ?? FACILITIES[kind].label}
       </text>
       {kind === 'oficina' && (
         <g>
@@ -137,79 +133,3 @@ export function FacilityPreview({ kind }: { kind: Facility }) {
   );
 }
 
-/** Catálogo de tipos de instalación: qué es cada una, cómo se ve, quién trabaja ahí, y cómo crear o asignar una. */
-export function CatalogoTab({ d, up, note }: TabProps) {
-  const [pick, setPick] = useState<Record<string, string>>({});
-  const units = flatUnits(d.units);
-  const unitOptions = [
-    { value: '', label: 'Aplicar a un área existente…' },
-    ...units.map(({ unit, depth }) => ({ value: unit.id, label: `${'  '.repeat(depth)}${unit.name ?? unit.id}  (${FACILITIES[unit.facility ?? 'oficina'].label})` })),
-  ];
-  const usedBy = (k: Facility) => units.filter(({ unit }) => (unit.facility ?? 'oficina') === k).map(({ unit }) => unit.name ?? unit.id);
-
-  const apply = (k: Facility) => {
-    const id = pick[k];
-    if (!id) return note('Elige primero el área o subárea a la que aplicar este tipo.');
-    up((x) => {
-      const u = findUnit(x.units, id)!;
-      if (k === 'oficina') delete u.facility;
-      else u.facility = k;
-    });
-    setPick({ ...pick, [k]: '' });
-    note(`«${units.find((q) => q.unit.id === id)?.unit.name ?? id}» ahora es ${FACILITIES[k].label}.`);
-  };
-  const create = (k: Facility) => {
-    up((x) => {
-      const id = addUnit(x, null, FACILITIES[k].defaultName);
-      if (k !== 'oficina') findUnit(x.units, id)!.facility = k;
-    });
-    note(`Área «${FACILITIES[k].defaultName}» creada. Añádele personas en «Áreas y subáreas».`);
-  };
-
-  return (
-    <div class="form">
-      <p class="lead">
-        Cada área o subárea es de un <b>tipo de instalación</b>. Solo cambia cómo se dibuja la sala en el plano; las personas, los procesos y la simulación funcionan igual. Elige un tipo para
-        crear un área nueva o aplícalo a una existente.
-      </p>
-      <div class="catalog">
-        {ORDER.map((k) => {
-          const f = FACILITIES[k];
-          const used = usedBy(k);
-          return (
-            <article class="fac-card" key={k}>
-              <FacilityPreview kind={k} />
-              <h4>
-                {f.icon} {f.label}
-              </h4>
-              <p>{f.description}</p>
-              <dl>
-                <dt>Se dibuja</dt>
-                <dd>{f.equipment.join(' · ')}</dd>
-                <dt>Puestos típicos</dt>
-                <dd>
-                  {f.roles.map((r) => (
-                    <span class="chip" key={r}>
-                      {r}
-                    </span>
-                  ))}
-                </dd>
-                <dt>Procesos típicos</dt>
-                <dd>{f.processes.join(' · ')}</dd>
-                <dt>En tu empresa</dt>
-                <dd>{used.length ? used.join(', ') : <i>ninguna todavía</i>}</dd>
-              </dl>
-              <div class="fac-actions">
-                <Sel value={pick[k] ?? ''} options={unitOptions} onChange={(v) => setPick({ ...pick, [k]: v })} />
-                <button type="button" class="btn" onClick={() => apply(k)}>
-                  Aplicar
-                </button>
-              </div>
-              <AddBtn onClick={() => create(k)}>Crear área de este tipo</AddBtn>
-            </article>
-          );
-        })}
-      </div>
-    </div>
-  );
-}

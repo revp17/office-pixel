@@ -428,3 +428,10 @@ svg.fac-preview { width: 100%; height: auto; display: block; border-radius: 8px;
 
 .cfg-nav button.sub { margin-left: 16px; padding: 7px 12px; font-size: 12.5px; }
 @media (max-width: 800px) { .cfg-nav button.sub { margin-left: 0; } }
+
+.fac-form { border-color: #3d5a85; grid-column: 1 / -1; }
+.fac-form .row { display: grid; grid-template-columns: 1fr 120px; gap: 10px; }
+.icon-picks { display: flex; flex-wrap: wrap; gap: 4px; }
+.icon-picks button { padding: 4px 8px; font-size: 16px; background: #0f1420; border: 1px solid var(--line); border-radius: 8px; }
+.icon-picks button.on { border-color: var(--accent); background: rgba(90, 169, 255, 0.18); }
+.chip.own { background: rgba(245, 196, 81, 0.18); border: 1px solid #b8893a; color: #f5c451; margin-left: 4px; font-size: 10px; padding: 1px 6px; border-radius: 999px; }

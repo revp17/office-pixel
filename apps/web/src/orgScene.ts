@@ -3,7 +3,6 @@ import {
   AUTO_ACTOR,
   OrgReplayer,
   DAY,
-  FACILITIES,
   type CompanyDef,
   type OrgCaseView,
   type OrgCounters,
@@ -478,7 +477,7 @@ export class OrgScene extends Phaser.Scene {
         .setDepth(3);
     }
     this.plant(g, r.x + 14, r.y + r.h - 16);
-    if (r.facility !== 'oficina') this.facilityProps(g, r);
+    if (r.look !== 'oficina') this.facilityProps(g, r);
     const autoRoom = [...this.autoUnits].some((u) => this.b!.unitRoom(u)?.id === r.id);
     if (autoRoom) {
       g.fillStyle(0x0f131c, 0.95);
@@ -488,7 +487,7 @@ export class OrgScene extends Phaser.Scene {
       this.add.text(r.x + 36, r.y + r.h - 40, '⚙ Sistema', TXT(9, '#8cc4ff', '700')).setDepth(3);
     }
 
-    const icon = r.facility !== 'oficina' ? `${FACILITIES[r.facility].icon} ` : '';
+    const icon = r.look !== 'oficina' ? `${r.icon} ` : '';
     const full = icon + (r.kind === 'subarea' && r.path.length > 2 ? r.path.slice(-2).join(' › ') : r.name);
     const maxChars = Math.max(4, Math.floor((r.w - 62) / 6.6));
     const title = full.length > maxChars ? `${full.slice(0, maxChars - 1)}…` : full;
@@ -563,7 +562,7 @@ export class OrgScene extends Phaser.Scene {
       for (let i = 0; i < w; i += 12) g.fillTriangle(x + i, y + 5, x + i + 6, y, x + i + 12, y);
     };
 
-    switch (r.facility) {
+    switch (r.look) {
       case 'bodega': {
         const rack = 36;
         const n = Math.max(1, Math.floor(pw / (rack + 4)));

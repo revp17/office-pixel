@@ -3,6 +3,7 @@ import { checkDist } from '../dist';
 import { compileExpr } from '../expr';
 import { parseHM } from './time';
 import { FACILITIES } from './types';
+import { isBuiltinFacility } from './facilities';
 import type { CompanyDef, UnitDef } from './types';
 
 export interface CompanyParseResult {
@@ -89,6 +90,23 @@ export function validateCompany(raw: unknown): CompanyParseResult {
       }
   }
 
+  // tipos de instalación propios
+  const customFacilityIds = new Set<string>();
+  if (raw.facilityTypes !== undefined) {
+    if (!Array.isArray(raw.facilityTypes)) errors.push('facilityTypes: debe ser una lista');
+    else
+      raw.facilityTypes.forEach((c, i) => {
+        const at = `facilityTypes[${i}]`;
+        if (!isObj(c) || typeof c.id !== 'string' || !c.id) return void errors.push(`${at}: falta "id"`);
+        if (isBuiltinFacility(c.id)) errors.push(`${at}: "${c.id}" ya es un tipo incluido`);
+        else if (customFacilityIds.has(c.id)) errors.push(`${at}: tipo duplicado "${c.id}"`);
+        customFacilityIds.add(c.id);
+        if (typeof c.label !== 'string' || !c.label.trim()) errors.push(`${at}.label: falta el nombre`);
+        if (typeof c.icon !== 'string' || !c.icon.trim()) errors.push(`${at}.icon: falta el icono`);
+        if (typeof c.look !== 'string' || !isBuiltinFacility(c.look)) errors.push(`${at}.look: debe ser uno de ${Object.keys(FACILITIES).join(', ')}`);
+      });
+  }
+
   // unidades
   const unitIds = new Set<string>();
   const walk = (list: unknown, path: string) => {
@@ -98,8 +116,8 @@ export function validateCompany(raw: unknown): CompanyParseResult {
       if (!isObj(u) || typeof u.id !== 'string') return void errors.push(`${at}: falta "id"`);
       if (unitIds.has(u.id)) errors.push(`${at}: unidad duplicada "${u.id}"`);
       unitIds.add(u.id);
-      if (u.facility !== undefined && !(typeof u.facility === 'string' && u.facility in FACILITIES))
-        errors.push(`${at}.facility: debe ser uno de ${Object.keys(FACILITIES).join(', ')}`);
+      if (u.facility !== undefined && !(typeof u.facility === 'string' && (isBuiltinFacility(u.facility) || customFacilityIds.has(u.facility))))
+        errors.push(`${at}.facility: debe ser uno de ${[...Object.keys(FACILITIES), ...customFacilityIds].join(', ')}`);
       if (u.children !== undefined) walk(u.children, `${at}.children`);
     });
   };

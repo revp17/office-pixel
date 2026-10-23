@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { FACILITIES, type Facility, type PersonDef, type PersonKind, type UnitDef } from '@office-pixel/sim';
+import { facilityViews, resolveFacility, type CompanyDef, type PersonDef, type PersonKind, type UnitDef } from '@office-pixel/sim';
 import {
   KIND_LABEL,
   addPerson,
@@ -119,18 +119,17 @@ function PeopleBox({ d, up, unitId }: { d: TabProps['d']; up: Up; unitId: string
   );
 }
 
-const FACILITY_OPTIONS = (Object.keys(FACILITIES) as Facility[]).map((k) => ({ value: k, label: `${FACILITIES[k].icon} ${FACILITIES[k].label}` }));
-
-function FacilitySel({ unit, up }: { unit: UnitDef; up: Up }) {
+function FacilitySel({ d, unit, up }: { d: CompanyDef; unit: UnitDef; up: Up }) {
+  const options = facilityViews(d).map((f) => ({ value: f.id, label: `${f.icon} ${f.label}` }));
   const set = (v: string) =>
     up((x) => {
       const u = findUnit(x.units, unit.id)!;
       if (v === 'oficina') delete u.facility;
-      else u.facility = v as Facility;
+      else u.facility = v;
     });
   return (
-    <Field label="Tipo de instalación" hint={FACILITIES[unit.facility ?? 'oficina'].hint}>
-      <Sel value={unit.facility ?? 'oficina'} options={FACILITY_OPTIONS} onChange={set} />
+    <Field label="Tipo de instalación" hint={resolveFacility(d, unit.facility).hint}>
+      <Sel value={unit.facility ?? 'oficina'} options={options} onChange={set} />
     </Field>
   );
 }
@@ -177,7 +176,7 @@ export function AreasTab({ d, up, note }: TabProps) {
             <Field label="Nombre del área">
               <Text value={area.name ?? area.id} onChange={(v) => rename(area.id, v)} />
             </Field>
-            <FacilitySel unit={area} up={up} />
+            <FacilitySel d={d} unit={area} up={up} />
             <PeopleBox d={d} up={up} unitId={area.id} />
 
             <div class="sublist">
@@ -192,7 +191,7 @@ export function AreasTab({ d, up, note }: TabProps) {
                       ✕
                     </IconBtn>
                   </div>
-                  <FacilitySel unit={unit} up={up} />
+                  <FacilitySel d={d} unit={unit} up={up} />
                   <PeopleBox d={d} up={up} unitId={unit.id} />
                 </div>
               ))}

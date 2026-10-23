@@ -16,6 +16,26 @@ Cada área y cada subárea tiene un **Tipo de instalación** (en **Configurar em
 | 🔧 Mantenimiento | Banco de trabajo, caja y tablero de herramientas |
 | 🚛 Transporte y flota | Vehículos de reparto |
 
+## Crear tus propios tipos de instalación
+
+Si tu empresa necesita un tipo que no viene incluido (laboratorio, cocina, taller de pintura, sala de servidores…), créalo en **Configurar empresa → Empresa → Instalaciones → Nuevo tipo de instalación**:
+
+1. **Nombre** (obligatorio) e **icono** (escríbelo o elige uno).
+2. **Descripción** (opcional).
+3. **Se dibuja como**: uno de los 7 dibujos incluidos. El plano no puede dibujar escenas nuevas desde cero, así que tu tipo toma el aspecto del que elijas (por ejemplo, un laboratorio como «Mantenimiento», con banco de trabajo) pero conserva su propio nombre e icono. La vista previa se actualiza mientras lo configuras.
+4. **Crear tipo**. Aparece en el catálogo con la marca *propio*, ya se puede elegir en el selector «Tipo de instalación» de cada área, y se puede **aplicar**, **crear un área de ese tipo**, **editar** o **borrar**. Al borrar un tipo, las áreas que lo usaban pasan a ser oficinas.
+
+Los tipos propios se guardan con la empresa (en el YAML, bajo `facilityTypes`) y viajan con ella:
+
+```yaml
+facilityTypes:
+  - { id: laboratorio, label: Laboratorio, icon: "🧪", description: Análisis de muestras, look: mantenimiento }
+units:
+  - { id: calidad, name: Control de calidad, facility: laboratorio }
+```
+
+Los tipos incluidos no se pueden borrar ni editar. Si necesitas un dibujo realmente distinto, hay que añadirlo al código.
+
 ## Catálogo de instalaciones
 
 En **Configurar empresa → Empresa → Instalaciones** están los 7 tipos con su vista previa, para qué sirven, qué se dibuja, los puestos y procesos típicos y en qué áreas de tu empresa se usan. Desde cada ficha puedes **aplicar el tipo a un área o subárea existente** o **crear un área nueva de ese tipo** (queda sin personas: añádelas en «Áreas y subáreas»).
@@ -30,7 +50,7 @@ units:
   - { id: garita, name: Garita y accesos, facility: seguridad }
 ```
 
-Valores válidos: `oficina`, `bodega`, `ingreso`, `despacho`, `seguridad`, `mantenimiento`, `transporte`. Cualquier otro se rechaza al validar.
+Valores válidos: `oficina`, `bodega`, `ingreso`, `despacho`, `seguridad`, `mantenimiento`, `transporte`, o el `id` de un tipo propio (ver abajo). Cualquier otro se rechaza al validar.
 
 ## Plantillas de empresa
 
