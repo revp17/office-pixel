@@ -56,14 +56,7 @@ const DOT: Record<PersonState, number> = {
 };
 const SEMANTIC_ZOOM = 0.28;
 const HEADER_Y = 40; // desde la parte superior de una sala hasta donde empiezan los escritorios
-const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const FONT = '"Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", sans-serif';
-
-export function fmtTime(t: number): string {
-  const day = Math.floor(t / DAY);
-  const m = Math.floor(t % DAY);
-  return `Día ${day + 1} · ${WEEKDAYS[day % 7]} ${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
-}
 
 const TXT = (size: number, color = '#e6ebf7', weight: '400' | '600' | '700' = '600') => ({
   fontFamily: FONT,

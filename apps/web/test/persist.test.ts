@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { companyToYaml, type CompanyDef } from '@office-pixel/sim';
 import type { Backend, CompanyFull, CompanyInfo } from '../src/application/ports';
 import { emptyCompany } from '../src/application/editing/model';
 import { Persistence } from '../src/application/persistence';
+import { memoryCache } from '../src/infrastructure/browserCache';
 
 /** Una base de datos de mentira en memoria con la misma interfaz que SQLite y Nhost. */
 function fakeBackend(online = true) {
@@ -74,10 +75,15 @@ function fakeBackend(online = true) {
 
 const co = (name: string): CompanyDef => ({ ...emptyCompany(), company: name });
 
+let cache = memoryCache();
+beforeEach(() => {
+  cache = memoryCache();
+});
+
 describe('una cuenta nueva empieza en cero', () => {
   it('al abrir sin empresas no crea nada y avisa de que no hay ninguna', async () => {
     const f = fakeBackend();
-    const p = new Persistence(f.backend);
+    const p = new Persistence(f.backend, cache);
     expect(await p.boot()).toBeUndefined();
     expect(f.rows).toHaveLength(0);
     expect(f.calls).not.toContain('create');
@@ -89,7 +95,7 @@ describe('una cuenta nueva empieza en cero', () => {
 
   it('el usuario crea la primera empresa y queda guardada y abierta', async () => {
     const f = fakeBackend();
-    const p = new Persistence(f.backend);
+    const p = new Persistence(f.backend, cache);
     await p.boot();
     const def = await p.create(co('Mi Banco'));
     expect(def.company).toBe('Mi Banco');
@@ -101,7 +107,7 @@ describe('una cuenta nueva empieza en cero', () => {
 
   it('guardar cambios sube la versión; al volver a abrir se retoma la última empresa', async () => {
     const f = fakeBackend();
-    const p = new Persistence(f.backend);
+    const p = new Persistence(f.backend, cache);
     await p.boot();
     await p.create(co('Una'));
     await p.create(co('Dos'));
@@ -109,7 +115,7 @@ describe('una cuenta nueva empieza en cero', () => {
     await p.settled();
     expect(f.rows.find((r) => r.name === 'Dos v2')?.version).toBe(2);
 
-    const otra = new Persistence(f.backend); // otra visita
+    const otra = new Persistence(f.backend, cache); // otra visita
     const abierta = await otra.boot();
     expect(abierta?.company).toBe('Dos v2'); // la que estaba abierta
     expect(otra.list).toHaveLength(2);
@@ -117,7 +123,7 @@ describe('una cuenta nueva empieza en cero', () => {
 
   it('borrar la última empresa deja la aplicación otra vez en cero', async () => {
     const f = fakeBackend();
-    const p = new Persistence(f.backend);
+    const p = new Persistence(f.backend, cache);
     await p.boot();
     await p.create(co('Única'));
     expect(await p.removeCurrent()).toBeUndefined();
@@ -128,7 +134,7 @@ describe('una cuenta nueva empieza en cero', () => {
 
   it('borrar una de varias abre otra', async () => {
     const f = fakeBackend();
-    const p = new Persistence(f.backend);
+    const p = new Persistence(f.backend, cache);
     await p.boot();
     await p.create(co('Una'));
     await p.create(co('Dos'));
@@ -139,7 +145,7 @@ describe('una cuenta nueva empieza en cero', () => {
 
   it('un conflicto (otra pestaña guardó antes) pregunta y respeta la respuesta', async () => {
     const f = fakeBackend();
-    const p = new Persistence(f.backend);
+    const p = new Persistence(f.backend, cache);
     await p.boot();
     await p.create(co('Base'));
     f.rows[0].yaml = companyToYaml(co('De la otra pestaña'));
@@ -160,10 +166,41 @@ describe('una cuenta nueva empieza en cero', () => {
   });
 });
 
+describe('copia local del navegador', () => {
+  it('lo que quedó en el navegador no se mezcla con una cuenta vacía y se borra', async () => {
+    const f = fakeBackend();
+    cache.write(companyToYaml(co('De otra cuenta')));
+    const p = new Persistence(f.backend, cache);
+    expect(await p.boot()).toBeUndefined(); // no se adopta
+    expect(cache.read()).toBeNull(); // y se limpia
+  });
+
+  it('cada cambio guardado deja una copia local, y borrar la última la quita', async () => {
+    const f = fakeBackend();
+    const p = new Persistence(f.backend, cache);
+    await p.boot();
+    await p.create(co('Una'));
+    expect(cache.read()).toContain('company: Una');
+    p.save(co('Una v2'));
+    expect(cache.read()).toContain('company: Una v2');
+    await p.settled();
+    await p.removeCurrent();
+    expect(cache.read()).toBeNull();
+  });
+
+  it('sin conexión se retoma la copia local', async () => {
+    const f = fakeBackend(false);
+    cache.write(companyToYaml(co('Guardada en el navegador')));
+    const p = new Persistence(f.backend, cache);
+    expect((await p.boot())?.company).toBe('Guardada en el navegador');
+    expect(p.status).toBe('local');
+  });
+});
+
 describe('sin conexión', () => {
   it('avisa del motivo, trabaja solo en el navegador y no toca la base de datos', async () => {
     const f = fakeBackend(false);
-    const p = new Persistence(f.backend);
+    const p = new Persistence(f.backend, cache);
     expect(await p.boot()).toBeUndefined(); // sin copia local, también en cero
     expect(p.status).toBe('local');
     expect(p.detail).toContain('se guarda solo en este navegador');

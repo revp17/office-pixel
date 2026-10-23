@@ -1,35 +1,9 @@
 import { companyToYaml, parseCompany, type CompanyDef } from '@office-pixel/sim';
-import { ApiError, db, type Backend, type CompanyFull, type CompanyInfo } from '../infrastructure/backend/db';
+import { ApiError, type Backend, type CompanyFull, type CompanyInfo, type LocalCache } from './ports';
 
 export type DbStatus = 'checking' | 'db' | 'saving' | 'local' | 'error';
 
-const CACHE = 'office-pixel.company.v1';
 const CURRENT = 'current_company';
-
-/** Copia local de la última empresa (por si no hay servidor). */
-function readCache(): CompanyDef | undefined {
-  try {
-    const text = localStorage.getItem(CACHE);
-    const r = text ? parseCompany(text) : undefined;
-    return r?.def;
-  } catch {
-    return undefined;
-  }
-}
-function writeCache(yaml: string) {
-  try {
-    localStorage.setItem(CACHE, yaml);
-  } catch {
-    /* sin espacio o sin almacenamiento: la base de datos es la que manda */
-  }
-}
-function clearCache() {
-  try {
-    localStorage.removeItem(CACHE);
-  } catch {
-    /* sin almacenamiento */
-  }
-}
 
 /**
  * Dónde viven las empresas: en la base de datos (SQLite local o Nhost). Si no hay servidor o sesión,
@@ -52,7 +26,10 @@ export class Persistence {
   /** se cargó otra versión desde la base de datos (tras un conflicto) */
   onReloaded?: (def: CompanyDef) => void;
 
-  constructor(private readonly backend: Backend = db) {}
+  constructor(
+    private readonly backend: Backend,
+    private readonly cache: LocalCache,
+  ) {}
 
   get online() {
     return this.status !== 'local' && this.status !== 'checking';
@@ -62,6 +39,12 @@ export class Persistence {
     this.status = status;
     this.detail = detail;
     this.onStatus?.();
+  }
+
+  /** La copia local de la última empresa abierta, si la hay y es válida. */
+  private cached(): CompanyDef | undefined {
+    const text = this.cache.read();
+    return text ? parseCompany(text).def : undefined;
   }
 
   /** Abre la empresa en uso (la última). Devuelve undefined si todavía no hay ninguna. */
@@ -75,13 +58,13 @@ export class Persistence {
           ? `No se pudo usar Nhost${b.lastError ? `: ${b.lastError}` : ''}. Mientras tanto se guarda solo en este navegador.`
           : 'Sin servidor de base de datos: se guarda solo en este navegador.',
       );
-      return readCache();
+      return this.cached();
     }
     try {
       this.list = await b.list();
       if (!this.list.length) {
         // sin empresas en la base de datos: lo que quedara en el navegador no es de esta cuenta y no se mezcla
-        clearCache();
+        this.cache.clear();
         this.currentId = undefined;
         this.set('db');
         this.onList?.();
@@ -95,7 +78,7 @@ export class Persistence {
       return def;
     } catch (e) {
       this.set('error', (e as Error).message);
-      return readCache();
+      return this.cached();
     }
   }
 
@@ -117,7 +100,7 @@ export class Persistence {
   /** Guarda la empresa actual (siempre deja una copia local; en la base de datos, en cola y sin pisar otros cambios). */
   save(def: CompanyDef, note?: string) {
     const yaml = companyToYaml(def);
-    writeCache(yaml);
+    this.cache.write(yaml);
     if (!this.currentId || this.status === 'local') return;
     this.set('saving');
     this.chain = this.chain
@@ -151,7 +134,7 @@ export class Persistence {
   async open(id: string): Promise<CompanyDef> {
     await this.chain;
     const def = await this.load(id);
-    writeCache(companyToYaml(def));
+    this.cache.write(companyToYaml(def));
     this.onList?.(); // el selector muestra la empresa abierta
     this.set('db');
     return def;
@@ -161,7 +144,7 @@ export class Persistence {
   async create(def: CompanyDef): Promise<CompanyDef> {
     await this.chain;
     if (this.status === 'local') {
-      writeCache(companyToYaml(def));
+      this.cache.write(companyToYaml(def));
       return def;
     }
     const c = await this.backend.create(companyToYaml(def));
@@ -183,7 +166,7 @@ export class Persistence {
     await this.refresh();
     if (!this.list.length) {
       this.currentId = undefined;
-      clearCache();
+      this.cache.clear();
       this.onList?.();
       return undefined;
     }

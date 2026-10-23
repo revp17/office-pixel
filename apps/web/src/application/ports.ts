@@ -44,6 +44,13 @@ export interface AccountApi {
   onChange?: () => void;
 }
 
+/** Copia local de la última empresa abierta (por si no hay servidor). La implementa la infraestructura. */
+export interface LocalCache {
+  read(): string | null;
+  write(text: string): void;
+  clear(): void;
+}
+
 export interface Backend {
   kind: 'sqlite' | 'nhost';
   /** cómo se llama en pantalla: «la base de datos», «Nhost» */
