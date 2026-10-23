@@ -136,7 +136,7 @@ export function describeDuration(spec: DistSpec | undefined): string {
 // ---------- paso 2, 4 y 5: transformaciones del proceso ----------
 
 /** Etapa a la que va un caso por defecto (la fija o la regla «en cualquier otro caso»). */
-function defaultNext(s: OrgStageDef): string | undefined {
+export function defaultNext(s: OrgStageDef): string | undefined {
   if (typeof s.next === 'string') return s.next;
   if (Array.isArray(s.next)) return s.next.find((r) => r.otherwise)?.to ?? s.next[s.next.length - 1]?.to;
   return undefined;

@@ -336,3 +336,22 @@ En la barra superior, **🧹 Limpiar todo**:
 3. Deja una empresa en blanco con lo mínimo que el simulador exige (1 área con 1 subárea, 2 personas y 1 proceso de 2 etapas: «Mi empresa»). Renómbralo o bórralo desde **⚙ Configurar empresa**.
 
 Alternativas: **Configurar empresa → Empezar en blanco** (solo reemplaza el formulario hasta que pulses *Aplicar y simular*) o **YAML (avanzado) → importar** un archivo tuyo. Para volver a un ejemplo, **Cargar plantilla…**.
+
+---
+
+## Quitar un área que la empresa ya no usa
+
+En **Configurar empresa → Áreas y subáreas**, el botón 🗑 de un área o subárea:
+
+- Si está **vacía**, se borra directamente.
+- Si todavía tiene **personas, etapas de proceso o reuniones**, se abre un asistente que muestra qué hay dentro y te deja elegir:
+  1. **Mover todo a otra área**: sus personas, etapas y reuniones pasan a la área que elijas. La empresa sigue funcionando igual; solo cambian de sala.
+  2. **Eliminar el área con todo su contenido**: se borran sus personas y reuniones, y se quitan las etapas que la usan. El asistente lista el efecto en cada una:
+     - una etapa intermedia se elimina y el flujo se **reconecta** con la siguiente;
+     - si era la **primera etapa**, la siguiente pasa a ser la entrada del proceso;
+     - si era un **cierre**, queda como cierre sin área;
+     - un **proceso que se queda sin ninguna etapa de trabajo se borra** (el asistente lo avisa).
+
+Las subáreas se van con su área. Los procedimientos de una etapa eliminada se conservan, pero quedan sin etapa asociada; las dependencias entre procesos y los requisitos que apuntaban a lo borrado se limpian solos.
+
+Los cambios se aplican al formulario; no se guardan hasta **Aplicar y simular**. Si te equivocas, cierra con la ✕ sin aplicar y vuelves a la empresa anterior.

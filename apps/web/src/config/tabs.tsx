@@ -14,6 +14,7 @@ import {
   subtreeIds,
   usage,
 } from './model';
+import { RetireDialog } from './RetireDialog';
 import { AddBtn, Card, Days, Field, IconBtn, Num, Pct, Sel, Section, Text, Time, type TabProps, type Up } from './ui';
 
 // ---------- Planta / empresa ----------
@@ -136,15 +137,20 @@ function FacilitySel({ unit, up }: { unit: UnitDef; up: Up }) {
 
 export function AreasTab({ d, up, note }: TabProps) {
   const rename = (id: string, name: string) => up((x) => void (findUnit(x.units, id)!.name = name));
+  const [retiring, setRetiring] = useState<string | null>(null);
   const remove = (id: string) => {
     const probe = structuredClone(d);
     const r = removeUnit(probe, id);
-    if (!r.ok) return note(r.reason);
+    // si aún tiene personas o etapas, se abre el asistente para moverlas o eliminarlas con el área
+    if (!r.ok) return setRetiring(id);
     up((x) => void removeUnit(x, id));
   };
 
   return (
     <div class="form">
+      {retiring && findUnit(d.units, retiring) && (
+        <RetireDialog d={d} unitId={retiring} up={up} note={note} onClose={() => setRetiring(null)} />
+      )}
       <p class="lead">
         La <b>planta</b> (tu empresa) tiene <b>áreas</b>, y cada área puede tener <b>subáreas</b>. Cada área y cada subárea tiene su
         propio nombre y sus <b>responsables</b> y <b>colaboradores</b>.
