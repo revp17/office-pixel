@@ -8,6 +8,8 @@ import {
   findUnit,
   flatUnits,
   kindOf,
+  moveUnit,
+  siblingsOf,
   peopleOf,
   removePerson,
   removeUnit,
@@ -143,6 +145,30 @@ export function AreasTab({ d, up, note }: TabProps) {
   const rename = (id: string, name: string) => up((x) => void (findUnit(x.units, id)!.name = name));
   const [retiring, setRetiring] = useState<string | null>(null);
   const [decorating, setDecorating] = useState<string | null>(null);
+  const move = (id: string, to: 'up' | 'down' | 'first' | 'last') => up((x) => void moveUnit(x, id, to));
+  /** botones para cambiar el orden entre hermanas (primera, subir, bajar, última) */
+  const mover = (id: string, what: string) => {
+    const s = siblingsOf(d, id);
+    if (!s || s.list.length < 2) return null;
+    const first = s.index === 0;
+    const last = s.index === s.list.length - 1;
+    return (
+      <>
+        <IconBtn title={`Poner ${what} la primera`} disabled={first} onClick={() => move(id, 'first')}>
+          ⤒
+        </IconBtn>
+        <IconBtn title={`Subir ${what} (va antes)`} disabled={first} onClick={() => move(id, 'up')}>
+          ▲
+        </IconBtn>
+        <IconBtn title={`Bajar ${what} (va después)`} disabled={last} onClick={() => move(id, 'down')}>
+          ▼
+        </IconBtn>
+        <IconBtn title={`Poner ${what} la última`} disabled={last} onClick={() => move(id, 'last')}>
+          ⤓
+        </IconBtn>
+      </>
+    );
+  };
   const decorate = (id: string) => (buildBuilding(d).rooms.has(id) ? setDecorating(id) : note('Esta área no tiene sala propia (solo sus subáreas). Decora una subárea.'));
   const remove = (id: string) => {
     const probe = structuredClone(d);
@@ -169,16 +195,24 @@ export function AreasTab({ d, up, note }: TabProps) {
         </Field>
       </Card>
 
-      {d.units.map((area) => {
+      {d.units.length > 1 && <p class="muted">El orden de las tarjetas es el orden en el plano: la primera va arriba (o a la izquierda). Usa ▲ ▼ para cambiarlo.</p>}
+      {d.units.map((area, areaIndex) => {
         const rows = flatUnits([area]).slice(1);
         return (
           <Card
             key={area.id}
-            title={<span class="pill">Área</span>}
+            title={
+              <span class="pill">
+                Área{d.units.length > 1 ? ` ${areaIndex + 1} de ${d.units.length}` : ''}
+              </span>
+            }
             actions={
-              <IconBtn title="Borrar área" danger onClick={() => remove(area.id)}>
+              <>
+                {mover(area.id, 'esta área')}
+                <IconBtn title="Borrar área" danger onClick={() => remove(area.id)}>
                 🗑
               </IconBtn>
+              </>
             }
           >
             <Field label="Nombre del área">
@@ -195,6 +229,7 @@ export function AreasTab({ d, up, note }: TabProps) {
                     <span class="pill sub">Subárea</span>
                     <Text value={unit.name ?? unit.id} onChange={(v) => rename(unit.id, v)} />
                     <span class="badge">{usage(d, unit.id).people} personas</span>
+                    {mover(unit.id, 'esta subárea')}
                     <IconBtn title="Borrar subárea" danger onClick={() => remove(unit.id)}>
                       ✕
                     </IconBtn>

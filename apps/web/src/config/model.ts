@@ -77,6 +77,31 @@ export function findUnit(units: UnitDef[], id: string): UnitDef | undefined {
   return flatUnits(units).find((f) => f.unit.id === id)?.unit;
 }
 
+/** La lista de hermanos (áreas, o subáreas de una misma área) donde está la unidad, y su posición. */
+export function siblingsOf(def: CompanyDef, id: string): { list: UnitDef[]; index: number } | undefined {
+  const search = (list: UnitDef[]): { list: UnitDef[]; index: number } | undefined => {
+    const index = list.findIndex((u) => u.id === id);
+    if (index >= 0) return { list, index };
+    for (const u of list) {
+      const r = u.children && search(u.children);
+      if (r) return r;
+    }
+  };
+  return search(def.units);
+}
+
+/** Mueve un área (o subárea) entre sus hermanas: el orden de la lista es el orden en el plano. */
+export function moveUnit(def: CompanyDef, id: string, to: 'up' | 'down' | 'first' | 'last'): boolean {
+  const s = siblingsOf(def, id);
+  if (!s) return false;
+  const { list, index } = s;
+  const target = to === 'up' ? index - 1 : to === 'down' ? index + 1 : to === 'first' ? 0 : list.length - 1;
+  if (target < 0 || target >= list.length || target === index) return false;
+  const [u] = list.splice(index, 1);
+  list.splice(target, 0, u);
+  return true;
+}
+
 export function subtreeIds(u: UnitDef): string[] {
   return flatUnits([u]).map((f) => f.unit.id);
 }

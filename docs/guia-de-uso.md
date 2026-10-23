@@ -355,3 +355,13 @@ En **Configurar empresa → Áreas y subáreas**, el botón 🗑 de un área o s
 Las subáreas se van con su área. Los procedimientos de una etapa eliminada se conservan, pero quedan sin etapa asociada; las dependencias entre procesos y los requisitos que apuntaban a lo borrado se limpian solos.
 
 Los cambios se aplican al formulario; no se guardan hasta **Aplicar y simular**. Si te equivocas, cierra con la ✕ sin aplicar y vuelves a la empresa anterior.
+
+---
+
+## Ordenar las áreas (y subáreas)
+
+El **orden de las tarjetas** en **Configurar empresa → Empresa → Áreas y subáreas** es el orden en el plano: en vertical, la primera va **arriba**; en horizontal, a la **izquierda**. Dentro de un área, las subáreas siguen su propio orden (de izquierda a derecha en vertical, de arriba a abajo en horizontal). También ordena los botones de área sobre el plano.
+
+Cada tarjeta (con dos o más hermanas) tiene cuatro botones: **⤒** primera, **▲** subir, **▼** bajar y **⤓** última. Las áreas dicen «Área 2 de 4». Los botones se desactivan en los extremos. Las subáreas se mueven entre las de su misma área; para pasar una subárea a otra área, bórrala y créala allí (o usa **Quitar área → Mover** si es una área entera).
+
+El orden se guarda con la empresa (es el orden de `units` en el YAML) y no cambia la simulación ni las personas.
