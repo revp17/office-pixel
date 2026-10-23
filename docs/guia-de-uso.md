@@ -261,7 +261,7 @@ El menú de configuración es: **Empresa** (con **Instalaciones** y **Áreas y s
 
 1. Revisa que abajo diga **✔ Todo listo para simular**.
 2. Pulsa **Aplicar y simular**. El panel se cierra y la simulación empieza.
-3. La empresa queda **guardada en tu navegador**: si recargas la página, vuelve a aparecer.
+3. La empresa queda **guardada en la base de datos** (ver [base-de-datos.md](base-de-datos.md)): si recargas la página o abres la app otro día, vuelve a aparecer.
 
 ### Paso 7 — Ajusta la simulación y mira los resultados
 

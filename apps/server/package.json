@@ -1,0 +1,19 @@
+{
+  "name": "@office-pixel/server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "API y base de datos SQLite de Office-Pixel",
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@office-pixel/sim": "*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "tsx": "^4.19.0",
+    "vitest": "^3.0.0"
+  }
+}

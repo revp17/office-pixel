@@ -9,6 +9,21 @@
     <div id="app">
       <main id="stage">
         <div id="toolbar">
+          <label class="inl" title="Empresas guardadas en la base de datos">Empresa
+            <select id="company-pick"></select>
+          </label>
+          <span class="menuwrap">
+            <button id="company-menu" title="Nueva, duplicar, versiones anteriores, borrar">⋯</button>
+            <div id="company-actions" hidden>
+              <button type="button" data-a="new">＋ Nueva empresa en blanco</button>
+              <button type="button" data-a="dup">⧉ Duplicar esta empresa</button>
+              <button type="button" data-a="versions">🕘 Versiones anteriores…</button>
+              <button type="button" data-a="backup">⬇ Descargar copia (.yaml)</button>
+              <button type="button" data-a="delete" class="danger">🗑 Borrar esta empresa</button>
+            </div>
+          </span>
+          <span id="db-status" class="dbstatus" role="status"></span>
+          <span class="sep"></span>
           <button id="configure" class="primary" title="Áreas, personas, procesos, reglas y excepciones">⚙ Configurar empresa</button>
           <button id="processes" title="Documentar procesos (5 fases), optimizarlos (5 pasos) y generar la ficha">📋 Procesos</button>
           <button id="reset-all" title="Borra todo lo guardado (empresa, procesos, procedimientos, preferencias) y deja una empresa en blanco para probar la tuya">🧹 Limpiar todo</button>

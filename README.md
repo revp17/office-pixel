@@ -5,11 +5,13 @@ Simulador visual de procesos para Forward Deployed Engineers: define un proceso 
 ## Estructura
 
 - `packages/sim` — motor de simulación de eventos discretos (TypeScript, sin dependencias de render): RNG con semilla, distribuciones, evaluador seguro de reglas, validación del YAML, motor DES, métricas y `Replayer`.
+- `apps/server` — API y base de datos SQLite (Node.js 22.13+, sin dependencias nativas).
 - `apps/web` — Studio (editor YAML) + mapa Phaser que reproduce el log de eventos, con controles de velocidad, línea de tiempo y métricas.
 - `examples/aprobacion_credito.yaml` — proceso de ejemplo.
 - `vault/` — vault de Obsidian con el diseño (empieza por `00 Inicio.md`).
 
 > **Guía de uso:** [docs/guia-de-uso.md](docs/guia-de-uso.md) — cómo se dibujan áreas y empleados, y cómo se configura todo paso a paso.
+> **Base de datos:** [docs/base-de-datos.md](docs/base-de-datos.md) — las empresas se guardan en SQLite (`data/office-pixel.db`), con varias empresas, versiones anteriores y copia de seguridad.
 > **Procedimientos:** [docs/procedimientos.md](docs/procedimientos.md) — cómo levantar el cómo, quién y cuándo de cada etapa (5 pasos, acción-resultado, capturas anotadas, prueba del novato y firma del ejecutor).
 > **Decorar salas:** [docs/decorar-salas.md](docs/decorar-salas.md) — biblioteca de objetos (puertas, mesas, sillas, plantas…) para acomodar en cada sala.
 > **Instalaciones y plantillas:** [docs/instalaciones-y-plantillas.md](docs/instalaciones-y-plantillas.md) — bodegas, ingreso y despacho, seguridad y mantenimiento en el plano, y plantillas de empresa pequeña, mediana y grande.
@@ -31,10 +33,11 @@ La web (`apps/web`) la muestra como un **edificio**:
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
-npm test           # tests del motor
+npm run dev        # http://localhost:5173 (con la base de datos incluida)
+npm test           # tests del motor, la web y la base de datos
 npm run typecheck
 npm run build
+npm start          # tras build: la app y la API en http://localhost:3001
 ```
 
 ## Configurar la empresa (formularios)
@@ -50,7 +53,7 @@ El botón **⚙ Configurar empresa** abre un panel de formularios, sin tocar YAM
 | Procesos | llegadas, datos de cada caso, etapas (equipo, rol, duración, plazo), camino siguiente o por condiciones, excepciones |
 | YAML (avanzado) | el mismo contenido como texto: copiar, descargar, abrir archivo, pegar |
 
-Los problemas se validan en vivo (el botón **Aplicar y simular** se bloquea hasta resolverlos). «Cargar ejemplo» y «Empezar en blanco» reemplazan el borrador. La empresa aplicada se guarda en el navegador (`localStorage`); si no hay nada guardado se carga Banco Pixel. Los identificadores internos se generan solos a partir de los nombres.
+Los problemas se validan en vivo (el botón **Aplicar y simular** se bloquea hasta resolverlos). «Cargar ejemplo» y «Empezar en blanco» reemplazan el borrador. La empresa aplicada se guarda en la **base de datos** (ver [docs/base-de-datos.md](docs/base-de-datos.md)); si no hay nada guardado se carga Banco Pixel. Los identificadores internos se generan solos a partir de los nombres.
 
 ## Uso de la interfaz
 

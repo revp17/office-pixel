@@ -6,3 +6,9 @@ vault/.obsidian/workspaces.json
 vault/.obsidian/cache
 
 .claude/
+
+# base de datos local (SQLite)
+data/
+*.db
+*.db-shm
+*.db-wal

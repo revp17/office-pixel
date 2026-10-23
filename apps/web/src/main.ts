@@ -14,6 +14,7 @@ import defaultYaml from '../../../examples/banco_pixel.yaml?raw';
 import { TEMPLATES } from './templates';
 import { StoryPanel } from './story';
 import { emptyCompany } from './config/model';
+import { Persistence } from './persist';
 import { closeConfig, openConfig, type TabId } from './config/ConfigApp';
 import { closeHub, openHub } from './process/Hub';
 import { OrgScene, fmtTime, type OrgHud } from './orgScene';
@@ -38,29 +39,12 @@ const unitsBox = $<HTMLElement>('units');
 const peopleBox = $<HTMLElement>('people');
 const detail = $<HTMLElement>('detail');
 
-// La empresa vive en el navegador (localStorage); si no hay nada guardado se carga el ejemplo.
-const STORE = 'office-pixel.company.v1';
+// Las empresas viven en la base de datos (SQLite, en el servidor). Sin servidor, la app sigue funcionando
+// y guarda solo en este navegador. Mientras se abre la base de datos se muestra el ejemplo.
 const example = (): CompanyDef => parseCompany(defaultYaml).def!;
-function loadCompany(): CompanyDef {
-  try {
-    const text = localStorage.getItem(STORE);
-    if (text) {
-      const r = parseCompany(text);
-      if (r.def) return r.def;
-    }
-  } catch {
-    /* sin almacenamiento: se usa el ejemplo */
-  }
-  return example();
-}
-function saveCompany(d: CompanyDef) {
-  try {
-    localStorage.setItem(STORE, companyToYaml(d));
-  } catch {
-    /* sin almacenamiento: no se persiste */
-  }
-}
-let company = loadCompany();
+const persist = new Persistence();
+const saveCompany = (d: CompanyDef, note?: string) => persist.save(d, note);
+let company: CompanyDef = example();
 
 const scene = new OrgScene();
 // Render a la resolución real de la pantalla (devicePixelRatio) y mostrarlo a tamaño CSS:
@@ -327,10 +311,11 @@ layoutBtns.forEach((b) => b.addEventListener('click', () => setLayout(b.dataset.
 // ---------- simulación ----------
 /** Si pv viene, se simula esa variante (vista previa) en vez de la empresa guardada. */
 let preview: { company: CompanyDef; label: string } | null = null;
-function run(next?: CompanyDef, pv?: { company: CompanyDef; label: string }) {
+/** Simula la empresa. `next` la reemplaza y, salvo que `save` sea false (ya viene de la base de datos), la guarda. */
+function run(next?: CompanyDef, pv?: { company: CompanyDef; label: string }, save = true) {
   if (next) {
     company = next;
-    saveCompany(next);
+    if (save) saveCompany(next);
   }
   preview = pv ?? null;
   previewBanner.hidden = !preview;
@@ -412,23 +397,137 @@ function downloadBackup() {
   URL.revokeObjectURL(a.href);
 }
 $('reset-all').addEventListener('click', () => {
-  const warn =
-    'Esto borra TODO lo guardado en este navegador: empresa, áreas, personas, procesos, procedimientos (con sus capturas) y preferencias. Queda una empresa en blanco para que cargues la tuya.\n\n¿Continuar?';
+  const inDb = persist.online;
+  const warn = inDb
+    ? 'Se crea una empresa NUEVA en blanco para que cargues la tuya. Las empresas que ya tienes siguen guardadas en la base de datos (puedes cambiar entre ellas o borrarlas con ⋯).\n\n¿Continuar?'
+    : 'Esto borra TODO lo guardado en este navegador: empresa, áreas, personas, procesos, procedimientos (con sus capturas) y preferencias. Queda una empresa en blanco para que cargues la tuya.\n\n¿Continuar?';
   if (!confirm(warn)) return;
-  if (confirm('¿Quieres descargar antes una copia (.yaml) de la empresa actual?\n\nAceptar = descargar la copia. Cancelar = no descargar.')) downloadBackup();
-  try {
-    for (const k of Object.keys(localStorage)) if (k.startsWith('office-pixel.')) localStorage.removeItem(k);
-  } catch {
-    /* sin almacenamiento: solo se limpia lo que hay en pantalla */
+  if (!inDb && confirm('¿Quieres descargar antes una copia (.yaml) de la empresa actual?\n\nAceptar = descargar la copia. Cancelar = no descargar.')) downloadBackup();
+  if (!inDb) {
+    try {
+      for (const k of Object.keys(localStorage)) if (k.startsWith('office-pixel.')) localStorage.removeItem(k);
+    } catch {
+      /* sin almacenamiento: solo se limpia lo que hay en pantalla */
+    }
   }
+  seedInput.value = '1';
+  daysInput.value = mode === 'explain' ? '2' : '5';
+  if (inDb) void switchTo(() => persist.create(emptyCompany()));
+  else {
+    closeConfig(configRoot);
+    closeHub(hubRoot);
+    scene.playing = false;
+    run(emptyCompany());
+  }
+});
+$('preview-exit').addEventListener('click', () => run());
+
+// ---------- empresas guardadas (base de datos) ----------
+const companyPick = $<HTMLSelectElement>('company-pick');
+const companyMenu = $<HTMLButtonElement>('company-menu');
+const companyActions = $<HTMLDivElement>('company-actions');
+const dbStatus = $<HTMLSpanElement>('db-status');
+const escHtml = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+const when = (iso: string) => new Date(iso).toLocaleString('es', { dateStyle: 'medium', timeStyle: 'short' });
+
+const STATUS_TEXT: Record<string, string> = {
+  checking: 'Conectando…',
+  db: '💾 Guardado en la base de datos',
+  saving: '⏳ Guardando…',
+  local: '⚠ Solo en este navegador',
+  error: '⚠ No se pudo guardar',
+};
+persist.onStatus = () => {
+  dbStatus.className = `dbstatus ${persist.status}`;
+  dbStatus.textContent = STATUS_TEXT[persist.status];
+  dbStatus.title = persist.detail || (persist.status === 'db' ? 'Todo lo que aplicas se guarda en la base de datos del servidor.' : '');
+};
+persist.onList = () => {
+  companyPick.innerHTML = persist.list.map((c) => `<option value="${c.id}">${escHtml(c.name)}</option>`).join('');
+  companyPick.value = persist.currentId ?? '';
+  companyPick.disabled = !persist.online;
+  companyMenu.disabled = !persist.online;
+};
+persist.onConflict = async (cur) => {
+  const overwrite = confirm(
+    `La empresa «${cur.name}» se guardó desde otra pestaña el ${when(cur.updatedAt)} (versión ${cur.version}).\n\nAceptar = guardar lo que ves aquí y reemplazar ese cambio (la versión anterior queda en el historial).\nCancelar = descartar lo de aquí y abrir lo que se guardó.`,
+  );
+  return overwrite ? 'overwrite' : 'reload';
+};
+persist.onReloaded = (d) => {
+  closeConfig(configRoot);
+  closeHub(hubRoot);
+  run(d, undefined, false);
+};
+persist.onStatus();
+persist.onList();
+
+/** Cambia a otra empresa de la base de datos y la simula. */
+async function switchTo(load: () => Promise<CompanyDef>) {
   closeConfig(configRoot);
   closeHub(hubRoot);
   scene.playing = false;
-  seedInput.value = '1';
-  daysInput.value = '5';
-  run(emptyCompany());
+  try {
+    run(await load(), undefined, false);
+  } catch (e) {
+    alert((e as Error).message);
+    persist.onList?.();
+  }
+}
+companyPick.addEventListener('change', () => void switchTo(() => persist.open(companyPick.value)));
+companyMenu.addEventListener('click', (e) => {
+  e.stopPropagation();
+  companyActions.hidden = !companyActions.hidden;
 });
-$('preview-exit').addEventListener('click', () => run());
+document.addEventListener('click', () => (companyActions.hidden = true));
+
+function showVersions() {
+  const back = document.createElement('div');
+  back.className = 'modal-back';
+  back.innerHTML =
+    '<div class="modal" role="dialog" aria-label="Versiones anteriores"><h3>🕘 Versiones anteriores</h3><p class="muted">Cada vez que aplicas un cambio se guarda la versión anterior (las últimas 40).</p><div class="revlist"><p class="muted">Cargando…</p></div><div class="modal-actions"><button type="button" class="btn" data-a="close">Cerrar</button></div></div>';
+  document.body.append(back);
+  const close = () => back.remove();
+  back.addEventListener('click', (e) => {
+    if (e.target === back || (e.target as HTMLElement).dataset.a === 'close') close();
+  });
+  persist
+    .revisions()
+    .then((list) => {
+      const box = back.querySelector('.revlist')!;
+      box.innerHTML = list.length
+        ? list
+            .map(
+              (r) =>
+                `<div class="rev"><span><b>Versión ${r.version}</b> · ${escHtml(r.name)}<small>${when(r.savedAt)}${r.note ? ' · ' + escHtml(r.note) : ''} · ${Math.round(r.bytes / 1024)} KB</small></span><button type="button" class="btn" data-restore="${r.id}">Restaurar</button></div>`,
+            )
+            .join('')
+        : '<p class="muted">Todavía no hay versiones anteriores: aparecen cuando guardas un cambio.</p>';
+      box.addEventListener('click', (e) => {
+        const id = (e.target as HTMLElement).dataset.restore;
+        if (!id) return;
+        if (!confirm('Se restaura esa versión. La que tienes ahora queda en el historial. ¿Continuar?')) return;
+        close();
+        void switchTo(() => persist.restore(Number(id)));
+      });
+    })
+    .catch((e: Error) => {
+      back.querySelector('.revlist')!.innerHTML = `<p class="muted">${escHtml(e.message)}</p>`;
+    });
+}
+
+companyActions.addEventListener('click', (e) => {
+  const a = (e.target as HTMLElement).closest('button')?.dataset.a;
+  if (!a) return;
+  if (a === 'new') void switchTo(() => persist.create(emptyCompany()));
+  if (a === 'dup') void switchTo(() => persist.duplicate());
+  if (a === 'versions') showVersions();
+  if (a === 'backup') downloadBackup();
+  if (a === 'delete') {
+    if (!confirm(`¿Borrar la empresa «${company.company}» de la base de datos, con todo su historial? No se puede deshacer.\n\nTe recomiendo descargar antes una copia (⋯ → Descargar copia).`)) return;
+    void switchTo(async () => (await persist.removeCurrent()) ?? persist.create(emptyCompany()));
+  }
+});
 window.addEventListener('keydown', (e) => {
   // con un diálogo abierto (decorar sala, quitar área…) Esc es suyo: no cierra toda la configuración
   if (e.key === 'Escape' && configRoot.classList.contains('open') && !document.querySelector('.modal-back')) closeConfig(configRoot);
@@ -457,6 +556,10 @@ timeline.addEventListener('input', () => {
 });
 applyMode(mode, false);
 
-if (import.meta.env.DEV) (window as unknown as { __op: unknown }).__op = { scene };
+if (import.meta.env.DEV) (window as unknown as { __op: unknown }).__op = { scene, persist };
 
-run();
+// Se abre la base de datos y se muestra la empresa guardada (o, la primera vez, lo que hubiera en el navegador).
+void persist.boot(example).then(({ def: first, migrated }) => {
+  run(first, undefined, false);
+  if (migrated) alert('Tu empresa guardada en este navegador se pasó a la base de datos. Desde ahora se guarda ahí.');
+});
