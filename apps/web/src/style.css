@@ -402,3 +402,16 @@ svg.flow .tag.link { fill: #8cc4ff; font-size: 10px; font-weight: 700; }
 .hub-modes .seg button { white-space: nowrap; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; }
 .legend > span { display: inline-flex; align-items: center; gap: 6px; }
+
+/* catálogo de instalaciones */
+.catalog { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 14px; }
+.fac-card { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: #121826; }
+.fac-card h4 { margin: 4px 0 0; font-size: 14px; }
+.fac-card p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+.fac-card dl { margin: 0; display: grid; gap: 2px; font-size: 12px; }
+.fac-card dt { color: var(--muted); font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 6px; }
+.fac-card dd { margin: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+.fac-card .chip { padding: 1px 8px; border-radius: 999px; background: #1c2536; border: 1px solid #2f3b57; font-size: 11px; }
+.fac-actions { display: flex; gap: 6px; margin-top: auto; }
+.fac-actions select { flex: 1; min-width: 0; }
+svg.fac-preview { width: 100%; height: auto; display: block; border-radius: 8px; }

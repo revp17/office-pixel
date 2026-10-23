@@ -2,12 +2,13 @@ import { render } from 'preact';
 import { useMemo, useState } from 'preact/hooks';
 import { validateCompany, type CompanyDef } from '@office-pixel/sim';
 import { emptyCompany } from './model';
+import { CatalogoTab } from './catalogo';
 import { EmpresaTab, AreasTab, PersonasTab } from './tabs';
 import { ProcesosTab } from './procesos';
 import { HorariosTab, YamlTab } from './extras';
 import type { Up } from './ui';
 
-export type TabId = 'empresa' | 'areas' | 'personas' | 'procesos' | 'horarios' | 'yaml';
+export type TabId = 'empresa' | 'areas' | 'catalogo' | 'personas' | 'procesos' | 'horarios' | 'yaml';
 
 interface Props {
   initial: CompanyDef;
@@ -42,6 +43,7 @@ function ConfigApp({ initial, initialTab, templates, onApply, onClose }: Props) 
   const tabs: Array<{ id: TabId; label: string; count?: number }> = [
     { id: 'empresa', label: 'Empresa' },
     { id: 'areas', label: 'Áreas y subáreas', count: draft.units.length },
+    { id: 'catalogo', label: 'Catálogo de instalaciones' },
     { id: 'personas', label: 'Personas', count: draft.people.length },
     { id: 'procesos', label: 'Procesos', count: draft.processes.length },
     { id: 'horarios', label: 'Horarios y reuniones' },
@@ -94,6 +96,7 @@ function ConfigApp({ initial, initialTab, templates, onApply, onClose }: Props) 
         <main class="cfg-main">
           {tab === 'empresa' && <EmpresaTab {...props} />}
           {tab === 'areas' && <AreasTab {...props} />}
+          {tab === 'catalogo' && <CatalogoTab {...props} />}
           {tab === 'personas' && <PersonasTab {...props} />}
           {tab === 'procesos' && <ProcesosTab {...props} />}
           {tab === 'horarios' && <HorariosTab {...props} />}

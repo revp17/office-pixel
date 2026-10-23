@@ -16,6 +16,10 @@ Cada área y cada subárea tiene un **Tipo de instalación** (en **Configurar em
 | 🔧 Mantenimiento | Banco de trabajo, caja y tablero de herramientas |
 | 🚛 Transporte y flota | Vehículos de reparto |
 
+## Catálogo de instalaciones
+
+En **Configurar empresa → Catálogo de instalaciones** están los 7 tipos con su vista previa, para qué sirven, qué se dibuja, los puestos y procesos típicos y en qué áreas de tu empresa se usan. Desde cada ficha puedes **aplicar el tipo a un área o subárea existente** o **crear un área nueva de ese tipo** (queda sin personas: añádelas en «Áreas y subáreas»).
+
 Las salas que no son oficina son un poco más anchas y altas para que quepa su equipamiento. Su nombre lleva el icono del tipo.
 
 En el YAML es el campo `facility` de la unidad:

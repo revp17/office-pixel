@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { dependencyEdges, parseCompany, simulateCompany, validateCompany } from '@office-pixel/sim';
+import { FACILITIES, dependencyEdges, parseCompany, simulateCompany, validateCompany } from '@office-pixel/sim';
 import { buildBuilding } from '../src/building';
 
 const load = (name: string) => parseCompany(readFileSync(new URL(`../../../examples/${name}.yaml`, import.meta.url), 'utf8'));
@@ -58,6 +58,18 @@ describe('plantillas de empresa (pequeña, mediana, grande)', () => {
       });
     });
   }
+
+  it('el catálogo describe cada tipo de instalación por completo', () => {
+    for (const [k, f] of Object.entries(FACILITIES)) {
+      expect(f.label, k).toBeTruthy();
+      expect(f.icon, k).toBeTruthy();
+      expect(f.description.length, k).toBeGreaterThan(20);
+      expect(f.equipment.length, k).toBeGreaterThan(0);
+      expect(f.roles.length, k).toBeGreaterThan(0);
+      expect(f.processes.length, k).toBeGreaterThan(0);
+      expect(f.defaultName, k).toBeTruthy();
+    }
+  });
 
   it('rechaza un tipo de instalación desconocido', () => {
     const r = load('plantilla_pequena_ferreteria');
