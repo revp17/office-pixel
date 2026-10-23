@@ -34,7 +34,9 @@ describe('nombres de los datos de cada caso', () => {
   it('se normalizan al confirmar: letras, números y guion bajo', () => {
     expect(normalizeAttrName('monto total')).toBe('monto_total');
     expect(normalizeAttrName('  prioridad ')).toBe('prioridad');
-    expect(normalizeAttrName('año/mes')).toBe('a_o_mes');
+    expect(normalizeAttrName('año/mes')).toBe('ano_mes');
+    expect(normalizeAttrName('Guía de remisión')).toBe('Guia_de_remision');
+    expect(normalizeAttrName('Peso (kg)')).toBe('Peso__kg_');
     expect(normalizeAttrName('')).toBe('');
   });
 

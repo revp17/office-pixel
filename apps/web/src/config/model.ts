@@ -355,5 +355,10 @@ export function parseNumText(s: string): number | undefined {
   return Number.isFinite(n) ? n : undefined;
 }
 
-/** Nombre de un dato: letras, números y guion bajo (lo demás se vuelve «_»). */
-export const normalizeAttrName = (s: string) => s.trim().replace(/[^A-Za-z0-9_]/g, '_');
+/** Nombre de un dato: letras, números y guion bajo. Las tildes y la ñ se quitan (í → i, ñ → n); lo demás se vuelve «_». */
+export const normalizeAttrName = (s: string) =>
+  s
+    .trim()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^A-Za-z0-9_]/g, '_');

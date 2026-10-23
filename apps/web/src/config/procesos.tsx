@@ -156,7 +156,7 @@ function Datos({ proc, P, note }: { proc: OrgProcessDef; P: PMut; note: (m: stri
     >
       {entries.map(([key, spec], idx) => (
         <div class="inline wrap" key={idx}>
-          <Field label="Nombre del dato" hint="Se confirma al salir del campo. Solo letras, números y _ (los espacios se vuelven _).">
+          <Field label="Nombre del dato" hint="Se confirma al salir del campo. Solo letras, números y _. Los espacios se vuelven _ y las tildes se quitan (Guía → Guia).">
             <NameInput
               value={key}
               onCommit={(v) => {
