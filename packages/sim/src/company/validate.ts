@@ -72,35 +72,44 @@ export function normalizeCompany(def: CompanyDef): CompanyDef {
   return def;
 }
 
-function checkHours(h: unknown, path: string, errors: string[]): void {
-  if (!isObj(h)) return void errors.push(`${path}: faltan "start" y "end"`);
+/** `label` es como lo ve el usuario en el formulario («Jornada de trabajo», «Pausa 2»…). */
+function checkHours(h: unknown, label: string, errors: string[]): void {
+  if (!isObj(h)) return void errors.push(`${label}: faltan la entrada y la salida.`);
   const s = parseHM(h.start);
   const e = parseHM(h.end);
-  if (s === null || e === null) errors.push(`${path}: usa el formato "HH:MM"`);
-  else if (e <= s) errors.push(`${path}: "end" debe ser posterior a "start"`);
+  if (s === null || e === null) errors.push(`${label}: usa el formato de hora HH:MM.`);
+  else if (e <= s) errors.push(`${label}: la salida debe ser posterior a la entrada.`);
 }
 
-function checkBlocks(list: unknown, path: string, errors: string[]): void {
+function checkBlocks(list: unknown, label: string, errors: string[]): void {
   if (list === undefined) return;
-  if (!Array.isArray(list)) return void errors.push(`${path}: debe ser una lista`);
-  list.forEach((b, i) => checkHours(b, `${path}[${i}]`, errors));
+  if (!Array.isArray(list)) return void errors.push(`${label}: debe ser una lista.`);
+  list.forEach((b, i) => checkHours(b, `${label} ${i + 1}`, errors));
 }
 
 export function validateCompany(raw: unknown): CompanyParseResult {
   const errors: string[] = [];
   if (!isObj(raw)) return { errors: ['La definición debe ser un objeto YAML/JSON'] };
-  if (typeof raw.company !== 'string' || !raw.company) errors.push('company: falta el nombre de la empresa');
+  if (typeof raw.company !== 'string' || !raw.company.trim()) errors.push('Nombre de la empresa: escribe un nombre.');
 
   // calendario
   const cal = raw.calendar;
-  if (!isObj(cal)) errors.push('calendar: falta el calendario');
+  if (!isObj(cal)) errors.push('Jornada de trabajo: falta el calendario de la empresa.');
   else {
     if (!Array.isArray(cal.workDays) || cal.workDays.length === 0 || !cal.workDays.every((d) => Number.isInteger(d) && d >= 0 && d <= 6))
-      errors.push('calendar.workDays: lista de días 0 (lun) a 6 (dom)');
-    checkHours(cal.hours, 'calendar.hours', errors);
-    checkBlocks(cal.breaks, 'calendar.breaks', errors);
+      errors.push('Días laborables: elige al menos un día (en YAML, números de 0 = lunes a 6 = domingo).');
+    checkHours(cal.hours, 'Jornada de trabajo', errors);
+    checkBlocks(cal.breaks, 'Pausa', errors);
     if (cal.absenteeism !== undefined && !(typeof cal.absenteeism === 'number' && cal.absenteeism >= 0 && cal.absenteeism <= 1))
-      errors.push('calendar.absenteeism: debe estar entre 0 y 1');
+      errors.push('Ausentismo diario: debe estar entre 0 % y 100 %.');
+  }
+
+  if (raw.travel !== undefined) {
+    const labels: Record<string, string> = { sameTeam: 'Traslado dentro de la misma subárea', sameArea: 'Traslado entre subáreas de una misma área', crossArea: 'Traslado entre áreas distintas' };
+    if (!isObj(raw.travel)) errors.push('Traslado de casos: debe ser un conjunto de minutos.');
+    else
+      for (const [k, v] of Object.entries(raw.travel))
+        if (v !== undefined && !(typeof v === 'number' && Number.isFinite(v) && v >= 0)) errors.push(`${labels[k] ?? `Traslado «${k}»`}: debe ser un número de minutos, 0 o más.`);
   }
 
   const scheduleIds = new Set<string>();
@@ -111,8 +120,8 @@ export function validateCompany(raw: unknown): CompanyParseResult {
         scheduleIds.add(k);
         if (!isObj(s)) errors.push(`schedules.${k}: inválido`);
         else {
-          checkHours(s.hours, `schedules.${k}.hours`, errors);
-          checkBlocks(s.breaks, `schedules.${k}.breaks`, errors);
+          checkHours(s.hours, `Horario «${k}»`, errors);
+          checkBlocks(s.breaks, `Horario «${k}», pausa`, errors);
         }
       }
   }
