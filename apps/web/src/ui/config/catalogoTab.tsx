@@ -1,5 +1,5 @@
 import { useState } from 'preact/hooks';
-import { FACILITIES, facilityViews, hasArt, type ArtItem, type CustomFacility, type Facility, type FacilityView } from '@office-pixel/sim';
+import { FACILITIES, MAX_FACILITY_DESCRIPTION, MAX_FACILITY_ICON, MAX_FACILITY_LABEL, facilityViews, hasArt, type ArtItem, type CustomFacility, type Facility, type FacilityView } from '@office-pixel/sim';
 import { ArtEditor, ArtSvg, artImageFromFile } from './arte';
 import { FacilityPreview } from './catalogo';
 import { addUnit, findUnit, flatUnits, uniqueId } from '../../application/editing/model';
@@ -61,10 +61,10 @@ function CustomForm(props: { d: TabProps['d']; edit?: CustomFacility; up: TabPro
       <h4>{edit ? `Editar «${edit.label}»` : 'Nuevo tipo de instalación'}</h4>
       <div class="row">
         <Field label="Nombre">
-          <Text value={label} placeholder="Laboratorio, Cocina, Taller de pintura…" onChange={setLabel} />
+          <Text value={label} placeholder="Laboratorio, Cocina, Taller de pintura…" maxLength={MAX_FACILITY_LABEL} onChange={setLabel} />
         </Field>
         <Field label="Icono">
-          <Text value={icon} onChange={setIcon} />
+          <Text value={icon} maxLength={MAX_FACILITY_ICON} onChange={setIcon} />
         </Field>
       </div>
       <div class="icon-picks">
@@ -75,7 +75,7 @@ function CustomForm(props: { d: TabProps['d']; edit?: CustomFacility; up: TabPro
         ))}
       </div>
       <Field label="Descripción (opcional)">
-        <TextArea rows={2} value={description} onChange={setDescription} />
+        <TextArea rows={2} value={description} maxLength={MAX_FACILITY_DESCRIPTION} onChange={setDescription} />
       </Field>
       <Field label="¿Cómo se ve en el plano?" hint="Puedes dibujar tu propia ilustración, subir una imagen, o reutilizar uno de los dibujos incluidos.">
         <div class="seg">

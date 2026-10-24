@@ -49,7 +49,7 @@ export function Card(p: { title?: ComponentChildren; actions?: ComponentChildren
   );
 }
 
-export function Text(p: { value: string; onChange: (v: string) => void; placeholder?: string; list?: string; class?: string }) {
+export function Text(p: { value: string; onChange: (v: string) => void; placeholder?: string; list?: string; class?: string; maxLength?: number }) {
   return (
     <input
       class={p.class}
@@ -57,18 +57,20 @@ export function Text(p: { value: string; onChange: (v: string) => void; placehol
       value={p.value}
       placeholder={p.placeholder}
       list={p.list}
+      maxLength={p.maxLength}
       onInput={(e) => p.onChange(val(e))}
     />
   );
 }
 
-export function TextArea(p: { value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) {
+export function TextArea(p: { value: string; onChange: (v: string) => void; placeholder?: string; rows?: number; maxLength?: number }) {
   return (
     <textarea
       class="ta"
       rows={p.rows ?? 3}
       value={p.value}
       placeholder={p.placeholder}
+      maxLength={p.maxLength}
       onInput={(e) => p.onChange((e.target as HTMLTextAreaElement).value)}
     />
   );

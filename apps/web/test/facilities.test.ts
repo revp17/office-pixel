@@ -46,22 +46,22 @@ describe('tipos de instalación propios', () => {
   it('rechaza un tipo propio mal definido o una unidad que usa uno que no existe', () => {
     const d = withLab();
     d.units[0].facility = 'cocina';
-    expect(validateCompany(d).errors.join('\n')).toMatch(/facility/);
+    expect(validateCompany(d).errors.join('\n')).toMatch(/el tipo de instalación «[a-z]+» no existe/);
     delete d.units[0].facility;
 
     d.facilityTypes!.push({ id: 'bodega', label: 'Otra', icon: 'x', look: 'bodega' });
-    expect(validateCompany(d).errors.join('\n')).toMatch(/ya es un tipo incluido/);
+    expect(validateCompany(d).errors.join('\n')).toMatch(/ya es de un tipo incluido/);
     d.facilityTypes!.pop();
 
     d.facilityTypes!.push({ id: 'laboratorio', label: 'Otro', icon: 'x', look: 'bodega' });
-    expect(validateCompany(d).errors.join('\n')).toMatch(/duplicado/);
+    expect(validateCompany(d).errors.join('\n')).toMatch(/está repetido/);
     d.facilityTypes!.pop();
 
     d.facilityTypes!.push({ id: 'raro', label: '', icon: '', look: 'hangar' as never });
     const errs = validateCompany(d).errors.join('\n');
     expect(errs).toMatch(/falta el nombre/);
     expect(errs).toMatch(/falta el icono/);
-    expect(errs).toMatch(/look/);
+    expect(errs).toMatch(/con qué dibujo incluido se ve/);
   });
 });
 

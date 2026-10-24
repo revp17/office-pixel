@@ -430,6 +430,7 @@ svg.fac-preview { width: 100%; height: auto; display: block; border-radius: 8px;
 @media (max-width: 800px) { .cfg-nav button.sub { margin-left: 0; } }
 
 .fac-form { border-color: #3d5a85; grid-column: 1 / -1; }
+.fac-form svg.fac-preview { max-width: 300px; }
 .fac-form .row { display: grid; grid-template-columns: 1fr 120px; gap: 10px; }
 .icon-picks { display: flex; flex-wrap: wrap; gap: 4px; }
 .icon-picks button { padding: 4px 8px; font-size: 16px; background: #0f1420; border: 1px solid var(--line); border-radius: 8px; }

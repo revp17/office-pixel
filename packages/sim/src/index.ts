@@ -16,7 +16,7 @@ export { makeBizCalendar, parseHM, DAY } from './kernel/time';
 export * from './model';
 
 // company
-export { parseCompany, validateCompany, normalizeCompany, type CompanyParseResult } from './company/validate';
+export { parseCompany, validateCompany, normalizeCompany, MAX_FACILITY_LABEL, MAX_FACILITY_ICON, MAX_FACILITY_DESCRIPTION, type CompanyParseResult } from './company/validate';
 export { companyToYaml } from './company/yaml';
 export * from './company/facilities';
 export * from './company/decor';

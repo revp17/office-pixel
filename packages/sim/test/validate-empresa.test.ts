@@ -40,3 +40,30 @@ describe('validación de los datos de la empresa (en el lenguaje del formulario)
     expect(errs.filter((e) => e.startsWith('Horario'))).toEqual(['Horario «tarde»: la salida debe ser posterior a la entrada.', 'Horario «tarde», pausa 1: la salida debe ser posterior a la entrada.']);
   });
 });
+
+describe('tipos de instalación propios', () => {
+  const custom = { id: 'taller', label: 'Taller', icon: '🔧', look: 'mantenimiento' as const };
+  const withType = (c: Record<string, unknown>) => errorsOf((d) => (d.facilityTypes = [c as never]));
+
+  it('uno bien formado es válido', () => {
+    expect(withType(custom)).toEqual([]);
+  });
+
+  it('nombre, icono y descripción tienen límite y dicen qué falla', () => {
+    expect(withType({ ...custom, label: ' ' })).toEqual(['Tipo de instalación «taller»: falta el nombre.']);
+    expect(withType({ ...custom, label: 'x'.repeat(41) })[0]).toMatch(/el nombre admite hasta 40 caracteres/);
+    expect(withType({ ...custom, icon: '' })).toEqual(['Tipo de instalación «Taller»: falta el icono.']);
+    expect(withType({ ...custom, icon: 'icono larguísimo de verdad' })[0]).toMatch(/el icono debe ser un emoji/);
+    expect(withType({ ...custom, description: 'x'.repeat(401) })[0]).toMatch(/la descripción admite hasta 400 caracteres/);
+  });
+
+  it('no repite identificadores ni usa los de los tipos incluidos', () => {
+    expect(withType({ ...custom, id: 'bodega' })[0]).toMatch(/ya es de un tipo incluido/);
+    expect(errorsOf((d) => (d.facilityTypes = [custom, custom] as never))[0]).toMatch(/está repetido/);
+  });
+
+  it('un área con un tipo que no existe lo dice por su nombre', () => {
+    const errs = errorsOf((d) => (d.units[0].facility = 'inexistente'));
+    expect(errs[0]).toMatch(new RegExp(`^Área «${banco.units[0].name}»: el tipo de instalación «inexistente» no existe`));
+  });
+});

@@ -74,6 +74,6 @@ describe('plantillas de empresa (pequeña, mediana, grande)', () => {
   it('rechaza un tipo de instalación desconocido', () => {
     const r = load('plantilla_pequena_ferreteria');
     r.def!.units[1].facility = 'hangar' as never;
-    expect(validateCompany(r.def!).errors.join('\n')).toMatch(/facility/);
+    expect(validateCompany(r.def!).errors.join('\n')).toMatch(/el tipo de instalación «[a-z]+» no existe/);
   });
 });

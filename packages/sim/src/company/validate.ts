@@ -7,6 +7,11 @@ import { isBuiltinFacility } from './facilities';
 import { isDecorKind } from './decor';
 import type { CompanyDef, UnitDef } from '../model';
 
+/** límites de los tipos de instalación propios (el formulario los aplica al escribir) */
+export const MAX_FACILITY_LABEL = 40;
+export const MAX_FACILITY_ICON = 16;
+export const MAX_FACILITY_DESCRIPTION = 400;
+
 const HEX = /^#[0-9a-fA-F]{3,8}$/;
 const num = (v: unknown) => typeof v === 'number' && Number.isFinite(v);
 
@@ -129,18 +134,23 @@ export function validateCompany(raw: unknown): CompanyParseResult {
   // tipos de instalación propios
   const customFacilityIds = new Set<string>();
   if (raw.facilityTypes !== undefined) {
-    if (!Array.isArray(raw.facilityTypes)) errors.push('facilityTypes: debe ser una lista');
+    if (!Array.isArray(raw.facilityTypes)) errors.push('Tipos de instalación: debe ser una lista.');
     else
       raw.facilityTypes.forEach((c, i) => {
         const at = `facilityTypes[${i}]`;
-        if (!isObj(c) || typeof c.id !== 'string' || !c.id) return void errors.push(`${at}: falta "id"`);
-        if (isBuiltinFacility(c.id)) errors.push(`${at}: "${c.id}" ya es un tipo incluido`);
-        else if (customFacilityIds.has(c.id)) errors.push(`${at}: tipo duplicado "${c.id}"`);
+        if (!isObj(c) || typeof c.id !== 'string' || !c.id) return void errors.push(`Tipo de instalación ${i + 1}: falta el identificador (id).`);
+        const who = `Tipo de instalación «${typeof c.label === 'string' && c.label.trim() ? c.label.trim() : c.id}»`;
+        if (isBuiltinFacility(c.id)) errors.push(`${who}: el identificador «${c.id}» ya es de un tipo incluido.`);
+        else if (customFacilityIds.has(c.id)) errors.push(`${who}: el identificador «${c.id}» está repetido.`);
         customFacilityIds.add(c.id);
-        if (typeof c.label !== 'string' || !c.label.trim()) errors.push(`${at}.label: falta el nombre`);
-        if (typeof c.icon !== 'string' || !c.icon.trim()) errors.push(`${at}.icon: falta el icono`);
-        if (typeof c.look !== 'string' || !isBuiltinFacility(c.look)) errors.push(`${at}.look: debe ser uno de ${Object.keys(FACILITIES).join(', ')}`);
-        if (c.art !== undefined) checkArt(c.art, `${at}.art`, errors);
+        if (typeof c.label !== 'string' || !c.label.trim()) errors.push(`${who}: falta el nombre.`);
+        else if (c.label.length > MAX_FACILITY_LABEL) errors.push(`${who}: el nombre admite hasta ${MAX_FACILITY_LABEL} caracteres.`);
+        if (typeof c.icon !== 'string' || !c.icon.trim()) errors.push(`${who}: falta el icono.`);
+        else if (c.icon.length > MAX_FACILITY_ICON) errors.push(`${who}: el icono debe ser un emoji o un par de letras (hasta ${MAX_FACILITY_ICON} caracteres).`);
+        if (c.description !== undefined && !(typeof c.description === 'string' && c.description.length <= MAX_FACILITY_DESCRIPTION))
+          errors.push(`${who}: la descripción admite hasta ${MAX_FACILITY_DESCRIPTION} caracteres.`);
+        if (typeof c.look !== 'string' || !isBuiltinFacility(c.look)) errors.push(`${who}: elige con qué dibujo incluido se ve (${Object.keys(FACILITIES).join(', ')}).`);
+        if (c.art !== undefined) checkArt(c.art, at + '.art', errors);
       });
   }
 
@@ -154,7 +164,7 @@ export function validateCompany(raw: unknown): CompanyParseResult {
       if (unitIds.has(u.id)) errors.push(`${at}: unidad duplicada "${u.id}"`);
       unitIds.add(u.id);
       if (u.facility !== undefined && !(typeof u.facility === 'string' && (isBuiltinFacility(u.facility) || customFacilityIds.has(u.facility))))
-        errors.push(`${at}.facility: debe ser uno de ${[...Object.keys(FACILITIES), ...customFacilityIds].join(', ')}`);
+        errors.push(`Área «${typeof u.name === 'string' && u.name ? u.name : u.id}»: el tipo de instalación «${String(u.facility)}» no existe (usa ${[...Object.keys(FACILITIES), ...customFacilityIds].join(', ')}).`);
       if (u.decor !== undefined) {
         if (!Array.isArray(u.decor)) errors.push(`${at}.decor: debe ser una lista`);
         else {
