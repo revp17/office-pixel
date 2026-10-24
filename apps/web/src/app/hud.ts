@@ -67,7 +67,7 @@ export function renderPanels() {
     <table><tr><th>Proceso</th><th>Cerrados</th><th>Ciclo</th><th>P90</th><th>SLA</th></tr>${procRows}</table>
     <h3>Mayor espera por etapa</h3>
     <table><tr><th>Etapa</th><th>Espera</th><th>Cola final</th></tr>${waits}</table>
-    <p class="hint">Tiempos en horas hábiles de la empresa.</p>`;
+    <p class="hint">Tiempos en horas hábiles de la empresa (sin sus pausas ni días no laborables).</p>`;
 
   dom.units.innerHTML =
     `<h3>Utilización por unidad</h3>` +

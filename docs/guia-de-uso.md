@@ -147,7 +147,7 @@ Ambas te piden confirmar porque **reemplazan lo que haya en el formulario**.
    - entre subáreas de una misma área,
    - entre áreas distintas.
 
-> Las llegadas de casos, los plazos (SLA) y los tiempos de ciclo se cuentan solo en **horas hábiles** (dentro de la jornada y en días laborables).
+> Los casos llegan dentro de la jornada, en días laborables. Los plazos (SLA), los tiempos de ciclo y las esperas se cuentan en **horas hábiles**: dentro de la jornada, en días laborables y **sin las pausas de la empresa** (almuerzo, descansos). Por ejemplo, con jornada de 09:00 a 18:00 y almuerzo de 13:00 a 14:00, un día tiene 8 horas hábiles, y un plazo de 2 horas que empieza a las 12:00 vence a las 15:00.
 
 ### Paso 2 — Pestaña «Áreas y subáreas»
 
@@ -210,7 +210,7 @@ Para cada etapa:
 1. **Nombre.**
 2. **Área / subárea que la hace** y **Rol de quien la hace.** Solo se ofrecen los roles que existen ahí.
 3. **Cuánto tarda** (a velocidad normal): elige el tipo de variación y sus minutos. Por ejemplo: *normal, media 35 min, desviación 10 min*.
-4. **Plazo máximo (SLA):** en horas hábiles, desde que el caso llega a la etapa. Vacío = sin plazo. Si se supera, el caso se marca en rojo y cuenta como incumplido.
+4. **Plazo máximo (SLA):** en horas hábiles (sin las pausas de la empresa), desde que el caso llega a la etapa. Vacío = sin plazo. Si se supera, el caso se marca en rojo y cuenta como incumplido.
 5. Con ↑ ↓ cambias el orden y con la papelera borras la etapa.
 
 **+ Añadir etapa** la inserta antes del cierre y la engancha en el camino.
@@ -279,7 +279,7 @@ En el panel de abajo (la simulación completa ya está calculada):
 | **Personas** | Todas, ordenadas por utilización. Clic para ver su ficha |
 | **Ficha** | Responsable o colaborador, su área › subárea, estado, caso, utilización y su día |
 
-> Todos los tiempos de ciclo y espera están en **horas hábiles**.
+> Todos los tiempos de ciclo y espera están en **horas hábiles** (sin las pausas de la empresa).
 
 ### Paso 8 — Itera
 
@@ -405,3 +405,5 @@ Reordenar puede cambiar ligeramente los números de una simulación con la misma
 
 - **Números** (duraciones, dispersión, plazos, porcentajes…): puedes **borrar el campo y escribir de nuevo**, usar **punto o coma** decimal (`0.45` o `0,45`) y las flechas ↑ ↓ para subir o bajar. El valor se aplica en cuanto es un número; al salir del campo se ajusta a los límites (por ejemplo, un porcentaje no pasa de 100).
 - **Nombre de un dato del caso** (en «Datos de cada caso»): se **confirma al salir del campo o con Enter** (Esc lo restaura). Solo admite letras, números y `_`: los espacios se convierten en `_` y las tildes se quitan (`monto total` → `monto_total`, `Guía de remisión` → `Guia_de_remision`). Si el nombre está vacío o ya existe, avisa y vuelve al anterior. Al renombrar un dato se actualizan las condiciones que lo usan (`case.monto > 5000`).
+
+> **Cambio de criterio (pausas):** antes, el almuerzo y los descansos de la empresa contaban como horas hábiles en los plazos, ciclos y esperas. Ahora no cuentan. Los ciclos y las esperas medidos antes de este cambio, y las **líneas base** ya guardadas en la ficha, siguen con el valor antiguo: vuelve a medirlas («Volver a medir» en la fase 3 de Documentar) para compararlas con las nuevas.

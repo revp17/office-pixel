@@ -14,9 +14,29 @@ export interface BizCalendar {
   bizBetween(a: number, b: number): number;
 }
 
-/** Tiempo hábil de la empresa: solo cuentan las horas de jornada de los días laborables. */
-export function makeBizCalendar(workDays: number[], startMin: number, endMin: number): BizCalendar {
+/** Tramos abiertos de un día de trabajo: de la entrada a la salida, sin las pausas (cada uno como [desde, hasta], en minutos). */
+export function openWindows(startMin: number, endMin: number, breaks: ReadonlyArray<readonly [number, number]> = []): Array<[number, number]> {
+  const blocks = breaks
+    .map(([s, e]) => [Math.max(s, startMin), Math.min(e, endMin)] as [number, number])
+    .filter(([s, e]) => e > s)
+    .sort((a, b) => a[0] - b[0]);
+  const out: Array<[number, number]> = [];
+  let cursor = startMin;
+  for (const [s, e] of blocks) {
+    if (s > cursor) out.push([cursor, s]);
+    cursor = Math.max(cursor, e);
+  }
+  if (cursor < endMin) out.push([cursor, endMin]);
+  return out;
+}
+
+/**
+ * Tiempo hábil de la empresa: solo cuentan las horas de jornada de los días laborables, sin las pausas
+ * (almuerzo, descansos) que se pasen en `breaks`.
+ */
+export function makeBizCalendar(workDays: number[], startMin: number, endMin: number, breaks: ReadonlyArray<readonly [number, number]> = []): BizCalendar {
   const wd = new Set(workDays);
+  const windows = openWindows(startMin, endMin, breaks);
   return {
     addBiz(t, minutes) {
       let m = minutes;
@@ -24,9 +44,10 @@ export function makeBizCalendar(workDays: number[], startMin: number, endMin: nu
       let cur = t;
       for (let guard = 0; guard < 100000; guard++) {
         if (wd.has(day % 7)) {
-          const ws = day * DAY + startMin;
-          const we = day * DAY + endMin;
-          if (cur < we) {
+          for (const [from, to] of windows) {
+            const ws = day * DAY + from;
+            const we = day * DAY + to;
+            if (cur >= we) continue;
             const s = Math.max(cur, ws);
             const avail = we - s;
             if (m <= avail) return s + m;
@@ -43,9 +64,11 @@ export function makeBizCalendar(workDays: number[], startMin: number, endMin: nu
       let total = 0;
       for (let day = Math.floor(a / DAY); day <= Math.floor(b / DAY); day++) {
         if (!wd.has(day % 7)) continue;
-        const s = Math.max(a, day * DAY + startMin);
-        const e = Math.min(b, day * DAY + endMin);
-        if (e > s) total += e - s;
+        for (const [from, to] of windows) {
+          const s = Math.max(a, day * DAY + from);
+          const e = Math.min(b, day * DAY + to);
+          if (e > s) total += e - s;
+        }
       }
       return total;
     },

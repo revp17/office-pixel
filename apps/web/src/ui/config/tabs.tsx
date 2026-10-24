@@ -35,7 +35,7 @@ export function EmpresaTab({ d, up }: TabProps) {
         </Field>
       </Section>
 
-      <Section title="Jornada de trabajo" hint="Las llegadas de casos, los SLA y los tiempos de ciclo se miden solo en horas hábiles.">
+      <Section title="Jornada de trabajo" hint="Los casos llegan dentro de la jornada. Los plazos (SLA), los tiempos de ciclo y las esperas se miden en horas hábiles: sin contar las pausas de abajo ni los días no laborables.">
         <div class="row">
           <Field label="Entrada">
             <Time value={cal.hours.start} onChange={(v) => up((x) => void (x.calendar.hours.start = v))} />

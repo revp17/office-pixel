@@ -1,7 +1,7 @@
 import { parse } from 'yaml';
 import { checkDist } from '../kernel/dist';
 import { compileExpr } from '../kernel/expr';
-import { parseHM } from '../kernel/time';
+import { openWindows, parseHM } from '../kernel/time';
 import { ART_H, ART_W, FACILITIES } from '../model';
 import { isBuiltinFacility } from './facilities';
 import { isDecorKind } from './decor';
@@ -121,6 +121,13 @@ export function validateCompany(raw: unknown): CompanyParseResult {
       errors.push('Días laborables: elige al menos un día (en YAML, números de 0 = lunes a 6 = domingo).');
     checkHours(cal.hours, 'Jornada de trabajo', errors);
     checkBlocks(cal.breaks, 'Pausa', errors);
+    // las pausas no pueden comerse toda la jornada: no quedaría tiempo hábil para medir plazos ni ciclos
+    const start = isObj(cal.hours) ? parseHM(cal.hours.start) : null;
+    const end = isObj(cal.hours) ? parseHM(cal.hours.end) : null;
+    if (start !== null && end !== null && end > start && Array.isArray(cal.breaks) && errors.length === 0) {
+      const blocks = cal.breaks.flatMap((b) => (isObj(b) && parseHM(b.start) !== null && parseHM(b.end) !== null ? [[parseHM(b.start)!, parseHM(b.end)!] as const] : []));
+      if (blocks.length && openWindows(start, end, blocks).length === 0) errors.push('Pausas: cubren toda la jornada; deja algún tramo de trabajo.');
+    }
     if (cal.absenteeism !== undefined && !(typeof cal.absenteeism === 'number' && cal.absenteeism >= 0 && cal.absenteeism <= 1))
       errors.push('Ausentismo diario: debe estar entre 0 % y 100 %.');
   }

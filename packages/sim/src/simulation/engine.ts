@@ -93,7 +93,11 @@ export function simulateCompany(def: CompanyDef, options: OrgSimOptions): OrgSim
   const cal = def.calendar;
   const bizStart = parseHM(cal.hours.start)!;
   const bizEnd = parseHM(cal.hours.end)!;
-  const biz = makeBizCalendar(cal.workDays, bizStart, bizEnd);
+  // plazos (SLA), tiempos de ciclo y esperas no cuentan las pausas de la empresa (almuerzo, descansos)
+  const bizBreaks = (cal.breaks ?? []).map((b) => [parseHM(b.start)!, parseHM(b.end)!] as const);
+  const biz = makeBizCalendar(cal.workDays, bizStart, bizEnd, bizBreaks);
+  // los casos llegan a lo largo de toda la jornada; la tasa «por hora hábil» no cambia por tener una pausa
+  const bizArrivals = makeBizCalendar(cal.workDays, bizStart, bizEnd);
   const workDays = new Set(cal.workDays);
   const travelCfg = { sameTeam: 0, sameArea: 2, crossArea: 5, ...(def.travel ?? {}) };
 
@@ -435,10 +439,10 @@ export function simulateCompany(def: CompanyDef, options: OrgSimOptions): OrgSim
 
     const arrive = () => {
       createCase(proc);
-      const next = biz.addBiz(now, interval());
+      const next = bizArrivals.addBiz(now, interval());
       if (next <= horizon) schedule(next, arrive);
     };
-    const first = biz.addBiz(0, interval());
+    const first = bizArrivals.addBiz(0, interval());
     if (first <= horizon) schedule(first, arrive);
   }
 

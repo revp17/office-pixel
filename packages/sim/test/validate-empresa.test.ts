@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { parseCompany, validateCompany, type CompanyDef } from '../src';
+import { parseCompany, simulateCompany, validateCompany, type CompanyDef } from '../src';
 
 const banco = parseCompany(readFileSync(new URL('../../../examples/banco_pixel.yaml', import.meta.url), 'utf8')).def!;
 const errorsOf = (fn: (d: CompanyDef) => void) => {
@@ -138,5 +138,44 @@ describe('texto YAML pegado a mano', () => {
     const dup = structuredClone(banco) as unknown as { units: Array<Record<string, unknown>> };
     dup.units.push({ ...dup.units[0] });
     expect(validateCompany(dup).errors.some((e) => /el identificador «.+» está repetido/.test(e))).toBe(true);
+  });
+});
+
+describe('el almuerzo no cuenta en ciclos ni plazos, pero las llegadas no cambian', () => {
+  // la misma empresa dos veces: el almuerzo como pausa de la empresa o solo como horario de cada persona
+  const conPausaEmpresa = (): CompanyDef => {
+    const d = structuredClone(banco);
+    d.calendar.breaks = [{ start: '13:00', end: '14:00' }];
+    return d;
+  };
+  const soloPersonas = (): CompanyDef => {
+    const d = conPausaEmpresa();
+    d.schedules = { ...d.schedules, general: { hours: { ...d.calendar.hours }, breaks: [{ start: '13:00', end: '14:00' }] } };
+    for (const p of d.people) p.schedule ??= 'general'; // quien ya tenía horario propio lo conserva
+    delete d.calendar.breaks;
+    return d;
+  };
+
+  it('las personas trabajan igual, los casos llegan igual', () => {
+    const a = simulateCompany(conPausaEmpresa(), { seed: 5, horizonDays: 5 });
+    const b = simulateCompany(soloPersonas(), { seed: 5, horizonDays: 5 });
+    const created = (r: typeof a) => r.events.filter((e) => e.type === 'case.created').map((e) => [e.t, (e as { caseId: string }).caseId]);
+    expect(created(a)).toEqual(created(b));
+    expect(a.metrics.completed).toBeGreaterThan(0);
+  });
+
+  it('con la pausa de la empresa los ciclos y las esperas miden menos (no cuentan la hora de almuerzo)', () => {
+    const a = simulateCompany(conPausaEmpresa(), { seed: 5, horizonDays: 5 });
+    const b = simulateCompany(soloPersonas(), { seed: 5, horizonDays: 5 });
+    const cycles = (r: typeof a) => Object.values(r.metrics.byProcess).map((p) => p.cycleAvg);
+    cycles(a).forEach((c, i) => expect(c).toBeLessThanOrEqual(cycles(b)[i] + 1e-9));
+    expect(cycles(a).some((c, i) => c < cycles(b)[i] - 1e-9)).toBe(true);
+    const waits = (r: typeof a) => Object.values(r.metrics.byStage).map((s) => s.waitAvg);
+    waits(a).forEach((w, i) => expect(w).toBeLessThanOrEqual(waits(b)[i] + 1e-9));
+  });
+
+  it('unas pausas que cubren toda la jornada no se aceptan', () => {
+    expect(errorsOf((d) => (d.calendar.breaks = [{ start: '08:00', end: '19:00' }]))).toEqual(['Pausas: cubren toda la jornada; deja algún tramo de trabajo.']);
+    expect(errorsOf((d) => (d.calendar.breaks = [{ start: '09:00', end: '13:00' }, { start: '13:00', end: '18:00' }]))).toHaveLength(1);
   });
 });
