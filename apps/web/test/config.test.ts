@@ -206,3 +206,18 @@ describe('borrar una etapa no deja referencias colgando', () => {
     expect(validateCompany(d).errors.filter((e) => /stageId|no existe/.test(e))).toEqual([]);
   });
 });
+
+describe('ficha del proceso: quitar un involucrado', () => {
+  it('su validación se va con él y el dueño vacío no se guarda como texto vacío', async () => {
+    const { ensureDoc } = await import('@office-pixel/sim');
+    const d = example();
+    const doc = ensureDoc(d.processes[0]);
+    doc.scope.stakeholders = [{ id: 'i1', name: 'Uno' }, { id: 'i2', name: 'Dos' }];
+    doc.validations = [{ stakeholderId: 'i1', status: 'aprobado' }, { stakeholderId: 'i2', status: 'observado', comment: 'x' }];
+    // lo mismo que hace el botón «Quitar involucrado»
+    const [gone] = doc.scope.stakeholders.splice(0, 1);
+    doc.validations = doc.validations.filter((v) => v.stakeholderId !== gone.id);
+    expect(doc.validations.map((v) => v.stakeholderId)).toEqual(['i2']);
+    expect(validateCompany(d).errors).toEqual([]);
+  });
+});

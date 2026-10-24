@@ -1,4 +1,5 @@
 import type { CompanyDef, DependencyKind, OrgProcessDef, Procedure } from '../model';
+import { pruneExceptionLinks } from './procedures';
 
 export interface DepEdge {
   /** proceso de origen (del que se depende) */
@@ -142,6 +143,7 @@ export function dropDanglingDependencies(def: CompanyDef): void {
       for (const map of [o.reqReview, o.speed, o.auto] as Array<Record<string, unknown>>) for (const id of Object.keys(map)) if (!here.has(id)) delete map[id];
     }
     for (const pc of p.procedures ?? []) {
+      pruneExceptionLinks(pc);
       if (pc.stageId !== undefined && !here.has(pc.stageId)) delete pc.stageId; // el procedimiento queda sin etapa asignada
       if (pc.prerequisites) {
         pc.prerequisites = pc.prerequisites.filter((r) => pcs.has(r));

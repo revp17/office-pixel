@@ -11,7 +11,7 @@ import {
   type PhaseKey,
   type ValidationStatus,
 } from '@office-pixel/sim';
-import { AddBtn, Card, Field, IconBtn, Sel, Section, Text, TextArea } from '../config/ui';
+import { AddBtn, Card, Field, IconBtn, MAX_NAME, NameInput, Sel, Section, Text, TextArea, checkedName } from '../config/ui';
 import { FlowDiagram } from './flow';
 
 export type PMut = (fn: (p: OrgProcessDef, d: CompanyDef) => void) => void;
@@ -116,7 +116,7 @@ function Alcance({ ctx }: { ctx: HubCtx }) {
         </Field>
         <div class="row">
           <Field label="Dueño del proceso">
-            <Sel value={sc.owner ?? ''} options={people} onChange={(v) => set((s) => void (s.owner = v))} />
+            <Sel value={sc.owner ?? ''} options={people} onChange={(v) => set((s) => void (v ? (s.owner = v) : delete s.owner))} />
           </Field>
           <Field label="Inicio del levantamiento">
             <input type="date" value={sc.startDate ?? ''} onInput={(e) => set((s) => void (s.startDate = (e.target as HTMLInputElement).value))} />
@@ -132,7 +132,7 @@ function Alcance({ ctx }: { ctx: HubCtx }) {
         {sc.stakeholders.map((s, i) => (
           <div class="inline wrap" key={s.id}>
             <Field label="Nombre">
-              <Text value={s.name} onChange={(v) => set((x) => void (x.stakeholders[i].name = v))} />
+              <NameInput value={s.name} maxLength={MAX_NAME} onCommit={checkedName((name) => set((x) => void (x.stakeholders[i].name = name)), ctx.note)} />
             </Field>
             <Field label="Rol en el proceso">
               <Text value={s.role ?? ''} placeholder="Usuario, dueño, auditor…" onChange={(v) => set((x) => void (x.stakeholders[i].role = v))} />
@@ -151,7 +151,17 @@ function Alcance({ ctx }: { ctx: HubCtx }) {
                 }
               />
             </Field>
-            <IconBtn title="Quitar involucrado" danger onClick={() => set((x) => void x.stakeholders.splice(i, 1))}>
+            <IconBtn
+              title="Quitar involucrado"
+              danger
+              onClick={() =>
+                P((p) => {
+                  const dd = ensureDoc(p);
+                  const [gone] = dd.scope.stakeholders.splice(i, 1);
+                  if (gone) dd.validations = dd.validations.filter((v) => v.stakeholderId !== gone.id); // su respuesta ya no cuenta
+                })
+              }
+            >
               ✕
             </IconBtn>
           </div>

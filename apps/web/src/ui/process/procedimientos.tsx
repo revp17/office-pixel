@@ -20,6 +20,7 @@ import {
   uncoveredExceptions,
   allProcedures,
   dropDanglingDependencies,
+  pruneExceptionLinks,
   unpublishedPrerequisites,
   type CompanyDef,
   type OrgProcessDef,
@@ -130,7 +131,7 @@ function Paso1({ ctx, pc, PM, go }: { ctx: HubCtx; pc: Procedure; PM: PM; go: (n
             key={f.id}
             title={<span class="pill sub">{f.method === 'en_vivo' ? 'Observación en vivo' : 'Entrevista'}</span>}
             actions={
-              <IconBtn title="Borrar registro" danger onClick={() => PM((x) => void x.fieldwork.splice(i, 1))}>
+              <IconBtn title="Borrar registro" danger onClick={() => PM((x) => void (x.fieldwork.splice(i, 1), pruneExceptionLinks(x)))}>
                 🗑
               </IconBtn>
             }
@@ -162,7 +163,7 @@ function Paso1({ ctx, pc, PM, go }: { ctx: HubCtx; pc: Procedure; PM: PM; go: (n
                 {f.exceptions.map((e, k) => (
                   <div class="inline" key={e.id}>
                     <Text value={e.text} placeholder="p. ej. el cliente no envía el documento" onChange={(v) => setRec(i, (r) => void (r.exceptions[k].text = v))} />
-                    <IconBtn title="Quitar" danger onClick={() => setRec(i, (r) => void r.exceptions.splice(k, 1))}>
+                    <IconBtn title="Quitar" danger onClick={() => PM((x) => void (x.fieldwork[i].exceptions.splice(k, 1), pruneExceptionLinks(x)))}>
                       ✕
                     </IconBtn>
                   </div>

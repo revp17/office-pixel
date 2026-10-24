@@ -171,6 +171,15 @@ export function allFieldExceptions(pc: Procedure): ProcException[] {
   return pc.fieldwork.flatMap((f) => f.exceptions).filter((e) => filled(e.text));
 }
 
+/**
+ * Tras borrar un registro o una excepción del levantamiento: los caminos alternativos que la cubrían dejan de decir
+ * «del levantamiento» (siguen como caminos alternativos escritos a mano) en vez de apuntar a algo que ya no existe.
+ */
+export function pruneExceptionLinks(pc: Procedure): void {
+  const ids = new Set(pc.fieldwork.flatMap((f) => f.exceptions.map((e) => e.id)));
+  for (const s of pc.steps) for (const a of s.alternatives) if (a.exceptionId !== undefined && !ids.has(a.exceptionId)) delete a.exceptionId;
+}
+
 /** Excepciones del levantamiento que ningún paso cubre con un camino alternativo. */
 export function uncoveredExceptions(pc: Procedure): ProcException[] {
   const covered = new Set(pc.steps.flatMap((s) => s.alternatives.map((a) => a.exceptionId).filter(Boolean)));
