@@ -4,7 +4,6 @@
 //   company     → reglas de la empresa: validación, YAML, instalaciones y objetos de las salas
 //   simulation  → motor de eventos discretos y reproductor del registro de eventos
 //   process     → gestión de procesos: dependencias, documentación, optimización, procedimientos y fichas
-//   legacy      → el motor original de un solo proceso (sin uso en la aplicación)
 
 // kernel
 export type { DistSpec } from './kernel/dist';
@@ -30,9 +29,3 @@ export * from './process/manage';
 export { fichaMarkdown } from './process/ficha';
 export * from './process/procedures';
 export * from './process/deps';
-
-// legacy (modelo de un solo proceso)
-export * from './legacy/types';
-export { parseProcess, validateProcess, type ParseResult } from './legacy/validate';
-export { simulate } from './legacy/engine';
-export { Replayer, type CaseView, type CaseStatus, type Counters } from './legacy/replay';

@@ -8,7 +8,6 @@ import { describe, expect, it } from 'vitest';
  *   kernel  ← model ← company
  *                  ← simulation
  *   process → model, company, simulation, kernel
- *   legacy  → kernel, model
  *
  * Si este test falla, un import rompe la estructura: muévelo a la capa correcta o replantea la dependencia.
  */
@@ -20,7 +19,6 @@ const ALLOWED: Record<string, string[]> = {
   company: ['company', 'model', 'kernel'],
   simulation: ['simulation', 'model', 'kernel'],
   process: ['process', 'company', 'simulation', 'model', 'kernel'],
-  legacy: ['legacy', 'model', 'kernel'],
 };
 
 function files(dir: string, out: string[] = []): string[] {

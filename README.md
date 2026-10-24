@@ -8,7 +8,6 @@ Simulador visual de procesos para Forward Deployed Engineers: define un proceso 
 - `nhost/` — esquema de Postgres (tablas, versiones, permisos por usuario) y script de preparación para Nhost.
 - `apps/server` — API y base de datos SQLite (Node.js 22.13+, sin dependencias nativas).
 - `apps/web` — Studio (editor YAML) + mapa Phaser que reproduce el log de eventos, con controles de velocidad, línea de tiempo y métricas.
-- `examples/aprobacion_credito.yaml` — proceso de ejemplo.
 - `vault/` — vault de Obsidian con el diseño (empieza por `00 Inicio.md`).
 
 > **Guía de uso:** [docs/guia-de-uso.md](docs/guia-de-uso.md) — cómo se dibujan áreas y empleados, y cómo se configura todo paso a paso.

@@ -27,7 +27,6 @@ Sin navegador, sin Node, sin base de datos. Solo depende de la librería `yaml`.
 | `company` | validación, YAML, instalaciones y objetos de las salas |
 | `simulation` | motor de eventos discretos y reproductor |
 | `process` | gestión de procesos: dependencias, fichas, procedimientos |
-| `legacy` | motor original de un solo proceso (sin uso en la aplicación) |
 
 Se importa siempre desde la raíz del paquete (`@office-pixel/sim`), que es su interfaz pública.
 

@@ -14,7 +14,7 @@ Dos vistas sincronizadas sobre el mismo modelo: **editor YAML/JSON** (validado p
 - **Llegadas**: constante, ráfagas, estacional.
 
 ## Ejemplo
-Ver `examples/aprobacion_credito.yaml` en el repo.
+> Nota: este es el formato del primer prototipo, de un solo proceso. Ese motor se eliminó y su ejemplo (`aprobacion_credito.yaml`) ya no está en el repo. Hoy se define una empresa completa; el formato vigente está en `examples/banco_pixel.yaml` y en `docs/guia-de-uso.md`. Lo de abajo se conserva como historia del diseño.
 
 ```yaml
 process: aprobacion_credito
