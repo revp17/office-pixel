@@ -8,7 +8,7 @@ import { $, dom } from './dom';
 import { paintDetail, renderPanels } from './hud';
 import { scene, story } from './sceneHost';
 import { persist } from './services';
-import { restoreSimPrefs } from './simPrefs';
+import { normalizeSimFields, readSimFields, restoreSimPrefs } from './simPrefs';
 import { SAMPLE_PER_DAY, state } from './state';
 
 /** El orquestador de la pantalla: simular, abrir la configuración o la gestión de procesos, cambiar de empresa. */
@@ -24,7 +24,7 @@ export const closeOverlays = () => {
 const saveCompany = (d: CompanyDef, note?: string) => persist.save(d, note);
 
 /** Días de la simulación según el campo de la barra (1 a 30). */
-export const simDays = () => Math.min(30, Math.max(1, Math.trunc(Number(dom.days.value)) || 5));
+export const simDays = () => readSimFields().days;
 
 /**
  * Simula la empresa. `next` la reemplaza y, salvo que `save` sea false (ya viene de la base de datos), la guarda.
@@ -39,8 +39,7 @@ export function run(next?: CompanyDef, pv?: { company: CompanyDef; label: string
   state.preview = pv ?? null;
   dom.previewBanner.hidden = !state.preview;
   if (state.preview) dom.previewText.textContent = `Vista previa: ${state.preview.label}. No se guarda; la empresa real no ha cambiado.`;
-  const seed = Math.trunc(Number(dom.seed.value)) || 0;
-  const days = simDays();
+  const { seed, days } = normalizeSimFields();
   state.def = state.preview ? state.preview.company : state.company;
   state.result = simulateCompany(state.def, { seed, horizonDays: days, ...(state.mode === 'explain' ? { arrivalsPerDay: SAMPLE_PER_DAY } : {}) });
   story.clear();

@@ -1,4 +1,5 @@
 import { DAY, type PersonState, type UnitDef } from '@office-pixel/sim';
+import { dayRange } from '../application/dayRange';
 import type { OrgHud } from '../scene/orgScene';
 import { escapeHtml as esc, fmtMin, fmtTime, pct } from '../shared/format';
 import { dom } from './dom';
@@ -61,7 +62,7 @@ export function renderPanels() {
     })
     .join('');
   dom.kpis.innerHTML = `
-    <h3>Resultado (${m.horizonDays} días, semilla ${result.options.seed})</h3>
+    <h3>Resultado (${m.horizonDays} ${m.horizonDays === 1 ? 'día' : 'días'}, semilla ${result.options.seed})</h3>
     ${state.mode === 'explain' ? `<p class="hint">Modo «cómo funciona»: una muestra de hasta ${SAMPLE_PER_DAY} casos por día en cada proceso. Para la carga real, cambia a «Semana completa».</p>` : ''}
     <table><tr><th>Proceso</th><th>Cerrados</th><th>Ciclo</th><th>P90</th><th>SLA</th></tr>${procRows}</table>
     <h3>Mayor espera por etapa</h3>
@@ -104,8 +105,9 @@ export function paintDetail(h?: OrgHud, force = false) {
   const t = h?.t ?? scene.simT;
   const st0 = h?.selectedState ?? 'off';
   const day = Math.floor(t / DAY);
-  const from = day * DAY + 6 * 60;
-  const to = day * DAY + 22 * 60;
+  const range = dayRange(state.def);
+  const from = day * DAY + range.from;
+  const to = day * DAY + Math.min(range.to, DAY);
   const evs = state.personEvents.get(id) ?? [];
   const segs: string[] = [];
   let cur: PersonState = 'off';
@@ -130,7 +132,7 @@ export function paintDetail(h?: OrgHud, force = false) {
     <p>Velocidad ${p.speed ?? 1} · error ${pct(p.errorRate ?? 0)} · jefe: ${p.reportsTo ? esc(nameOf(p.reportsTo)) : '—'}</p>
     <p>Utilización ${pct(s.utilization)} · ${s.tasks} tareas · ${fmtMin(s.workedMinutes)} trabajados</p>
     <div class="daybar">${segs.join('')}<u style="left:${nowPct}%"></u></div>
-    <div class="dayaxis"><span>06</span><span>10</span><span>14</span><span>18</span><span>22</span></div>
+    <div class="dayaxis">${[0, 1, 2, 3, 4].map((i) => `<span>${String(Math.round((range.from + ((range.to - range.from) * i) / 4) / 60) % 24).padStart(2, '0')}</span>`).join('')}</div>
     <div class="legend"><span style="--c:#4aa3ff">trabajo</span><span style="--c:#8591ad">libre</span><span style="--c:#ffb020">pausa</span><span style="--c:#b06ab3">reunión</span><span style="--c:#ff5a4a">ausente</span></div>`;
 }
 
