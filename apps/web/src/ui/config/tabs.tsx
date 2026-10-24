@@ -20,21 +20,7 @@ import {
 import { buildBuilding } from '../../scene/building';
 import { DecorEditor } from './DecorEditor';
 import { RetireDialog } from './RetireDialog';
-import { AddBtn, Card, Days, Field, IconBtn, NameInput, Num, Pct, Sel, Section, Text, Time, type TabProps, type Up } from './ui';
-
-/** Longitud máxima de los nombres de áreas, subáreas y personas. */
-const MAX_NAME = 60;
-
-/** Confirma un nombre: sin espacios sobrantes y nunca vacío. Devuelve el error si no vale (el campo vuelve al anterior). */
-const checkedName = (apply: (name: string) => void, note: (m: string) => void, what = 'nombre') => (v: string) => {
-  const name = v.trim();
-  if (!name) {
-    note(`El ${what} no puede quedar vacío.`);
-    return 'vacío';
-  }
-  apply(name);
-};
-
+import { AddBtn, Card, Days, Field, IconBtn, MAX_NAME, NameInput, Num, Pct, Sel, Section, Text, Time, checkedName, type TabProps, type Up } from './ui';
 
 // ---------- Planta / empresa ----------
 

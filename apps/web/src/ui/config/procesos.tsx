@@ -20,7 +20,7 @@ import {
   usage,
   type Op,
 } from '../../application/editing/model';
-import { AddBtn, Card, DistEditor, Field, IconBtn, NameInput, Num, Pct, Sel, Section, Text, type TabProps } from './ui';
+import { AddBtn, Card, DistEditor, Field, IconBtn, MAX_NAME, NameInput, Num, Pct, Sel, Section, Text, checkedName, type TabProps } from './ui';
 
 type PMut = (fn: (p: OrgProcessDef, d: CompanyDef) => void) => void;
 
@@ -96,7 +96,7 @@ export function ProcesosTab({ d, up, note }: TabProps) {
             }
           >
             <Field label="Nombre del proceso">
-              <Text value={proc.name ?? proc.id} onChange={(v) => P((p) => void (p.name = v))} />
+              <NameInput value={proc.name ?? proc.id} maxLength={MAX_NAME} onCommit={checkedName((name) => P((p) => void (p.name = name)), note)} />
             </Field>
           </Card>
 
@@ -301,7 +301,7 @@ export function StageCard(props: {
       title={
         <span class="stagehead">
           <span class="num-badge">{i + 1}</span>
-          <Text value={st.label ?? st.id} onChange={(v) => S((s) => void (s.label = v))} />
+          <NameInput value={st.label ?? st.id} maxLength={MAX_NAME} onCommit={checkedName((name) => S((s) => void (s.label = name)), note)} />
           {st.terminal && <span class="pill end">Final</span>}
         </span>
       }

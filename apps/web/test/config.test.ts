@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { companyToYaml, parseCompany, simulateCompany, validateCompany, type CompanyDef } from '@office-pixel/sim';
+import { companyToYaml, dropDanglingDependencies, parseCompany, simulateCompany, validateCompany, type CompanyDef } from '@office-pixel/sim';
 import {
   addPerson,
   addProcess,
@@ -142,7 +142,7 @@ describe('procesos y etapas', () => {
     removeStage(proc, st.id);
     expect(proc.stages[0].exceptions).toEqual([]);
     expect(proc.stages[0].next).toBeUndefined();
-    expect(validateCompany(d).errors.some((e) => e.includes('falta "next"'))).toBe(true);
+    expect(validateCompany(d).errors.some((e) => e.includes('elige a qué etapa va después'))).toBe(true);
   });
   it('renombrar un dato actualiza las condiciones', () => {
     const d = example();
@@ -186,5 +186,23 @@ describe('personas: borrar y jefes', () => {
     c.reportsTo = b.id;
     expect([...subordinatesOf(d, a.id)].sort()).toEqual([b.id, c.id].sort());
     expect([...subordinatesOf(d, c.id)]).toEqual([]);
+  });
+});
+
+describe('borrar una etapa no deja referencias colgando', () => {
+  it('el procedimiento queda sin etapa y la optimización pierde lo de esa etapa; la empresa sigue siendo válida', () => {
+    const d = example();
+    const proc = d.processes[0];
+    const victim = proc.stages[1].id;
+    const other = proc.stages[2].id;
+    proc.procedures = [{ id: 'pc1', code: 'PRO-1', title: 'T', stageId: victim, digital: false, fieldwork: [], responsibilities: [], glossary: [], annexes: [], steps: [], attempts: [], signoffs: [], changes: [], done: {} }];
+    proc.optimization = { reqReview: { [victim]: { needed: 'no' }, [other]: { needed: 'si' } }, eliminated: [victim], speed: { [victim]: 0.5 }, auto: { [victim]: 0.5 }, steps: {} };
+    removeStage(proc, victim);
+    dropDanglingDependencies(d);
+    expect(proc.procedures[0].stageId).toBeUndefined();
+    expect(proc.optimization.eliminated).toEqual([]);
+    expect(Object.keys(proc.optimization.reqReview)).toEqual([other]);
+    expect(proc.optimization.speed).toEqual({});
+    expect(validateCompany(d).errors.filter((e) => /stageId|no existe/.test(e))).toEqual([]);
   });
 });

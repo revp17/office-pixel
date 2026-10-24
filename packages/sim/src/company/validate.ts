@@ -250,7 +250,7 @@ export function validateCompany(raw: unknown): CompanyParseResult {
 
   // procesos
   const procs = Array.isArray(raw.processes) ? raw.processes : null;
-  if (!procs || procs.length === 0) errors.push('processes: debe haber al menos un proceso');
+  if (!procs || procs.length === 0) errors.push('Procesos: añade al menos un proceso.');
   else {
     const procIds = new Set<string>();
     procs.forEach((pr, pi) => {
@@ -258,15 +258,15 @@ export function validateCompany(raw: unknown): CompanyParseResult {
       if (!isObj(pr) || typeof pr.id !== 'string') return void errors.push(`${pat}: falta "id"`);
       if (procIds.has(pr.id)) errors.push(`${pat}: proceso duplicado "${pr.id}"`);
       procIds.add(pr.id);
-      const P = `proceso "${pr.id}"`;
+      const P = `Proceso «${typeof pr.name === 'string' && pr.name.trim() ? pr.name.trim() : pr.id}»`;
 
       const arr = pr.arrivals;
-      if (!isObj(arr)) errors.push(`${P}.arrivals: faltan las llegadas`);
+      if (!isObj(arr)) errors.push(`${P}: faltan las llegadas de casos.`);
       else if (arr.type === 'poisson') {
-        if (!(typeof arr.ratePerHour === 'number' && arr.ratePerHour > 0)) errors.push(`${P}.arrivals.ratePerHour: debe ser > 0`);
+        if (!(typeof arr.ratePerHour === 'number' && arr.ratePerHour > 0)) errors.push(`${P}: los casos por hora hábil deben ser más de 0.`);
       } else if (arr.type === 'constant') {
-        if (!(typeof arr.everyMinutes === 'number' && arr.everyMinutes > 0)) errors.push(`${P}.arrivals.everyMinutes: debe ser > 0`);
-      } else errors.push(`${P}.arrivals.type: "poisson" o "constant"`);
+        if (!(typeof arr.everyMinutes === 'number' && arr.everyMinutes > 0)) errors.push(`${P}: el tiempo entre casos debe ser de al menos 1 minuto.`);
+      } else errors.push(`${P}: el tipo de llegada debe ser «al azar» (poisson) o «regular» (constant).`);
 
       // ficha y optimización: solo se comprueba la forma básica (el simulador no las usa)
       if (pr.doc !== undefined) {
@@ -308,16 +308,16 @@ export function validateCompany(raw: unknown): CompanyParseResult {
       }
 
       const stages = Array.isArray(pr.stages) ? pr.stages : null;
-      if (!stages || stages.length === 0) return void errors.push(`${P}.stages: debe haber al menos una etapa`);
+      if (!stages || stages.length === 0) return void errors.push(`${P}: añade al menos una etapa.`);
       const ids = new Set<string>();
       stages.forEach((s) => isObj(s) && typeof s.id === 'string' && ids.add(s.id));
       let terminal = false;
       stages.forEach((s, si) => {
         if (!isObj(s) || typeof s.id !== 'string') return void errors.push(`${P}.stages[${si}]: falta "id"`);
-        const S = `${P}, etapa "${s.id}"`;
+        const S = `${P}, etapa «${typeof s.label === 'string' && s.label.trim() ? s.label.trim() : s.id}»`;
         if (s.duration !== undefined) checkDist(s.duration, `${S}.duration`, errors);
         if (s.duration !== undefined || s.unit !== undefined) {
-          if (typeof s.unit !== 'string' || !unitIds.has(s.unit)) errors.push(`${S}: la unidad "${String(s.unit)}" no existe`);
+          if (typeof s.unit !== 'string' || !unitIds.has(s.unit)) errors.push(`${S}: elige el área o subárea que la hace («${String(s.unit)}» no existe).`);
           else if (people && s.automated !== true) {
             const ok = people.some(
               (p) =>
@@ -333,45 +333,45 @@ export function validateCompany(raw: unknown): CompanyParseResult {
           }
         }
         if (s.duration === undefined && s.unit === undefined && s.terminal !== true)
-          errors.push(`${S}: una etapa no terminal necesita "unit" y "duration"`);
+          errors.push(`${S}: indica quién la hace (área) y cuánto tarda, o márcala como final.`);
         if (s.automated !== undefined && typeof s.automated !== 'boolean') errors.push(`${S}.automated: debe ser true o false`);
         if (s.automated === true && (s.duration === undefined || s.unit === undefined))
-          errors.push(`${S}: una etapa automatizada necesita "unit" (dónde se muestra) y "duration"`);
+          errors.push(`${S}: una etapa automatizada necesita el área donde se muestra y cuánto tarda.`);
         if (s.sla !== undefined && !(isObj(s.sla) && typeof s.sla.maxMinutes === 'number' && s.sla.maxMinutes > 0))
-          errors.push(`${S}.sla.maxMinutes: debe ser > 0`);
+          errors.push(`${S}: el plazo máximo (SLA) debe ser mayor que 0.`);
         if (Array.isArray(s.exceptions))
           s.exceptions.forEach((e, j) => {
-            const ea = `${S}.exceptions[${j}]`;
-            if (!isObj(e)) return void errors.push(`${ea}: inválida`);
-            if (!(typeof e.probability === 'number' && e.probability >= 0 && e.probability <= 1)) errors.push(`${ea}.probability: entre 0 y 1`);
-            if (e.action !== 'goto') errors.push(`${ea}.action: solo "goto"`);
-            else if (!ids.has(String(e.target))) errors.push(`${ea}.target: la etapa "${String(e.target)}" no existe`);
+            const ea = `${S}, excepción ${j + 1}`;
+            if (!isObj(e)) return void errors.push(`${ea}: no es válida.`);
+            if (!(typeof e.probability === 'number' && e.probability >= 0 && e.probability <= 1)) errors.push(`${ea}: la probabilidad debe estar entre 0 % y 100 %.`);
+            if (e.action !== 'goto') errors.push(`${ea}: la única acción posible es pasar a otra etapa (goto).`);
+            else if (!ids.has(String(e.target))) errors.push(`${ea}: la etapa a la que pasa el caso («${String(e.target)}») ya no existe.`);
           });
         if (s.terminal === true) {
           terminal = true;
-          if (s.next !== undefined) errors.push(`${S}: una etapa terminal no puede tener "next"`);
-        } else if (s.next === undefined) errors.push(`${S}: falta "next" (o terminal: true)`);
+          if (s.next !== undefined) errors.push(`${S}: una etapa final no puede tener siguiente etapa.`);
+        } else if (s.next === undefined) errors.push(`${S}: elige a qué etapa va después (o márcala como final).`);
         else if (typeof s.next === 'string') {
-          if (!ids.has(s.next)) errors.push(`${S}.next: la etapa "${s.next}" no existe`);
+          if (!ids.has(s.next)) errors.push(`${S}: la etapa siguiente («${s.next}») ya no existe.`);
         } else if (Array.isArray(s.next)) {
           let otherwise = false;
           s.next.forEach((r, j) => {
-            const ra = `${S}.next[${j}]`;
-            if (!isObj(r) || typeof r.to !== 'string') return void errors.push(`${ra}: falta "to"`);
-            if (!ids.has(r.to)) errors.push(`${ra}.to: la etapa "${r.to}" no existe`);
+            const ra = `${S}, condición ${j + 1}`;
+            if (!isObj(r) || typeof r.to !== 'string') return void errors.push(`${ra}: elige a qué etapa va.`);
+            if (!ids.has(r.to)) errors.push(`${ra}: la etapa a la que va («${r.to}») no existe; elige otra.`);
             if (r.otherwise === true) otherwise = true;
-            else if (typeof r.when !== 'string') errors.push(`${ra}: necesita "when" u "otherwise: true"`);
+            else if (typeof r.when !== 'string') errors.push(`${ra}: escribe la condición (o márcala como «en cualquier otro caso», otherwise).`);
             else
               try {
                 compileExpr(r.when);
               } catch (err) {
-                errors.push(`${ra}.when: ${(err as Error).message}`);
+                errors.push(`${ra}: la condición no se entiende (${(err as Error).message}).`);
               }
           });
-          if (!otherwise) errors.push(`${S}.next: falta una regla final con "otherwise: true"`);
-        } else errors.push(`${S}.next: texto o lista de reglas`);
+          if (!otherwise) errors.push(`${S}: falta la regla final «en cualquier otro caso» (otherwise).`);
+        } else errors.push(`${S}: la etapa siguiente debe ser una etapa o una lista de condiciones.`);
       });
-      if (!terminal) errors.push(`${P}: debe haber una etapa con terminal: true`);
+      if (!terminal) errors.push(`${P}: marca una etapa como final (donde el caso se cierra).`);
     });
 
     // dependencias entre procesos y requisitos entre procedimientos

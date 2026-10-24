@@ -86,3 +86,31 @@ describe('personas (en el lenguaje del formulario)', () => {
     expect(errs[0]).toMatch(/nadie en «.+» tiene el rol «.+»\. Cambia el rol de alguien en Personas/);
   });
 });
+
+describe('procesos y etapas (en el lenguaje del formulario)', () => {
+  const proc = () => banco.processes[0];
+  const nombre = () => proc().name ?? proc().id;
+
+  it('las llegadas, el plazo y las etapas dicen qué proceso y qué etapa', () => {
+    expect(errorsOf((d) => (d.processes[0].arrivals = { type: 'poisson', ratePerHour: 0 }))).toEqual([`Proceso «${nombre()}»: los casos por hora hábil deben ser más de 0.`]);
+    expect(errorsOf((d) => (d.processes[0].arrivals = { type: 'constant', everyMinutes: 0 }))[0]).toMatch(/el tiempo entre casos debe ser de al menos 1 minuto/);
+    const first = proc().stages[0];
+    const label = first.label ?? first.id;
+    expect(errorsOf((d) => (d.processes[0].stages[0].sla = { maxMinutes: 0 }))).toEqual([`Proceso «${nombre()}», etapa «${label}»: el plazo máximo (SLA) debe ser mayor que 0.`]);
+    expect(errorsOf((d) => delete d.processes[0].stages[0].next)[0]).toBe(`Proceso «${nombre()}», etapa «${label}»: elige a qué etapa va después (o márcala como final).`);
+    expect(errorsOf((d) => (d.processes[0].stages[0].next = 'no_existe'))[0]).toMatch(/la etapa siguiente \(«no_existe»\) ya no existe/);
+  });
+
+  it('sin etapa final, o con una etapa final que tiene siguiente, lo explica', () => {
+    expect(errorsOf((d) => d.processes[0].stages.forEach((s) => ((s.terminal = false), s.next ?? (s.next = d.processes[0].stages[0].id)))).some((e) => /marca una etapa como final/.test(e))).toBe(true);
+    expect(errorsOf((d) => ((d.processes[0].stages.at(-1)!.terminal = true), (d.processes[0].stages.at(-1)!.next = 'x')))[0]).toMatch(/una etapa final no puede tener siguiente etapa/);
+  });
+
+  it('las condiciones fallidas dicen cuál es y qué falta', () => {
+    const errs = errorsOf((d) => {
+      d.processes[0].stages[0].next = [{ when: 'case.monto >', to: d.processes[0].stages[1].id }];
+    });
+    expect(errs.some((e) => /condición 1: la condición no se entiende/.test(e))).toBe(true);
+    expect(errs.some((e) => /falta la regla final «en cualquier otro caso» \(otherwise\)/.test(e))).toBe(true);
+  });
+});

@@ -266,3 +266,16 @@ export function DistEditor(p: { spec: DistSpec; minutes: boolean; onChange: (s: 
     </span>
   );
 }
+
+/** Longitud máxima de los nombres de áreas, subáreas, personas, procesos y etapas. */
+export const MAX_NAME = 60;
+
+/** Confirma un nombre: sin espacios sobrantes y nunca vacío. Devuelve el error si no vale (el campo vuelve al anterior). */
+export const checkedName = (apply: (name: string) => void, note: (m: string) => void, what = 'nombre') => (v: string) => {
+  const name = v.trim();
+  if (!name) {
+    note(`El ${what} no puede quedar vacío.`);
+    return 'vacío';
+  }
+  apply(name);
+};

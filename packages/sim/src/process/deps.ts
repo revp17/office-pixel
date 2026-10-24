@@ -134,7 +134,15 @@ export function dropDanglingDependencies(def: CompanyDef): void {
       }
       if (!p.dependsOn.length) delete p.dependsOn;
     }
+    // la ficha y la optimización guardan datos por etapa: se quitan los de etapas que ya no existen
+    const here = stages.get(p.id)!;
+    const o = p.optimization;
+    if (o) {
+      o.eliminated = o.eliminated.filter((id) => here.has(id));
+      for (const map of [o.reqReview, o.speed, o.auto] as Array<Record<string, unknown>>) for (const id of Object.keys(map)) if (!here.has(id)) delete map[id];
+    }
     for (const pc of p.procedures ?? []) {
+      if (pc.stageId !== undefined && !here.has(pc.stageId)) delete pc.stageId; // el procedimiento queda sin etapa asignada
       if (pc.prerequisites) {
         pc.prerequisites = pc.prerequisites.filter((r) => pcs.has(r));
         if (!pc.prerequisites.length) delete pc.prerequisites;
