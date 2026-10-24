@@ -133,12 +133,15 @@ export function Num(p: {
  * Nombre que se confirma al salir del campo (o con Enter), para no renombrar con cada tecla.
  * `onCommit` devuelve un texto de error si el nombre no vale; entonces se vuelve al anterior.
  */
-export function NameInput(p: { value: string; onCommit: (v: string) => string | void; placeholder?: string; maxLength?: number }) {
+export function NameInput(p: { value: string; onCommit: (v: string) => string | void; placeholder?: string; maxLength?: number; list?: string }) {
   const [draft, setDraft] = useState(p.value);
   useEffect(() => setDraft(p.value), [p.value]);
   const commit = () => {
+    const text = draft.trim();
+    // solo cambiaron espacios sobrantes: se muestra limpio y no hay nada que guardar
+    if (text === p.value) return setDraft(p.value);
     if (draft === p.value) return;
-    const err = p.onCommit(draft);
+    const err = p.onCommit(text);
     if (err) setDraft(p.value);
   };
   return (
@@ -147,6 +150,7 @@ export function NameInput(p: { value: string; onCommit: (v: string) => string | 
       value={draft}
       placeholder={p.placeholder}
       maxLength={p.maxLength}
+      list={p.list}
       onInput={(e) => setDraft((e.currentTarget as HTMLInputElement).value)}
       onBlur={commit}
       onKeyDown={(e) => {

@@ -191,27 +191,26 @@ export function validateCompany(raw: unknown): CompanyParseResult {
   // personas
   const personIds = new Set<string>();
   const people = Array.isArray(raw.people) ? raw.people : null;
-  if (!people || people.length === 0) errors.push('people: debe haber al menos una persona');
+  if (!people || people.length === 0) errors.push('Personas: añade al menos una persona.');
   else {
     people.forEach((p) => isObj(p) && typeof p.id === 'string' && personIds.add(p.id));
     const seen = new Set<string>();
     people.forEach((p, i) => {
       const at = `people[${i}]`;
       if (!isObj(p) || typeof p.id !== 'string') return void errors.push(`${at}: falta "id"`);
-      const id = `persona "${p.id}"`;
-      if (seen.has(p.id)) errors.push(`${at}: persona duplicada "${p.id}"`);
+      const id = `Persona «${typeof p.name === 'string' && p.name.trim() ? p.name.trim() : p.id}»`;
+      if (seen.has(p.id)) errors.push(`${id}: el identificador «${p.id}» está repetido.`);
       seen.add(p.id);
-      if (typeof p.unit !== 'string' || !unitIds.has(p.unit)) errors.push(`${id}: la unidad "${String(p.unit)}" no existe`);
-      if (typeof p.role !== 'string' || !p.role) errors.push(`${id}: falta "role"`);
-      if (p.kind !== undefined && p.kind !== 'responsable' && p.kind !== 'colaborador')
-        errors.push(`${id}.kind: debe ser "responsable" o "colaborador"`);
-      if (p.reportsTo !== undefined && !personIds.has(String(p.reportsTo))) errors.push(`${id}: reportsTo "${String(p.reportsTo)}" no existe`);
-      if (p.schedule !== undefined && !scheduleIds.has(String(p.schedule))) errors.push(`${id}: el horario "${String(p.schedule)}" no existe`);
-      if (p.speed !== undefined && !(typeof p.speed === 'number' && p.speed > 0)) errors.push(`${id}.speed: debe ser > 0`);
+      if (typeof p.unit !== 'string' || !unitIds.has(p.unit)) errors.push(`${id}: elige un área o subárea (la «${String(p.unit)}» no existe).`);
+      if (typeof p.role !== 'string' || !p.role.trim()) errors.push(`${id}: escribe su rol (las etapas de los procesos piden un rol).`);
+      if (p.kind !== undefined && p.kind !== 'responsable' && p.kind !== 'colaborador') errors.push(`${id}: el tipo debe ser responsable o colaborador.`);
+      if (p.reportsTo !== undefined && !personIds.has(String(p.reportsTo))) errors.push(`${id}: su jefe «${String(p.reportsTo)}» ya no existe.`);
+      if (p.schedule !== undefined && !scheduleIds.has(String(p.schedule))) errors.push(`${id}: el horario «${String(p.schedule)}» no existe.`);
+      if (p.speed !== undefined && !(typeof p.speed === 'number' && p.speed > 0)) errors.push(`${id}: la velocidad debe ser mayor que 0.`);
       if (p.errorRate !== undefined && !(typeof p.errorRate === 'number' && p.errorRate >= 0 && p.errorRate < 1))
-        errors.push(`${id}.errorRate: debe estar entre 0 y 1`);
+        errors.push(`${id}: los errores deben estar entre 0 % y 99 %.`);
       if (p.absenteeism !== undefined && !(typeof p.absenteeism === 'number' && p.absenteeism >= 0 && p.absenteeism <= 1))
-        errors.push(`${id}.absenteeism: debe estar entre 0 y 1`);
+        errors.push(`${id}: el ausentismo debe estar entre 0 % y 100 %.`);
     });
   }
 
@@ -327,7 +326,10 @@ export function validateCompany(raw: unknown): CompanyParseResult {
                 (s.role === undefined || p.role === s.role) &&
                 (s.skill === undefined || (Array.isArray(p.skills) && p.skills.includes(s.skill))),
             );
-            if (!ok) errors.push(`${S}: nadie en "${s.unit}" cumple role/skill (${String(s.role ?? '—')}/${String(s.skill ?? '—')})`);
+            if (!ok) {
+              const need = [s.role !== undefined ? `el rol «${String(s.role)}»` : '', s.skill !== undefined ? `la habilidad «${String(s.skill)}»` : ''].filter(Boolean).join(' y ');
+              errors.push(`${S}: nadie en «${s.unit}» tiene ${need || 'lo que pide'}. Cambia el rol de alguien en Personas o lo que pide la etapa.`);
+            }
           }
         }
         if (s.duration === undefined && s.unit === undefined && s.terminal !== true)

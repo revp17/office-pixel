@@ -67,3 +67,22 @@ describe('tipos de instalación propios', () => {
     expect(errs[0]).toMatch(new RegExp(`^Área «${banco.units[0].name}»: el tipo de instalación «inexistente» no existe`));
   });
 });
+
+describe('personas (en el lenguaje del formulario)', () => {
+  it('dicen quién es y qué falta', () => {
+    const nombre = banco.people[0].name ?? banco.people[0].id;
+    expect(errorsOf((d) => (d.people[0].role = '  '))).toEqual([`Persona «${nombre}»: escribe su rol (las etapas de los procesos piden un rol).`]);
+    expect(errorsOf((d) => (d.people[0].reportsTo = 'fantasma'))).toEqual([`Persona «${nombre}»: su jefe «fantasma» ya no existe.`]);
+    expect(errorsOf((d) => (d.people[0].errorRate = 1))).toEqual([`Persona «${nombre}»: los errores deben estar entre 0 % y 99 %.`]);
+    expect(errorsOf((d) => (d.people = []))[0]).toBe('Personas: añade al menos una persona.');
+  });
+
+  it('si cambias el rol de la única persona que cubría una etapa, lo explica', () => {
+    const errs = errorsOf((d) => {
+      const stage = d.processes[0].stages.find((s) => s.role && s.unit)!;
+      for (const p of d.people) if (p.role === stage.role) p.role = 'otro rol';
+    });
+    expect(errs.length).toBeGreaterThan(0);
+    expect(errs[0]).toMatch(/nadie en «.+» tiene el rol «.+»\. Cambia el rol de alguien en Personas/);
+  });
+});

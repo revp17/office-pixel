@@ -183,6 +183,24 @@ export function removePerson(def: CompanyDef, id: string) {
   def.people = def.people.filter((p) => p.id !== id);
   for (const p of def.people) if (p.reportsTo === id) delete p.reportsTo;
   if (def.scenario?.absences) def.scenario.absences = def.scenario.absences.filter((a) => a.person !== id);
+  // la ficha de cada proceso no debe quedar apuntando a alguien que ya no existe
+  for (const proc of def.processes) {
+    const scope = proc.doc?.scope;
+    if (!scope) continue;
+    if (scope.owner === id) delete scope.owner;
+    for (const s of scope.stakeholders) if (s.personId === id) delete s.personId;
+  }
+}
+
+/** Personas que dependen de `id`, directa o indirectamente (no pueden ser su jefe: sería un círculo). */
+export function subordinatesOf(def: CompanyDef, id: string): Set<string> {
+  const out = new Set<string>();
+  const queue = [id];
+  while (queue.length) {
+    const boss = queue.pop()!;
+    for (const p of def.people) if (p.reportsTo === boss && !out.has(p.id)) (out.add(p.id), queue.push(p.id));
+  }
+  return out;
 }
 
 // ---------- procesos ----------

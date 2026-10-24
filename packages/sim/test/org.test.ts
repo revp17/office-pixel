@@ -60,7 +60,7 @@ describe('responsables y colaboradores', () => {
   });
   it('rechaza un tipo desconocido', () => {
     const bad = text.replace('id: e1, name: Sofía Luna,', 'id: e1, kind: jefazo, name: Sofía Luna,');
-    expect(parseCompany(bad).errors.some((e) => e.includes('kind'))).toBe(true);
+    expect(parseCompany(bad).errors.some((e) => e.includes('responsable o colaborador'))).toBe(true);
   });
   it('no cambia el resultado de la simulación', () => {
     const def = load();

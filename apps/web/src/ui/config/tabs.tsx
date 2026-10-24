@@ -10,6 +10,7 @@ import {
   kindOf,
   moveUnit,
   siblingsOf,
+  subordinatesOf,
   peopleOf,
   removePerson,
   removeUnit,
@@ -25,10 +26,10 @@ import { AddBtn, Card, Days, Field, IconBtn, NameInput, Num, Pct, Sel, Section, 
 const MAX_NAME = 60;
 
 /** Confirma un nombre: sin espacios sobrantes y nunca vacío. Devuelve el error si no vale (el campo vuelve al anterior). */
-const checkedName = (apply: (name: string) => void, note: (m: string) => void) => (v: string) => {
+const checkedName = (apply: (name: string) => void, note: (m: string) => void, what = 'nombre') => (v: string) => {
   const name = v.trim();
   if (!name) {
-    note('El nombre no puede quedar vacío.');
+    note(`El ${what} no puede quedar vacío.`);
     return 'vacío';
   }
   apply(name);
@@ -332,7 +333,7 @@ export function PersonasTab({ d, up, note }: TabProps) {
             {rows.map(({ p }) => (
               <tr key={p.id} class={kindOf(p)}>
                 <td>
-                  <Text value={p.name ?? ''} onChange={(v) => edit(p.id, (q) => void (q.name = v))} />
+                  <NameInput value={p.name ?? ''} maxLength={MAX_NAME} placeholder={p.id} onCommit={checkedName((name) => edit(p.id, (q) => void (q.name = name)), note)} />
                 </td>
                 <td>
                   <Sel value={p.unit} options={unitOptions} onChange={(v) => edit(p.id, (q) => void (q.unit = v))} />
@@ -341,12 +342,12 @@ export function PersonasTab({ d, up, note }: TabProps) {
                   <Sel value={kindOf(p)} options={kinds} onChange={(v) => edit(p.id, (q) => void (q.kind = v as PersonKind))} />
                 </td>
                 <td>
-                  <Text value={p.role} list="roles" onChange={(v) => edit(p.id, (q) => void (q.role = v))} />
+                  <NameInput value={p.role} maxLength={MAX_NAME} list="roles" onCommit={checkedName((role) => edit(p.id, (q) => void (q.role = role)), note, 'rol')} />
                 </td>
                 <td>
                   <Sel
                     value={p.reportsTo ?? ''}
-                    options={bosses.filter((b) => b.value !== p.id)}
+                    options={bosses.filter((b) => b.value !== p.id && !subordinatesOf(d, p.id).has(b.value))}
                     onChange={(v) =>
                       edit(p.id, (q) => {
                         if (v) q.reportsTo = v;
