@@ -19,7 +19,21 @@ import {
 import { buildBuilding } from '../../scene/building';
 import { DecorEditor } from './DecorEditor';
 import { RetireDialog } from './RetireDialog';
-import { AddBtn, Card, Days, Field, IconBtn, Num, Pct, Sel, Section, Text, Time, type TabProps, type Up } from './ui';
+import { AddBtn, Card, Days, Field, IconBtn, NameInput, Num, Pct, Sel, Section, Text, Time, type TabProps, type Up } from './ui';
+
+/** Longitud máxima de los nombres de áreas, subáreas y personas. */
+const MAX_NAME = 60;
+
+/** Confirma un nombre: sin espacios sobrantes y nunca vacío. Devuelve el error si no vale (el campo vuelve al anterior). */
+const checkedName = (apply: (name: string) => void, note: (m: string) => void) => (v: string) => {
+  const name = v.trim();
+  if (!name) {
+    note('El nombre no puede quedar vacío.');
+    return 'vacío';
+  }
+  apply(name);
+};
+
 
 // ---------- Planta / empresa ----------
 
@@ -88,7 +102,7 @@ export function EmpresaTab({ d, up }: TabProps) {
 // ---------- Áreas y subáreas (con sus responsables y colaboradores) ----------
 
 /** Dos columnas: responsables y colaboradores de una unidad, editables en línea. */
-function PeopleBox({ d, up, unitId }: { d: TabProps['d']; up: Up; unitId: string }) {
+function PeopleBox({ d, up, unitId, note }: { d: TabProps['d']; up: Up; unitId: string; note: (m: string) => void }) {
   const edit = (id: string, fn: (p: PersonDef) => void) => up((x) => void fn(x.people.find((q) => q.id === id)!));
   const col = (kind: PersonKind, title: string, hint: string) => {
     const list = peopleOf(d, unitId, kind);
@@ -102,7 +116,7 @@ function PeopleBox({ d, up, unitId }: { d: TabProps['d']; up: Up; unitId: string
         {list.length === 0 && <p class="empty">{hint}</p>}
         {list.map((p) => (
           <div class="pchip" key={p.id}>
-            <Text value={p.name ?? ''} onChange={(v) => edit(p.id, (q) => void (q.name = v))} />
+            <NameInput value={p.name ?? ''} maxLength={MAX_NAME} placeholder={p.id} onCommit={checkedName((name) => edit(p.id, (q) => void (q.name = name)), note)} />
             <IconBtn title={`Pasar a ${KIND_LABEL[other].toLowerCase()}`} onClick={() => edit(p.id, (q) => void (q.kind = other))}>
               ⇄
             </IconBtn>
@@ -145,6 +159,11 @@ export function AreasTab({ d, up, note }: TabProps) {
   const rename = (id: string, name: string) => up((x) => void (findUnit(x.units, id)!.name = name));
   const [retiring, setRetiring] = useState<string | null>(null);
   const [decorating, setDecorating] = useState<string | null>(null);
+  // nombres de áreas y subáreas que se repiten (se avisa, no se impide)
+  const nameKey = (u: UnitDef) => (u.name ?? u.id).trim().toLowerCase();
+  const seen = new Set<string>();
+  const repeated = new Set<string>();
+  for (const { unit } of flatUnits(d.units)) (seen.has(nameKey(unit)) ? repeated : seen).add(nameKey(unit));
   const move = (id: string, to: 'up' | 'down' | 'first' | 'last') => up((x) => void moveUnit(x, id, to));
   /** botones para cambiar el orden entre hermanas (primera, subir, bajar, última) */
   const mover = (id: string, what: string) => {
@@ -215,11 +234,11 @@ export function AreasTab({ d, up, note }: TabProps) {
               </>
             }
           >
-            <Field label="Nombre del área">
-              <Text value={area.name ?? area.id} onChange={(v) => rename(area.id, v)} />
+            <Field label="Nombre del área" hint={repeated.has(nameKey(area)) ? 'Ya hay otra área o subárea con este nombre: en las listas se confunden. Cámbialo.' : undefined}>
+              <NameInput value={area.name ?? area.id} maxLength={MAX_NAME} onCommit={checkedName((name) => rename(area.id, name), note)} />
             </Field>
             <FacilitySel d={d} unit={area} up={up} onDecorate={decorate} />
-            <PeopleBox d={d} up={up} unitId={area.id} />
+            <PeopleBox d={d} up={up} unitId={area.id} note={note} />
 
             <div class="sublist">
               {rows.length === 0 && <p class="empty">Esta área no tiene subáreas. Es opcional: añade una si quieres separar equipos dentro del área.</p>}
@@ -227,7 +246,12 @@ export function AreasTab({ d, up, note }: TabProps) {
                 <div class="subcard" key={unit.id} style={{ marginLeft: `${(depth - 1) * 18}px` }}>
                   <div class="subhead">
                     <span class="pill sub">Subárea</span>
-                    <Text value={unit.name ?? unit.id} onChange={(v) => rename(unit.id, v)} />
+                    <NameInput value={unit.name ?? unit.id} maxLength={MAX_NAME} onCommit={checkedName((name) => rename(unit.id, name), note)} />
+                    {repeated.has(nameKey(unit)) && (
+                      <span class="badge warn" title="Ya hay otra área o subárea con este nombre: en las listas se confunden.">
+                        nombre repetido
+                      </span>
+                    )}
                     <span class="badge">{usage(d, unit.id).people} personas</span>
                     {mover(unit.id, 'esta subárea')}
                     <IconBtn title="Borrar subárea" danger onClick={() => remove(unit.id)}>
@@ -235,7 +259,7 @@ export function AreasTab({ d, up, note }: TabProps) {
                     </IconBtn>
                   </div>
                   <FacilitySel d={d} unit={unit} up={up} onDecorate={decorate} />
-                  <PeopleBox d={d} up={up} unitId={unit.id} />
+                  <PeopleBox d={d} up={up} unitId={unit.id} note={note} />
                 </div>
               ))}
               <AddBtn onClick={() => up((x) => void addUnit(x, area.id, 'Nueva subárea'))}>Añadir subárea</AddBtn>
