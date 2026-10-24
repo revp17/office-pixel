@@ -185,16 +185,25 @@ export function HorariosTab({ d, up, note }: TabProps) {
 
 // ---------- YAML avanzado ----------
 
+const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
 export function YamlTab({ d, setDraft }: { d: CompanyDef; setDraft: (d: CompanyDef) => void }) {
   const [text, setText] = useState(() => companyToYaml(d));
   const [msg, setMsg] = useState<string[]>([]);
+  const [ok, setOk] = useState('');
 
   const load = () => {
     const r = parseCompany(text);
-    if (r.def) {
-      setDraft(r.def);
-      setMsg([]);
-    } else setMsg(r.errors);
+    if (!r.def) return setMsg(r.errors), setOk('');
+    const same = companyToYaml(r.def) === companyToYaml(d);
+    if (!same && !confirm('Esto reemplaza todo lo que hay ahora en los formularios (áreas, personas, procesos…) por lo del texto. ¿Continuar?')) return;
+    setDraft(r.def);
+    setMsg([]);
+    setOk(
+      same
+        ? 'El texto es igual a lo que ya hay en los formularios.'
+        : `✔ Cargado «${r.def.company}»: ${count(flatUnits(r.def.units).length, 'área o subárea', 'áreas y subáreas')}, ${count(r.def.people.length, 'persona', 'personas')}, ${count(r.def.processes.length, 'proceso', 'procesos')}. Pulsa «Aplicar y simular» para usarlo.`,
+    );
   };
 
   const download = () => {
@@ -229,12 +238,19 @@ export function YamlTab({ d, setDraft }: { d: CompanyDef; setDraft: (d: CompanyD
             type="file"
             accept=".yaml,.yml,.txt"
             onChange={async (e) => {
-              const f = (e.target as HTMLInputElement).files?.[0];
-              if (f) setText(await f.text());
+              const input = e.target as HTMLInputElement;
+              const f = input.files?.[0];
+              input.value = ''; // permite volver a abrir el mismo archivo
+              if (!f) return;
+              if (f.size > 30 * 1024 * 1024) return setMsg(['El archivo pesa más de 30 MB: no parece una empresa.']);
+              setText(await f.text());
+              setMsg([]);
+              setOk('');
             }}
           />
         </label>
       </div>
+      {ok && <p class="ok">{ok}</p>}
       {msg.length > 0 && (
         <ul class="errs">
           {msg.map((m) => (

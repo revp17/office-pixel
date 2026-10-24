@@ -46,12 +46,28 @@ export interface CompanyParseResult {
 const isObj = (v: unknown): v is Record<string, unknown> =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 
+/** Un error de sintaxis de YAML en una sola línea, con dónde está y en español para los casos más comunes. */
+function yamlSyntaxMessage(e: Error & { linePos?: Array<{ line: number; col: number }> }): string {
+  const first = e.message.split(/\r?\n/)[0].replace(/ at line \d+, column \d+:?$/, '');
+  const hints: Array<[RegExp, string]> = [
+    [/Tabs are not allowed/i, 'no se pueden usar tabuladores para sangrar; usa espacios'],
+    [/Nested mappings are not allowed/i, 'hay dos «clave: valor» en la misma línea; ponlos en líneas separadas'],
+    [/Flow sequence|Flow map/i, 'falta cerrar un corchete ] o una llave }'],
+    [/Implicit map keys need to be followed by map values/i, 'falta el «:» después de un nombre'],
+    [/Map keys must be unique/i, 'hay un nombre repetido en el mismo bloque'],
+  ];
+  const detail = hints.find(([re]) => re.test(first))?.[1] ?? first;
+  const pos = e.linePos?.[0];
+  return `El texto no es YAML válido${pos ? ` (línea ${pos.line}, columna ${pos.col})` : ''}: ${detail}.`;
+}
+
 export function parseCompany(yamlText: string): CompanyParseResult {
   let raw: unknown;
+  if (!yamlText.trim()) return { errors: ['El texto está vacío: pega o abre una empresa en YAML.'] };
   try {
     raw = parse(yamlText);
   } catch (e) {
-    return { errors: [`YAML inválido: ${(e as Error).message}`] };
+    return { errors: [yamlSyntaxMessage(e as Error & { linePos?: Array<{ line: number; col: number }> })] };
   }
   const res = validateCompany(raw);
   if (res.def) normalizeCompany(res.def);
@@ -94,7 +110,7 @@ function checkBlocks(list: unknown, label: string, errors: string[]): void {
 
 export function validateCompany(raw: unknown): CompanyParseResult {
   const errors: string[] = [];
-  if (!isObj(raw)) return { errors: ['La definición debe ser un objeto YAML/JSON'] };
+  if (!isObj(raw)) return { errors: ['Esto no parece una empresa: el texto debe empezar con «company: nombre» y seguir con calendar, units, people y processes.'] };
   if (typeof raw.company !== 'string' || !raw.company.trim()) errors.push('Nombre de la empresa: escribe un nombre.');
 
   // calendario
@@ -155,13 +171,14 @@ export function validateCompany(raw: unknown): CompanyParseResult {
   }
 
   // unidades
+  let unitsWellFormed = false;
   const unitIds = new Set<string>();
   const walk = (list: unknown, path: string) => {
-    if (!Array.isArray(list)) return void errors.push(`${path}: debe ser una lista`);
+    if (!Array.isArray(list)) return void errors.push(`Áreas: ${path === 'units' ? 'deben ser una lista' : `las subáreas de «${path}» deben ser una lista`}.`);
     list.forEach((u, i) => {
       const at = `${path}[${i}]`;
-      if (!isObj(u) || typeof u.id !== 'string') return void errors.push(`${at}: falta "id"`);
-      if (unitIds.has(u.id)) errors.push(`${at}: unidad duplicada "${u.id}"`);
+      if (!isObj(u) || typeof u.id !== 'string') return void errors.push(`Área o subárea ${i + 1}: falta el identificador (id).`);
+      if (unitIds.has(u.id)) errors.push(`Área o subárea «${typeof u.name === 'string' && u.name ? u.name : u.id}»: el identificador «${u.id}» está repetido.`);
       unitIds.add(u.id);
       if (u.facility !== undefined && !(typeof u.facility === 'string' && (isBuiltinFacility(u.facility) || customFacilityIds.has(u.facility))))
         errors.push(`Área «${typeof u.name === 'string' && u.name ? u.name : u.id}»: el tipo de instalación «${String(u.facility)}» no existe (usa ${[...Object.keys(FACILITIES), ...customFacilityIds].join(', ')}).`);
@@ -185,8 +202,12 @@ export function validateCompany(raw: unknown): CompanyParseResult {
       if (u.children !== undefined) walk(u.children, `${at}.children`);
     });
   };
-  if (!Array.isArray(raw.units) || raw.units.length === 0) errors.push('units: debe haber al menos un área');
-  else walk(raw.units, 'units');
+  if (!Array.isArray(raw.units) || raw.units.length === 0) errors.push('Áreas: añade al menos un área.');
+  else {
+    const before = errors.length;
+    walk(raw.units, 'units');
+    unitsWellFormed = errors.length === before;
+  }
 
   // personas
   const personIds = new Set<string>();
@@ -220,7 +241,7 @@ export function validateCompany(raw: unknown): CompanyParseResult {
       if (u.head !== undefined && !personIds.has(u.head)) errors.push(`unidad "${u.id}": head "${u.head}" no existe`);
       if (u.children) checkHeads(u.children);
     });
-  if (Array.isArray(raw.units) && errors.every((e) => !e.startsWith('units'))) checkHeads(raw.units as UnitDef[]);
+  if (Array.isArray(raw.units) && unitsWellFormed) checkHeads(raw.units as UnitDef[]);
 
   // reuniones
   if (raw.meetings !== undefined) {

@@ -114,3 +114,29 @@ describe('procesos y etapas (en el lenguaje del formulario)', () => {
     expect(errs.some((e) => /falta la regla final «en cualquier otro caso» \(otherwise\)/.test(e))).toBe(true);
   });
 });
+
+describe('texto YAML pegado a mano', () => {
+  const errs = (t: string) => parseCompany(t).errors;
+
+  it('vacío, que no es una empresa, o con errores de sintaxis: un mensaje corto y claro', () => {
+    expect(errs('  \n ')).toEqual(['El texto está vacío: pega o abre una empresa en YAML.']);
+    expect(errs('- 1\n- 2')[0]).toMatch(/^Esto no parece una empresa/);
+    expect(errs('company: [')[0]).toMatch(/^El texto no es YAML válido \(línea 1, columna \d+\): falta cerrar un corchete \] o una llave \}\.$/);
+    expect(errs('a: b: c')[0]).toMatch(/hay dos «clave: valor» en la misma línea/);
+    expect(errs('company: "X"\n\tbad: 1')[0]).toMatch(/no se pueden usar tabuladores para sangrar; usa espacios/);
+    for (const t of ['company: [', 'a: b: c']) expect(errs(t)[0]).not.toContain('\n');
+  });
+
+  it('un JSON de empresa también vale', () => {
+    expect(parseCompany(JSON.stringify(banco)).errors).toEqual([]);
+  });
+
+  it('áreas mal escritas dicen cuál es', () => {
+    const d = structuredClone(banco) as unknown as { units: Array<Record<string, unknown>> };
+    d.units.push({ name: 'Sin id' });
+    expect(validateCompany(d).errors.some((e) => /^Área o subárea \d+: falta el identificador \(id\)\.$/.test(e))).toBe(true);
+    const dup = structuredClone(banco) as unknown as { units: Array<Record<string, unknown>> };
+    dup.units.push({ ...dup.units[0] });
+    expect(validateCompany(dup).errors.some((e) => /el identificador «.+» está repetido/.test(e))).toBe(true);
+  });
+});
